@@ -1,0 +1,1701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KAIRO Data Intelligence Dashboard</title>
+    <meta name="description" content="Comprehensive data analysis for KAIRO registration platform development">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0f0f1a;
+            --bg-secondary: #1a1a2e;
+            --bg-card: #16162a;
+            --bg-chat: #0d0d1a;
+            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
+            --accent-gradient-alt: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --accent-purple: #8b5cf6;
+            --accent-cyan: #06b6d4;
+            --accent-blue: #6366f1;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #6b6b7b;
+            --border-color: #2a2a3e;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --orange: #fb923c;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-right {
+            text-align: right;
+        }
+
+        .header-title {
+            font-size: 0.9rem;
+            color: var(--accent-cyan);
+        }
+
+        .header-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.5rem 2rem;
+            overflow-x: auto;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            gap: 0.25rem;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .nav-tab {
+            padding: 0.6rem 1rem;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .nav-tab:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--text-primary);
+        }
+
+        .nav-tab.active {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--accent-cyan);
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Section Header */
+        .section-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .section-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .section-header p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Data Source Badge */
+        .data-source {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: var(--accent-cyan);
+            margin-bottom: 1rem;
+        }
+
+        .data-source.nbc {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: var(--success);
+        }
+
+        .data-source.combined {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: rgba(139, 92, 246, 0.3);
+            color: var(--accent-purple);
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--accent-gradient);
+        }
+
+        .stat-card.nbc::before {
+            background: var(--accent-gradient-alt);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .stat-subtitle {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        /* Grid Layouts */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        /* Charts */
+        .chart-container {
+            position: relative;
+            height: 280px;
+        }
+
+        .chart-container.small {
+            height: 220px;
+        }
+
+        /* Gradient Banners */
+        .gradient-banner {
+            background: var(--accent-gradient);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .gradient-banner.green {
+            background: var(--accent-gradient-alt);
+        }
+
+        .gradient-banner h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .gradient-banner p {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+
+        .banner-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .banner-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+        }
+
+        .banner-item strong {
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Alert Cards */
+        .alert-card {
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            border-left: 4px solid;
+            margin-bottom: 1rem;
+        }
+
+        .alert-card.info {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--accent-blue);
+        }
+
+        .alert-card.success {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--success);
+        }
+
+        .alert-card.warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: var(--warning);
+        }
+
+        .alert-card.danger {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--danger);
+        }
+
+        .alert-card h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .alert-card p, .alert-card li {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .alert-card ul, .alert-card ol {
+            margin-left: 1.25rem;
+            margin-top: 0.5rem;
+        }
+
+        .alert-card li {
+            margin-bottom: 0.25rem;
+        }
+
+        /* Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.8rem;
+        }
+
+        .data-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table tr:hover {
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
+        .badge.success {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+        }
+
+        .badge.warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+        }
+
+        .badge.danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+        }
+
+        .badge.info {
+            background: rgba(99, 102, 241, 0.2);
+            color: #818cf8;
+        }
+
+        /* Code Block */
+        .code-block {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.8rem;
+            color: var(--success);
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        /* Comparison Table */
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .comparison-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+
+        .comparison-card h4 {
+            font-size: 0.9rem;
+            color: var(--accent-cyan);
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .comparison-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.85rem;
+        }
+
+        .comparison-row:last-child {
+            border-bottom: none;
+        }
+
+        .comparison-label {
+            color: var(--text-secondary);
+        }
+
+        .comparison-value {
+            font-weight: 600;
+        }
+
+        /* Metric Cards */
+        .metric-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .metric-card {
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .metric-card.danger {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .metric-card.warning {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .metric-card.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .metric-card.info {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .metric-card .label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-card .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .metric-card.danger .value { color: #f87171; }
+        .metric-card.warning .value { color: #fbbf24; }
+        .metric-card.success .value { color: #34d399; }
+        .metric-card.info .value { color: #818cf8; }
+
+        /* Location List */
+        .location-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .location-item:last-child {
+            border-bottom: none;
+        }
+
+        .location-rank {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--accent-gradient);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.8rem;
+            margin-right: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .location-name {
+            flex: 1;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .location-count {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        /* Insight Box */
+        .insight-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .insight-box h4 {
+            font-size: 0.9rem;
+            color: var(--accent-cyan);
+            margin-bottom: 0.5rem;
+        }
+
+        .insight-box p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            padding: 1.5rem 2rem;
+            text-align: center;
+            margin-top: 3rem;
+        }
+
+        .footer p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .footer span {
+            color: var(--accent-cyan);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                padding: 1rem;
+            }
+
+            .nav-tabs {
+                padding: 0.5rem 1rem;
+            }
+
+            .main-content {
+                padding: 1rem;
+            }
+
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .metric-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .nav-tab {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">Kairo Pro</div>
+            <div class="header-right">
+                <div class="header-title">Data Intelligence Dashboard</div>
+                <div class="header-subtitle">Built for Busy Parents</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav-tabs">
+        <div class="nav-container">
+            <button class="nav-tab active" data-tab="overview">📊 Overview</button>
+            <button class="nav-tab" data-tab="nbc">🏊 NBC Analysis</button>
+            <button class="nav-tab" data-tab="configio">⚽ Configio Data</button>
+            <button class="nav-tab" data-tab="demographics">👶 Demographics</button>
+            <button class="nav-tab" data-tab="payments">💳 Payments</button>
+            <button class="nav-tab" data-tab="scheduling">📅 Scheduling</button>
+            <button class="nav-tab" data-tab="capacity">👥 Capacity</button>
+            <button class="nav-tab" data-tab="insights">⚡ Kairo Insights</button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        
+        <!-- OVERVIEW TAB -->
+        <section id="overview" class="tab-content active">
+            <div class="gradient-banner">
+                <h3>🚀 Combined Data Intelligence</h3>
+                <p>Analysis of 7,594 records across two major platforms: NBC Sports Engine (661 registrations) and Configio (6,933 products)</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Records</div>
+                    <div class="stat-value">7,594</div>
+                    <div class="stat-subtitle">Combined dataset</div>
+                </div>
+                <div class="stat-card nbc">
+                    <div class="stat-label">NBC Registrations</div>
+                    <div class="stat-value">661</div>
+                    <div class="stat-subtitle">Individual enrollments</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Configio Products</div>
+                    <div class="stat-value">6,933</div>
+                    <div class="stat-subtitle">Class offerings</div>
+                </div>
+                <div class="stat-card nbc">
+                    <div class="stat-label">Combined Revenue</div>
+                    <div class="stat-value">$9.8M</div>
+                    <div class="stat-subtitle">In analyzed data</div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">📊 Key Metrics Comparison</div>
+                    <div class="comparison-grid" style="gap: 1rem;">
+                        <div>
+                            <h5 style="color: var(--accent-cyan); margin-bottom: 0.75rem; font-size: 0.85rem;">NBC Sports Engine</h5>
+                            <div class="comparison-row">
+                                <span class="comparison-label">Avg Registration</span>
+                                <span class="comparison-value">$206</span>
+                            </div>
+                            <div class="comparison-row">
+                                <span class="comparison-label">Preschool Revenue</span>
+                                <span class="comparison-value">74.8%</span>
+                            </div>
+                            <div class="comparison-row">
+                                <span class="comparison-label">Pay in Full</span>
+                                <span class="comparison-value">86.4%</span>
+                            </div>
+                            <div class="comparison-row">
+                                <span class="comparison-label">Multi-Child</span>
+                                <span class="comparison-value">8.1%</span>
+                            </div>
+                        </div>
+                        <div>
+                            <h5 style="color: var(--success); margin-bottom: 0.75rem; font-size: 0.85rem;">Configio</h5>
+                            <div class="comparison-row">
+                                <span class="comparison-label">Avg Price</span>
+                                <span class="comparison-value">$220</span>
+                            </div>
+                            <div class="comparison-row">
+                                <span class="comparison-label">Preschool Products</span>
+                                <span class="comparison-value">32%</span>
+                            </div>
+                            <div class="comparison-row">
+                                <span class="comparison-label">Weekend Classes</span>
+                                <span class="comparison-value">76%</span>
+                            </div>
+                            <div class="comparison-row">
+                                <span class="comparison-label">At Capacity</span>
+                                <span class="comparison-value">12%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">🔑 Critical Findings</div>
+                    <div class="insight-box">
+                        <h4>46% Registration Drop-off</h4>
+                        <p>From price acceptance to completion. This is the core problem Kairo solves.</p>
+                    </div>
+                    <div class="insight-box">
+                        <h4>Preschool = 74.8% of NBC Revenue</h4>
+                        <p>B2B preschool partnerships are far more valuable than community programs.</p>
+                    </div>
+                    <div class="insight-box">
+                        <h4>92.3% Register on Weekdays</h4>
+                        <p>Parents register during work hours on mobile, not at home on weekends.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gradient-banner green">
+                <h3>💡 Platform Comparison Insight</h3>
+                <div class="banner-grid">
+                    <div class="banner-item">
+                        <strong>NBC Advantage</strong>
+                        <span>Individual enrollment tracking, detailed demographics</span>
+                    </div>
+                    <div class="banner-item">
+                        <strong>Configio Advantage</strong>
+                        <span>Product hierarchy, regional organization, capacity tracking</span>
+                    </div>
+                    <div class="banner-item">
+                        <strong>Both Lack</strong>
+                        <span>AI guidance, mobile optimization, progress saving, alternative suggestions</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- NBC ANALYSIS TAB -->
+        <section id="nbc" class="tab-content">
+            <div class="data-source nbc">📊 Data Source: NBC Sports Engine • 661 Registrations • Soccer Shots OC</div>
+            
+            <div class="stats-grid">
+                <div class="stat-card nbc">
+                    <div class="stat-label">Total Revenue</div>
+                    <div class="stat-value">$136,166</div>
+                    <div class="stat-subtitle">661 registrations</div>
+                </div>
+                <div class="stat-card nbc">
+                    <div class="stat-label">Avg per Registration</div>
+                    <div class="stat-value">$206</div>
+                    <div class="stat-subtitle">Median: $224</div>
+                </div>
+                <div class="stat-card nbc">
+                    <div class="stat-label">Discounts Applied</div>
+                    <div class="stat-value">$6,081</div>
+                    <div class="stat-subtitle">23.8% of registrations</div>
+                </div>
+                <div class="stat-card nbc">
+                    <div class="stat-label">Unique Venues</div>
+                    <div class="stat-value">66</div>
+                    <div class="stat-subtitle">25 instructors</div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">📍 Revenue by Location Type</div>
+                    <div class="chart-container">
+                        <canvas id="nbcLocationTypeChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">🎯 Program Distribution</div>
+                    <div class="chart-container">
+                        <canvas id="nbcProgramChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">🏫 Top NBC Venues</div>
+                <div class="grid-2" style="gap: 1rem;">
+                    <div>
+                        <div class="location-item">
+                            <span class="location-rank" style="background: var(--accent-gradient-alt);">1</span>
+                            <span class="location-name">Beacon Park School</span>
+                            <span class="location-count">37 registrations</span>
+                        </div>
+                        <div class="location-item">
+                            <span class="location-rank" style="background: var(--accent-gradient-alt);">2</span>
+                            <span class="location-name">Milestones Montessori Irvine</span>
+                            <span class="location-count">34 registrations</span>
+                        </div>
+                        <div class="location-item">
+                            <span class="location-rank" style="background: var(--accent-gradient-alt);">3</span>
+                            <span class="location-name">Piper Preschool</span>
+                            <span class="location-count">30 registrations</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="location-item">
+                            <span class="location-rank" style="background: var(--accent-gradient-alt);">4</span>
+                            <span class="location-name">Bella Montessori</span>
+                            <span class="location-count">29 registrations</span>
+                        </div>
+                        <div class="location-item">
+                            <span class="location-rank" style="background: var(--accent-gradient-alt);">5</span>
+                            <span class="location-name">Sendero Field</span>
+                            <span class="location-count">24 registrations</span>
+                        </div>
+                        <div class="location-item">
+                            <span class="location-rank" style="background: var(--accent-gradient-alt);">6</span>
+                            <span class="location-name">LiMai Montessori</span>
+                            <span class="location-count">22 registrations</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert-card success">
+                <h4>🏫 Montessori Dominance</h4>
+                <p>Montessori schools appear in 4 of the top 6 venues. This suggests a strong Montessori-specific marketing opportunity. Consider dedicated Montessori partnership messaging and portal features.</p>
+            </div>
+        </section>
+
+        <!-- CONFIGIO DATA TAB -->
+        <section id="configio" class="tab-content">
+            <div class="data-source">📊 Data Source: Configio • 6,933 Products • Soccer Shots OC</div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Products</div>
+                    <div class="stat-value">6,933</div>
+                    <div class="stat-subtitle">Active: 3,880</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Revenue</div>
+                    <div class="stat-value">$9.66M</div>
+                    <div class="stat-subtitle">In dataset</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Locations</div>
+                    <div class="stat-value">175+</div>
+                    <div class="stat-subtitle">16 cities</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">4 Regions</div>
+                    <div class="stat-value">OC</div>
+                    <div class="stat-subtitle">Central, South, North, West</div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">📁 Product Categories</div>
+                    <div class="chart-container">
+                        <canvas id="configioCategoryChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">🗺️ Revenue by Region</div>
+                    <div class="chart-container">
+                        <canvas id="configioRegionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">📈 Price Trends 2022-2025</div>
+                <div class="chart-container small">
+                    <canvas id="configioPriceTrendChart"></canvas>
+                </div>
+            </div>
+
+            <div class="alert-card warning">
+                <h4>📈 18% Price Increase in 2025</h4>
+                <p>Average price jumped from $245 (2024) to $288 (2025). This validates the need for prominent payment plan display. "$37/month" is more palatable than "$299 total".</p>
+            </div>
+        </section>
+
+        <!-- DEMOGRAPHICS TAB -->
+        <section id="demographics" class="tab-content">
+            <div class="data-source nbc">📊 Data Source: NBC Sports Engine • 661 Registrations</div>
+
+            <div class="stats-grid">
+                <div class="stat-card nbc">
+                    <div class="stat-label">Average Age</div>
+                    <div class="stat-value">3.9 yrs</div>
+                    <div class="stat-subtitle">47.3 months</div>
+                </div>
+                <div class="stat-card nbc">
+                    <div class="stat-label">Age Range</div>
+                    <div class="stat-value">1-10.5</div>
+                    <div class="stat-subtitle">years old</div>
+                </div>
+                <div class="stat-card nbc">
+                    <div class="stat-label">Male</div>
+                    <div class="stat-value">64.3%</div>
+                    <div class="stat-subtitle">425 children</div>
+                </div>
+                <div class="stat-card nbc">
+                    <div class="stat-label">Female</div>
+                    <div class="stat-value">34.9%</div>
+                    <div class="stat-subtitle">231 children</div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">👶 Age Distribution</div>
+                    <div class="chart-container">
+                        <canvas id="ageDistChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">👕 Shirt Size Distribution</div>
+                    <div class="chart-container">
+                        <canvas id="shirtSizeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">👨‍👩‍👧‍👦 Multi-Child Families</div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Family Type</th>
+                            <th>Count</th>
+                            <th>Percentage</th>
+                            <th>Kairo Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Single-child registration</td>
+                            <td>559</td>
+                            <td><span class="badge info">91.9%</span></td>
+                            <td>Standard flow</td>
+                        </tr>
+                        <tr>
+                            <td>2 children</td>
+                            <td>46</td>
+                            <td><span class="badge success">7.6%</span></td>
+                            <td>Auto-apply $50-60 sibling discount</td>
+                        </tr>
+                        <tr>
+                            <td>3 children</td>
+                            <td>2</td>
+                            <td><span class="badge warning">0.3%</span></td>
+                            <td>Cascade discounts</td>
+                        </tr>
+                        <tr>
+                            <td>5 children</td>
+                            <td>1</td>
+                            <td><span class="badge danger">0.2%</span></td>
+                            <td>Bulk roster upload</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="alert-card info">
+                <h4>🎯 Smart Defaults from Demographics</h4>
+                <ul>
+                    <li><strong>Age → Program:</strong> 3 years → Auto-suggest "Classic"</li>
+                    <li><strong>Age → Shirt Size:</strong> 3 years → Default to XXS (2T-3T)</li>
+                    <li><strong>DOB → Age:</strong> Calculate automatically, never ask parent to enter age</li>
+                    <li><strong>Zip → Venues:</strong> Show nearest 3 locations with availability</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- PAYMENTS TAB -->
+        <section id="payments" class="tab-content">
+            <div class="data-source combined">📊 Combined Data: NBC + Configio Analysis</div>
+
+            <div class="metric-cards">
+                <div class="metric-card success">
+                    <div class="label">Pay in Full</div>
+                    <div class="value">86.4%</div>
+                </div>
+                <div class="metric-card warning">
+                    <div class="label">Payment Plans</div>
+                    <div class="value">8%</div>
+                </div>
+                <div class="metric-card info">
+                    <div class="label">With Discount</div>
+                    <div class="value">23.8%</div>
+                </div>
+                <div class="metric-card danger">
+                    <div class="label">Avg Discount</div>
+                    <div class="value">$38.73</div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">💳 Payment Plan Types (NBC)</div>
+                    <div class="chart-container">
+                        <canvas id="paymentPlanChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">💰 Price Distribution (Configio)</div>
+                    <div class="chart-container">
+                        <canvas id="priceDistChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">👨‍👩‍👧 Sibling Discount Patterns</div>
+                <div class="grid-2" style="gap: 1.5rem;">
+                    <div class="insight-box">
+                        <h4>Hornstein Family (3 children)</h4>
+                        <p>Zahra: $240 (full) → Zayda: $180 (-$60) → Emran: $222 (-$60)</p>
+                    </div>
+                    <div class="insight-box">
+                        <h4>Pho Family (2 children)</h4>
+                        <p>Emmy: $224 (full) → Alice: $210 (-$56 sibling discount)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert-card success">
+                <h4>💰 Kairo Payment Strategy</h4>
+                <div class="grid-2" style="margin-top: 0.75rem;">
+                    <div>
+                        <strong>Payment Plan Display:</strong>
+                        <p>Show first: "$52/month" then "or pay $208 today"</p>
+                        <p style="margin-top: 0.5rem;"><strong>Per-Class Breakdown:</strong></p>
+                        <p>"That's just $6.50 per class!"</p>
+                    </div>
+                    <div>
+                        <strong>Sibling Celebration:</strong>
+                        <p>When adding 2nd child: "You're saving $56!"</p>
+                        <p style="margin-top: 0.5rem;"><strong>Auto-Apply:</strong></p>
+                        <p>$50-60 sibling discount (25% off additional child)</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCHEDULING TAB -->
+        <section id="scheduling" class="tab-content">
+            <div class="data-source combined">📊 Combined Data: NBC + Configio Analysis</div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">📆 When Parents REGISTER (NBC)</div>
+                    <div class="chart-container">
+                        <canvas id="registrationDayChart"></canvas>
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 1rem; text-align: center;">92.3% register Monday-Friday during work hours</p>
+                </div>
+                <div class="card">
+                    <div class="card-header">📅 When CLASSES Run (Configio)</div>
+                    <div class="chart-container">
+                        <canvas id="classDayChart"></canvas>
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 1rem; text-align: center;">76% of classes are Saturday/Sunday</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">⏰ Popular Time Slots (Configio)</div>
+                <div class="chart-container small">
+                    <canvas id="timeSlotChart"></canvas>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="alert-card warning">
+                    <h4>📱 Critical Insight: Registration vs Classes</h4>
+                    <ul>
+                        <li><strong>Parents register:</strong> Mon-Fri during work (92.3%)</li>
+                        <li><strong>Classes run:</strong> Sat-Sun mornings (76%)</li>
+                        <li><strong>Implication:</strong> Mobile-first is validated - parents register on phones between meetings</li>
+                    </ul>
+                </div>
+                <div class="alert-card info">
+                    <h4>💾 Save Progress is Critical</h4>
+                    <ul>
+                        <li>Parents have limited windows (lunch breaks)</li>
+                        <li>Interruptions are guaranteed</li>
+                        <li>Auto-save after every field</li>
+                        <li>Abandoned cart follow-up at 6-8 PM</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- CAPACITY TAB -->
+        <section id="capacity" class="tab-content">
+            <div class="data-source">📊 Data Source: Configio • 6,933 Products</div>
+
+            <div class="metric-cards">
+                <div class="metric-card danger">
+                    <div class="label">At 100%+ Capacity</div>
+                    <div class="value">753</div>
+                </div>
+                <div class="metric-card warning">
+                    <div class="label">With Holds</div>
+                    <div class="value">296</div>
+                </div>
+                <div class="metric-card info">
+                    <div class="label">Overbooked</div>
+                    <div class="value">90</div>
+                </div>
+                <div class="metric-card success">
+                    <div class="label">NBC Waitlist</div>
+                    <div class="value">0.9%</div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">📊 Fill Rate by Program Level</div>
+                    <div class="chart-container">
+                        <canvas id="fillRateChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">📈 Fill Rate by Class Size</div>
+                    <div class="chart-container">
+                        <canvas id="fillBySizeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">📆 Fill Rate by Day of Week</div>
+                <div class="chart-container small">
+                    <canvas id="fillByDayChart"></canvas>
+                </div>
+            </div>
+
+            <div class="alert-card danger">
+                <h4>⚠️ Waitlist Prevention Logic</h4>
+                <div class="grid-2" style="margin-top: 0.75rem;">
+                    <div>
+                        <strong>When class is full, Kai suggests:</strong>
+                        <ol style="margin-left: 1rem; margin-top: 0.5rem;">
+                            <li>Same day, ±45 min time slot</li>
+                            <li>Same time, adjacent day</li>
+                            <li>Same level, nearby location (&lt;5 miles)</li>
+                            <li>Next season early registration</li>
+                        </ol>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px;">
+                        <strong>Example:</strong>
+                        <p style="font-style: italic; margin-top: 0.5rem;">"Great choice! That Saturday 9:45 AM class is full, but I found a spot at 10:30 AM same day—would that work?"</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- INSIGHTS TAB -->
+        <section id="insights" class="tab-content">
+            <div class="gradient-banner">
+                <h3>🚀 Kairo Development Recommendations</h3>
+                <p>Actionable insights from analyzing 7,594 records across NBC Sports Engine and Configio platforms</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">🔧 Waitlist Prevention Logic</div>
+                <div class="code-block">IF class_at_capacity:
+  1. Check same_day + adjacent_time (±45 min)
+  2. Check same_time + adjacent_day (±1 day)  
+  3. Check same_level + nearby_location (within 5 miles)
+  4. Check same_level + next_season
+  5. If all fail → Waitlist with position + notification</div>
+            </div>
+
+            <div class="grid-3">
+                <div class="alert-card info">
+                    <h4>🎯 Schema Enhancements</h4>
+                    <ul style="margin-top: 0.5rem;">
+                        <li>Add <code style="background: var(--bg-primary); padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.75rem;">region</code> to locations</li>
+                        <li>Add <code style="background: var(--bg-primary); padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.75rem;">program_category</code> enum</li>
+                        <li>Add <code style="background: var(--bg-primary); padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.75rem;">season</code> to sessions</li>
+                        <li>Add <code style="background: var(--bg-primary); padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.75rem;">merchandise</code> table</li>
+                    </ul>
+                </div>
+                <div class="alert-card success">
+                    <h4>⚡ Kai AI Features</h4>
+                    <ul style="margin-top: 0.5rem;">
+                        <li>Fill rate awareness (&gt;75% priority)</li>
+                        <li>Smart day alternatives</li>
+                        <li>Time slot suggestions</li>
+                        <li>Monthly price display first</li>
+                    </ul>
+                </div>
+                <div class="alert-card warning">
+                    <h4>📊 Data Fields Required</h4>
+                    <ul style="margin-top: 0.5rem;">
+                        <li>Child: Name, DOB, Gender, Shirt Size</li>
+                        <li>Guardian: Name, Phone, Email, Address</li>
+                        <li>Enrollment: Class, Plan, Discount, Agreements</li>
+                        <li>Admin: Waitlist, Review, Instructor</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="grid-3" style="margin-top: 1rem;">
+                <div class="card">
+                    <div class="card-header" style="color: var(--accent-cyan);">Mini Programs</div>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary);">Highest fill (46.7%) and capacity hits (18.8%). <strong>Prioritize waitlist prevention here.</strong></p>
+                </div>
+                <div class="card">
+                    <div class="card-header" style="color: var(--success);">Classic Programs</div>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary);">Highest volume (62.2%). Most revenue ($3.43M). <strong>Core business engine.</strong></p>
+                </div>
+                <div class="card">
+                    <div class="card-header" style="color: var(--warning);">Preschool Partners</div>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary);">74.8% of NBC revenue. <strong>Build dedicated partner portal in Phase 2.</strong></p>
+                </div>
+            </div>
+
+            <div class="gradient-banner green" style="margin-top: 1.5rem;">
+                <h3>💡 Business Opportunity Summary</h3>
+                <div class="banner-grid">
+                    <div class="banner-item">
+                        <strong>753 classes hit capacity</strong>
+                        <span>Each = lost revenue. Kai captures with smart alternatives.</span>
+                    </div>
+                    <div class="banner-item">
+                        <strong>46% registration abandonment</strong>
+                        <span>Kairo's 3-min flow vs legacy 18-min forms.</span>
+                    </div>
+                    <div class="banner-item">
+                        <strong>Only 8% use payment plans</strong>
+                        <span>Show monthly first → increase conversions.</span>
+                    </div>
+                    <div class="banner-item">
+                        <strong>92% register on mobile</strong>
+                        <span>Mobile-first, one-handed design validated.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 1.5rem;">
+                <div class="card-header">📋 Test Scenarios from Real Data</div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Scenario</th>
+                            <th>Frequency</th>
+                            <th>Priority</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Single Child, Pay in Full</td>
+                            <td>75%</td>
+                            <td><span class="badge danger">Critical</span></td>
+                        </tr>
+                        <tr>
+                            <td>Preschool Program Enrollment</td>
+                            <td>74%</td>
+                            <td><span class="badge danger">Critical</span></td>
+                        </tr>
+                        <tr>
+                            <td>Community Program, Weekend</td>
+                            <td>26%</td>
+                            <td><span class="badge warning">High</span></td>
+                        </tr>
+                        <tr>
+                            <td>Multi-Child, Sibling Discount</td>
+                            <td>8%</td>
+                            <td><span class="badge warning">High</span></td>
+                        </tr>
+                        <tr>
+                            <td>Single Child, Payment Plan</td>
+                            <td>8%</td>
+                            <td><span class="badge info">Medium</span></td>
+                        </tr>
+                        <tr>
+                            <td>Waitlist Scenario</td>
+                            <td>1%</td>
+                            <td><span class="badge success">Low (but valuable)</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>Powered by <span>Kairo Pro</span> & <span>RocketHub</span> 🚀 • Combined Analysis: 7,594 Records</p>
+        <p style="margin-top: 0.5rem; font-size: 0.75rem;">NBC Sports Engine (661) + Configio (6,933) • December 2025</p>
+    </footer>
+
+    <script>
+        // Tab Navigation
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Chart.js Global Config
+        Chart.defaults.color = '#a0a0b0';
+        Chart.defaults.borderColor = '#2a2a3e';
+        Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+
+        const colors = {
+            purple: '#6366f1',
+            cyan: '#06b6d4',
+            green: '#10b981',
+            amber: '#f59e0b',
+            red: '#ef4444',
+            pink: '#ec4899',
+            violet: '#8b5cf6'
+        };
+
+        // NBC Location Type Chart
+        new Chart(document.getElementById('nbcLocationTypeChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Preschool Partnership (74.8%)', 'Community Program (25.2%)'],
+                datasets: [{
+                    data: [101817, 34349],
+                    backgroundColor: [colors.green, colors.cyan],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { padding: 15, usePointStyle: true } }
+                }
+            }
+        });
+
+        // NBC Program Chart
+        new Chart(document.getElementById('nbcProgramChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Classic', 'Mini', 'Other', 'Premier'],
+                datasets: [{
+                    label: 'Registrations',
+                    data: [411, 145, 58, 47],
+                    backgroundColor: [colors.purple, colors.cyan, colors.amber, colors.green],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // Configio Category Chart
+        new Chart(document.getElementById('configioCategoryChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Preschool', 'Mini - Public', 'Classic - Public', 'Premier', 'Parks', 'Other'],
+                datasets: [{
+                    data: [2214, 1160, 1148, 488, 403, 1520],
+                    backgroundColor: [colors.green, colors.cyan, colors.purple, colors.amber, colors.pink, colors.violet],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right', labels: { padding: 10, usePointStyle: true, font: { size: 11 } } }
+                }
+            }
+        });
+
+        // Configio Region Chart
+        new Chart(document.getElementById('configioRegionChart'), {
+            type: 'bar',
+            data: {
+                labels: ['OC South', 'OC Central', 'OC North', 'OC West'],
+                datasets: [{
+                    label: 'Revenue',
+                    data: [3707533, 3216672, 1560341, 1153332],
+                    backgroundColor: colors.purple,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: { x: { ticks: { callback: v => '$' + (v/1000000).toFixed(1) + 'M' } } }
+            }
+        });
+
+        // Configio Price Trend
+        new Chart(document.getElementById('configioPriceTrendChart'), {
+            type: 'line',
+            data: {
+                labels: ['2022', '2023', '2024', '2025'],
+                datasets: [{
+                    label: 'Avg Price',
+                    data: [199.91, 219.65, 244.71, 288.12],
+                    borderColor: colors.cyan,
+                    backgroundColor: colors.cyan,
+                    borderWidth: 3,
+                    pointRadius: 6,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { min: 180, max: 310, ticks: { callback: v => '$' + v } } }
+            }
+        });
+
+        // Age Distribution Chart
+        new Chart(document.getElementById('ageDistChart'), {
+            type: 'bar',
+            data: {
+                labels: ['2-3 yrs', '3-4 yrs', '4-5 yrs', '5-6 yrs', '6+ yrs'],
+                datasets: [{
+                    label: 'Children',
+                    data: [116, 276, 155, 78, 36],
+                    backgroundColor: colors.green,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // Shirt Size Chart
+        new Chart(document.getElementById('shirtSizeChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['XS (4T-5T) 56%', 'XXS (2T-3T) 28%', 'S (Youth 6-8) 14%', 'M+ 2%'],
+                datasets: [{
+                    data: [333, 163, 81, 15],
+                    backgroundColor: [colors.purple, colors.cyan, colors.amber, colors.pink],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'right', labels: { usePointStyle: true } } }
+            }
+        });
+
+        // Payment Plan Chart
+        new Chart(document.getElementById('paymentPlanChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Pay in Full', 'Payment Plan', 'Full Payment', 'Payment in Full', 'Annual Fee'],
+                datasets: [{
+                    label: 'Count',
+                    data: [500, 53, 50, 21, 35],
+                    backgroundColor: [colors.green, colors.amber, colors.purple, colors.cyan, colors.pink],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // Price Distribution Chart
+        new Chart(document.getElementById('priceDistChart'), {
+            type: 'bar',
+            data: {
+                labels: ['$0-100', '$100-150', '$150-200', '$200-250', '$250-300', '$300+'],
+                datasets: [{
+                    label: 'Products',
+                    data: [514, 275, 1960, 2696, 1011, 10],
+                    backgroundColor: colors.cyan,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // Registration Day Chart (NBC)
+        new Chart(document.getElementById('registrationDayChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Thu', 'Mon', 'Wed', 'Tue', 'Fri', 'Sun', 'Sat'],
+                datasets: [{
+                    label: 'Registrations',
+                    data: [146, 136, 123, 117, 88, 27, 24],
+                    backgroundColor: colors.green,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // Class Day Chart (Configio)
+        new Chart(document.getElementById('classDayChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+                datasets: [{
+                    label: 'Classes',
+                    data: [1415, 646, 146, 154, 150, 142, 77],
+                    backgroundColor: colors.purple,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // Time Slot Chart
+        new Chart(document.getElementById('timeSlotChart'), {
+            type: 'line',
+            data: {
+                labels: ['9:00', '9:45', '10:30', '11:20', '3:00', '4:30', '5:15'],
+                datasets: [{
+                    label: 'Classes',
+                    data: [307, 329, 347, 264, 115, 183, 153],
+                    borderColor: colors.violet,
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // Fill Rate by Program Chart
+        new Chart(document.getElementById('fillRateChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Mini', 'Classic', 'Premier'],
+                datasets: [{
+                    label: 'Fill Rate %',
+                    data: [46.7, 45.9, 28.7],
+                    backgroundColor: colors.cyan,
+                    borderRadius: 6
+                }, {
+                    label: 'At Capacity %',
+                    data: [18.8, 13.8, 6.9],
+                    backgroundColor: colors.red,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top' } }
+            }
+        });
+
+        // Fill by Size Chart
+        new Chart(document.getElementById('fillBySizeChart'), {
+            type: 'bar',
+            data: {
+                labels: ['8 spots', '10 spots', '12 spots', '24 spots'],
+                datasets: [{
+                    label: 'Fill Rate %',
+                    data: [45.4, 62.9, 39.9, 35.2],
+                    backgroundColor: colors.green,
+                    borderRadius: 6
+                }, {
+                    label: 'At Capacity %',
+                    data: [18.0, 26.5, 10.6, 8.2],
+                    backgroundColor: colors.amber,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top' } }
+            }
+        });
+
+        // Fill by Day Chart
+        new Chart(document.getElementById('fillByDayChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+                datasets: [{
+                    label: 'Fill Rate %',
+                    data: [45.4, 37.5, 34.8, 27.9, 28.5, 31.7, 27.7],
+                    backgroundColor: colors.purple,
+                    borderRadius: 6
+                }, {
+                    label: 'At Capacity %',
+                    data: [18.3, 10.5, 4.3, 3.3, 10.7, 5.7, 6.0],
+                    backgroundColor: colors.red,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top' } }
+            }
+        });
+    </script>
+</body>
+</html>
