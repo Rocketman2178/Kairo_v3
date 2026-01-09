@@ -55,6 +55,9 @@ export interface ConversationContext {
   familyId?: string;
   organizationId: string;
   currentState: ConversationState;
+  tempChildId?: string;
+  tempFamilyId?: string;
+  isAuthenticated?: boolean;
   childName?: string;
   childAge?: number;
   preferredDays?: number[];
@@ -83,4 +86,11 @@ export interface ConversationContext {
   selectedSessionId?: string;
   storedAlternatives?: SessionRecommendation[];
   storedRequestedSession?: SessionRecommendation;
+}
+
+export interface RegistrationRedirect {
+  registrationToken: string;
+  redirectUrl: string;
+  expiresAt: string;
+  amountCents: number;
 }

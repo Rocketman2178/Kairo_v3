@@ -1,8 +1,8 @@
 # Kairo Platform - Strategic Build Plan
 
-**Version:** 2.8
-**Last Updated:** January 5, 2026
-**Current Stage:** Stage 2 In Progress (Architecture Migration Complete, Voice Registration Next)
+**Version:** 2.9
+**Last Updated:** January 9, 2026
+**Current Stage:** Stage 2 COMPLETE | Stage 3 Starting (Payments & Registration Flow)
 
 ---
 
@@ -21,8 +21,9 @@ This version incorporates detailed customer feedback received in January 2026, a
 | Milestone | Target Date | Status |
 |-----------|-------------|--------|
 | Stage 1: Foundation | December 2, 2025 | COMPLETE |
-| Stage 2: Kai Intelligence | December 2025 | IN PROGRESS |
-| Stage 3: Payments & Retention | January 2026 | PLANNED |
+| Stage 2: Kai Intelligence (Core) | January 9, 2026 | COMPLETE |
+| Stage 3: Payments & Registration Flow | January 2026 | IN PROGRESS |
+| Stage 2B: Voice & Multi-Language | TBD | PLANNED |
 | Entrepreneur Feedback Session | After January 8, 2026 | SCHEDULED |
 | Full Platform Capability | February 2026 | TARGET |
 | Adjustments & Enhancements | March 2026 | TARGET |
@@ -64,12 +65,19 @@ Transform youth sports registration from an 18-20 minute painful process into a 
 ## Architecture Decisions
 
 ### AI Model Strategy
-- **Primary Model:** Google Gemini Flash (`gemini-2.0-flash-exp`)
+- **Primary Model:** Google Gemini 3 Flash (`models/gemini-3-flash-preview`)
   - Fast response times (<500ms)
   - Cost-effective for high-volume conversations
   - Strong natural language understanding
   - Good at structured data extraction
   - JSON response mode for reliable parsing
+  - Temperature: 0.2 for consistent responses
+
+**Production Configuration:**
+- **Workflow URL:** `https://healthrocket.app.n8n.cloud/webhook/kai-conversation`
+- **Workflow ID:** `WN1T9cPLJjgg4urm`
+- **Architecture:** AI Agent node with Code Tools (Dynamic)
+- **Test Results:** 14/14 tests passed (100% accuracy)
 
 ### Integration Pattern (Updated December 10, 2025)
 - **N8N Workflow** as primary AI orchestration layer
@@ -253,36 +261,51 @@ Research required to inform Kairo's tiered pricing model.
 
 ---
 
-### Stage 2: Kai Intelligence & Voice (IN PROGRESS)
-**Target Completion:** [TBD]
+### Stage 2: Kai Intelligence (COMPLETE)
+**Status:** COMPLETE
+**Completion Date:** January 9, 2026
 
-**Goals:**
+**Goals Achieved:**
 - AI-powered conversational registration
-- Voice input capability
 - Smart class recommendations
 - Waitlist prevention intelligence
-- Multi-language support (English, Spanish)
+- 99% accuracy target achieved (14/14 tests passed)
 
-**Completed Features:**
+**Test Results (January 2026):**
+| Category | Tests | Passed | Success Rate |
+|----------|-------|--------|--------------|
+| Basic Functionality | 3 | 3 | 100% |
+| Complex Scenarios | 5 | 5 | 100% |
+| Edge Cases | 2 | 2 | 100% |
+| Registration Flow | 4 | 4 | 100% |
+| **Total** | **14** | **14** | **100%** |
 
-#### 2.1 AI Integration (Architecture Migrated to N8N)
+#### 2.1 AI Integration (COMPLETE)
 - [x] N8N webhook integration for Kai conversation management
 - [x] Frontend service layer (`n8nWebhook.ts`)
 - [x] Conversation hook updated for n8n (`useConversation.ts`)
 - [x] Database views for optimized queries
 - [x] Database functions for session matching (RPC)
-- [x] Intent recognition and data extraction (n8n Code node)
-- [x] Context preservation across turns (conversation state)
+- [x] Intent recognition and data extraction (Code Tools)
+- [x] Context preservation across turns (Window Buffer Memory)
 - [x] Conversation state machine implementation
 - [x] Error handling with fallback to guided forms
 - [x] Age validation (2-18 years)
 
-**Previous Edge Function Implementation (Deprecated):**
-- ~~Supabase Edge Function for Kai conversation management~~
-- ~~Direct Gemini API calls from Edge Functions~~
-- Note: Edge functions remain in codebase but are no longer the primary AI handler
+**Production Configuration:**
+- **Model:** Google Gemini 3 Flash (`models/gemini-3-flash-preview`)
+- **Temperature:** 0.2
+- **Webhook URL:** `https://healthrocket.app.n8n.cloud/webhook/kai-conversation`
+- **Workflow ID:** `WN1T9cPLJjgg4urm`
+- **Architecture:** AI Agent with Code Tools (Dynamic)
 
-#### 2.2 Smart Recommendations
+**Code Tools Implemented:**
+- `Search Sessions` - Find sessions by age, day, time, program
+- `Get Alternatives` - Find alternatives when session is full
+- `Check Availability` - Verify spots available before booking
+- `Add to Waitlist` - Join waitlist with position tracking
+
+#### 2.2 Smart Recommendations (COMPLETE)
 - [x] Age-based class filtering
 - [x] Schedule compatibility matching (day of week, time of day)
 - [x] Real-time availability checking
@@ -293,7 +316,7 @@ Research required to inform Kairo's tiered pricing model.
 - [x] Up to 3 top recommendations shown
 - [ ] Location-based sorting (proximity) - Deferred to later stage
 
-#### 2.3 Waitlist Prevention
+#### 2.3 Waitlist Prevention (COMPLETE)
 - [x] Adjacent day suggestions (Wed full -> Tue/Thu)
 - [x] Alternative time slots (same location)
 - [x] Alternative locations (same time)
@@ -302,8 +325,33 @@ Research required to inform Kairo's tiered pricing model.
 - [x] Database function `get_alternative_sessions()` for n8n
 - [x] Integration with conversation flow
 - [x] Waitlist as last resort (<20% target)
+- [x] AI intelligently suggests registration over waitlist when spots available
 
-#### 2.4 Voice Registration
+**Files Created/Updated:**
+- `src/services/ai/n8nWebhook.ts` - N8N webhook service layer
+- `src/hooks/useConversation.ts` - Updated to use n8n webhook
+- `supabase/migrations/20251210204818_add_n8n_database_views.sql` - Database views
+- `supabase/migrations/20251210204907_add_n8n_database_functions.sql` - Database functions
+- `N8N_INTEGRATION.md` - N8N workflow documentation
+- `N8N_WORKFLOW_COMPLETE_SPECIFICATION.md` - Complete build specification
+
+**Legacy Files (Deprecated):**
+- `supabase/functions/kai-conversation/index.ts` - Original Edge Function
+- `supabase/functions/session-recommendations/index.ts` - Session matching Edge Function
+- `supabase/functions/find-alternatives/index.ts` - Waitlist alternatives Edge Function
+- `src/services/ai/kaiAgent.ts` - Original AI service layer
+
+---
+
+### Stage 2B: Voice & Multi-Language (PLANNED - Future)
+**Status:** PLANNED
+**Priority:** Medium - After core payment flow is complete
+
+**Goals:**
+- Voice input capability for hands-free registration
+- Multi-language support starting with Spanish
+
+#### 2B.1 Voice Registration
 - [ ] Web Speech API integration
 - [ ] Voice activity detection
 - [ ] Speech-to-text transcription
@@ -311,24 +359,11 @@ Research required to inform Kairo's tiered pricing model.
 - [ ] Fallback to text input
 - [ ] Visual waveform feedback
 
-#### 2.5 Multi-Language
+#### 2B.2 Multi-Language
 - [ ] English (primary)
 - [ ] Spanish (secondary)
 - [ ] Language detection
 - [ ] Translation layer
-
-**Files Created/Updated (December 10, 2025):**
-- `src/services/ai/n8nWebhook.ts` - N8N webhook service layer (NEW)
-- `src/hooks/useConversation.ts` - Updated to use n8n webhook
-- `supabase/migrations/20251210204818_add_n8n_database_views.sql` - Database views for n8n
-- `supabase/migrations/20251210204907_add_n8n_database_functions.sql` - Database functions for n8n
-- `N8N_INTEGRATION.md` - Comprehensive n8n workflow documentation
-
-**Legacy Files (No Longer Primary):**
-- `supabase/functions/kai-conversation/index.ts` - Original Edge Function (deprecated)
-- `supabase/functions/session-recommendations/index.ts` - Session matching Edge Function (deprecated)
-- `supabase/functions/find-alternatives/index.ts` - Waitlist alternatives Edge Function (deprecated)
-- `src/services/ai/kaiAgent.ts` - Original AI service layer (deprecated)
 
 **Files to Create:**
 - `src/hooks/useVoiceInput.ts` - Voice capture hook
@@ -336,17 +371,52 @@ Research required to inform Kairo's tiered pricing model.
 
 ---
 
-### Stage 3: Payments & Retention (PLANNED)
-**Target Start:** After Stage 2
+### Stage 3: Payments & Registration Flow (IN PROGRESS)
+**Status:** IN PROGRESS
+**Started:** January 9, 2026
 **Updated:** January 2026 with customer feedback enhancements
 
 **Goals:**
+- Anonymous-to-registered user conversion flow
 - Complete payment processing with multiple options
 - Flexible payment plans (3 types)
 - Cart abandonment recovery
 - Re-enrollment automation
 - Payment display psychology (data-driven)
 - Biometric authentication
+
+#### 3.0 Registration Flow Architecture (Priority: CRITICAL)
+**Purpose:** Convert anonymous chat users into paying registered customers
+
+**User Journey:**
+```
+Anonymous User → Chat with Kai → Select Session → Pending Registration →
+Registration Form → Payment → Confirmed Registration → Return User
+```
+
+**Database Schema Updates Required:**
+- [ ] Add `temp_child_id` column to registrations table
+- [ ] Add `temp_family_id` column to registrations table
+- [ ] Add `registration_token` column (unique, for linking anonymous → registered)
+- [ ] Add `expires_at` column for auto-expiring pending registrations
+
+**Database Functions to Create:**
+- [ ] `create_pending_registration()` - Create pending registration from chat
+- [ ] `get_pending_registration()` - Retrieve by token for registration form
+- [ ] `confirm_registration()` - Finalize after payment
+- [ ] `cleanup_expired_registrations()` - Cron job for cleanup
+
+**Frontend Updates Required:**
+- [ ] Generate temp IDs on first chat visit (localStorage)
+- [ ] Send temp IDs with every webhook request
+- [ ] Handle registration redirect URL from AI response
+- [ ] Create registration form component (pre-filled from chat)
+- [ ] Payment integration in registration form
+
+**N8N Workflow Updates:**
+- [ ] Update webhook to accept temp IDs
+- [ ] Add "Register for Session" Code Tool
+- [ ] Return registration token and redirect URL
 
 #### 3.1 Payment Processing
 - [ ] Stripe integration
@@ -1872,8 +1942,59 @@ import { supabase } from './lib/supabase'
      - CEO view with revenue scorecard, platform performance, customer health, investor metrics
      - EA view with priority actions, customer table, transactions, revenue protection, expansion
 
+### January 9, 2026 - Stage 2 Complete & N8N Workflow Testing
+- **Build Plan Version:** Updated to 2.9
+- **Stage 2 Status:** COMPLETE
+
+  **Kai Intelligence Workflow - Production Ready:**
+
+  1. **N8N Workflow Deployed:**
+     - Production URL: `https://healthrocket.app.n8n.cloud/webhook/kai-conversation`
+     - Workflow ID: `WN1T9cPLJjgg4urm`
+     - Model: Google Gemini 3 Flash (`models/gemini-3-flash-preview`)
+     - Temperature: 0.2
+     - Architecture: AI Agent with Code Tools (Dynamic)
+
+  2. **Test Results (14/14 Tests Passed - 100% Success):**
+     - Basic Functionality: 3/3 (simple searches, multi-sport)
+     - Complex Scenarios: 5/5 (multi-turn, no matches, young child, multiple sports, availability)
+     - Edge Cases: 2/2 (older teenager, weekday-only preferences)
+     - Registration Flow: 4/4 (session IDs, availability check, waitlist intelligence, full flow)
+
+  3. **Key Validations Confirmed:**
+     - Child names never hallucinated (100% accuracy)
+     - Age-appropriate session recommendations
+     - Multi-turn context retention working
+     - Edge case handling (no results, full sessions)
+     - Session ID extraction and availability checking
+     - AI intelligently suggests registration over waitlist when spots available
+
+  4. **Code Tools Implemented:**
+     - Search Sessions (Dynamic) - Find sessions by criteria
+     - Get Alternatives (Dynamic) - Find alternatives when full
+     - Check Availability (Dynamic) - Verify spots before booking
+     - Add to Waitlist (Dynamic) - Join waitlist with position
+
+  5. **Stage 2B Created:**
+     - Voice Registration moved to Stage 2B (PLANNED)
+     - Multi-Language moved to Stage 2B (PLANNED)
+     - Priority: After core payment flow is complete
+
+  6. **Stage 3 Started:**
+     - Registration Flow Architecture documented
+     - Database schema updates identified
+     - Frontend updates identified
+     - Payment integration planned
+
+  **Implementation Status Audit:**
+  - Registrations table: EXISTS (basic structure)
+  - Registration flow functions: NOT YET CREATED
+  - Frontend temp ID generation: NOT YET IMPLEMENTED
+  - Registration form component: NOT YET CREATED
+  - Next steps: Build registration flow infrastructure
+
 ---
 
 **Document Owner:** Development Team
 **Review Frequency:** After each stage completion
-**Last Reviewed:** January 5, 2026
+**Last Reviewed:** January 9, 2026

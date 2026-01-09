@@ -15,6 +15,7 @@ import { DemoWhiteLabel } from '../components/demo/DemoWhiteLabel';
 import { DemoDataInsights } from '../components/demo/DemoDataInsights';
 import { DemoBenchmarking } from '../components/demo/DemoBenchmarking';
 import { DemoInternalDashboard } from '../components/demo/DemoInternalDashboard';
+import { DemoKairoTesting } from '../components/demo/DemoKairoTesting';
 
 interface Stage {
   id: number;
@@ -233,7 +234,7 @@ const stages: Stage[] = [
   }
 ];
 
-type DemoView = 'overview' | 'chat' | 'payments' | 'analytics' | 'coach' | 'scheduling' | 'marketing' | 'whitelabel' | 'datainsights' | 'benchmarking' | 'internal';
+type DemoView = 'overview' | 'chat' | 'payments' | 'analytics' | 'coach' | 'scheduling' | 'marketing' | 'whitelabel' | 'datainsights' | 'benchmarking' | 'internal' | 'testing';
 
 export function Demo() {
   const [activeView, setActiveView] = useState<DemoView>('overview');
@@ -266,10 +267,11 @@ export function Demo() {
     { view: 'datainsights' as DemoView, label: 'Data Insights', icon: <TrendingUp className="w-4 h-4" />, stage: 4, badge: 'new' as const },
     { view: 'benchmarking' as DemoView, label: 'Benchmarking', icon: <BarChart3 className="w-4 h-4" />, stage: 8.5, badge: 'new' as const },
     { view: 'internal' as DemoView, label: 'Internal Ops', icon: <LayoutDashboard className="w-4 h-4" />, stage: 13, badge: 'new' as const },
+    { view: 'testing' as DemoView, label: 'Kai Testing', icon: <Brain className="w-4 h-4" />, stage: 2, badge: 'new' as const },
   ];
 
   if (activeView !== 'overview') {
-    const isDarkView = activeView === 'chat' || activeView === 'datainsights' || activeView === 'benchmarking' || activeView === 'internal';
+    const isDarkView = activeView === 'chat' || activeView === 'datainsights' || activeView === 'benchmarking' || activeView === 'internal' || activeView === 'testing';
     return (
       <div className={`min-h-screen ${isDarkView ? 'bg-slate-900' : 'bg-slate-50'}`}>
         <header className={`${isDarkView ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} border-b sticky top-0 z-50`}>
@@ -298,6 +300,7 @@ export function Demo() {
         {activeView === 'datainsights' && <DemoDataInsights />}
         {activeView === 'benchmarking' && <DemoBenchmarking />}
         {activeView === 'internal' && <DemoInternalDashboard />}
+        {activeView === 'testing' && <DemoKairoTesting />}
       </div>
     );
   }

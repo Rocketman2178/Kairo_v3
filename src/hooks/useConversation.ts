@@ -1,28 +1,99 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import type { ConversationContext, ConversationState, Message } from '../types/conversation';
+import type { ConversationContext, ConversationState, Message, RegistrationRedirect } from '../types/conversation';
 import { sendMessageToN8N, isN8NConfigured } from '../services/ai/n8nWebhook';
+
+const TEMP_IDS_STORAGE_KEY = 'kairo_temp_ids';
+
+interface KairoChatMessage {
+  conversation_id: string;
+  organization_id: string;
+  family_id?: string | null;
+  temp_family_id?: string | null;
+  temp_child_id?: string | null;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  extracted_data?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  conversation_state?: string;
+}
+
+async function saveToKairoChat(message: KairoChatMessage): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('kairo_chat')
+      .insert(message);
+
+    if (error) {
+      console.error('Failed to save message to kairo_chat:', error);
+    }
+  } catch (err) {
+    console.error('Error saving to kairo_chat:', err);
+  }
+}
+
+interface TempIds {
+  tempChildId: string;
+  tempFamilyId: string;
+}
+
+function generateUUID(): string {
+  return crypto.randomUUID();
+}
+
+function getTempIds(): TempIds {
+  try {
+    const stored = localStorage.getItem(TEMP_IDS_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed.tempChildId && parsed.tempFamilyId) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to parse stored temp IDs:', e);
+  }
+
+  const newIds: TempIds = {
+    tempChildId: generateUUID(),
+    tempFamilyId: generateUUID(),
+  };
+  localStorage.setItem(TEMP_IDS_STORAGE_KEY, JSON.stringify(newIds));
+  return newIds;
+}
+
+function clearTempIds(): void {
+  localStorage.removeItem(TEMP_IDS_STORAGE_KEY);
+}
 
 interface UseConversationOptions {
   organizationId: string;
   familyId?: string;
+  childId?: string;
+  isAuthenticated?: boolean;
   onError?: (error: Error) => void;
   onFallbackToForm?: () => void;
+  onRegistrationRedirect?: (redirect: RegistrationRedirect) => void;
 }
 
 export function useConversation(options: UseConversationOptions) {
-  const { organizationId, familyId, onError, onFallbackToForm } = options;
+  const { organizationId, familyId, childId, isAuthenticated, onError, onFallbackToForm, onRegistrationRedirect } = options;
 
+  const [tempIds] = useState<TempIds>(() => getTempIds());
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [state, setState] = useState<ConversationState>('greeting');
   const [context, setContext] = useState<ConversationContext>({
     conversationId: '',
     organizationId,
     familyId,
+    tempChildId: tempIds.tempChildId,
+    tempFamilyId: tempIds.tempFamilyId,
+    isAuthenticated: isAuthenticated || false,
     currentState: 'greeting',
   });
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [registrationRedirect, setRegistrationRedirect] = useState<RegistrationRedirect | null>(null);
 
   useEffect(() => {
     initializeConversation();
@@ -30,17 +101,22 @@ export function useConversation(options: UseConversationOptions) {
 
   const initializeConversation = useCallback(async () => {
     try {
+      const initialContext = {
+        organizationId,
+        familyId,
+        tempChildId: tempIds.tempChildId,
+        tempFamilyId: tempIds.tempFamilyId,
+        isAuthenticated: isAuthenticated || false,
+        currentState: 'greeting',
+      };
+
       const { data, error } = await (supabase
         .from('conversations')
         .insert({
           family_id: familyId || null,
           channel: 'web',
           state: 'greeting',
-          context: {
-            organizationId,
-            familyId,
-            currentState: 'greeting',
-          } as any,
+          context: initialContext as any,
           messages: [] as any,
         })
         .select()
@@ -52,16 +128,14 @@ export function useConversation(options: UseConversationOptions) {
         setConversationId(data.id);
         setContext({
           conversationId: data.id,
-          organizationId,
-          familyId,
-          currentState: 'greeting',
+          ...initialContext,
         });
       }
     } catch (error) {
       console.error('Failed to initialize conversation:', error);
       onError?.(error as Error);
     }
-  }, [organizationId, familyId, onError]);
+  }, [organizationId, familyId, tempIds, isAuthenticated, onError]);
 
   const sendMessage = useCallback(
     async (userMessage: string, contextOverride?: Partial<ConversationContext>): Promise<Message | null> => {
@@ -81,6 +155,17 @@ export function useConversation(options: UseConversationOptions) {
         };
 
         setMessages((prev) => [...prev, userMsg]);
+
+        saveToKairoChat({
+          conversation_id: conversationId,
+          organization_id: organizationId,
+          family_id: familyId || null,
+          temp_family_id: tempIds.tempFamilyId,
+          temp_child_id: tempIds.tempChildId,
+          role: 'user',
+          content: userMessage,
+          conversation_state: state,
+        });
 
         const messageHistory = messages.map((m) => ({
           role: m.role,
@@ -138,6 +223,25 @@ export function useConversation(options: UseConversationOptions) {
           const newState = response.response.nextState;
           setState(newState);
 
+          saveToKairoChat({
+            conversation_id: conversationId,
+            organization_id: organizationId,
+            family_id: familyId || null,
+            temp_family_id: tempIds.tempFamilyId,
+            temp_child_id: tempIds.tempChildId,
+            role: 'assistant',
+            content: response.response.message,
+            extracted_data: response.response.extractedData || {},
+            metadata: {
+              quickReplies: response.response.quickReplies,
+              recommendations: response.response.recommendations,
+              alternatives: response.response.alternatives,
+              requestedSession: response.response.requestedSession,
+              sessionIssue: response.response.sessionIssue,
+            },
+            conversation_state: newState,
+          });
+
           const newContext: ConversationContext = {
             ...context,
             currentState: newState,
@@ -188,6 +292,11 @@ export function useConversation(options: UseConversationOptions) {
             })
             .eq('id', conversationId);
 
+          if (response.response.registrationRedirect) {
+            setRegistrationRedirect(response.response.registrationRedirect);
+            onRegistrationRedirect?.(response.response.registrationRedirect);
+          }
+
           setIsLoading(false);
           return aiMsg;
         } else if (response.error) {
@@ -210,7 +319,7 @@ export function useConversation(options: UseConversationOptions) {
         return null;
       }
     },
-    [conversationId, context, messages, onError, onFallbackToForm]
+    [conversationId, context, messages, organizationId, familyId, tempIds, state, onError, onFallbackToForm, onRegistrationRedirect]
   );
 
   const addSystemMessage = useCallback((content: string) => {
@@ -221,7 +330,20 @@ export function useConversation(options: UseConversationOptions) {
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, systemMsg]);
-  }, []);
+
+    if (conversationId) {
+      saveToKairoChat({
+        conversation_id: conversationId,
+        organization_id: organizationId,
+        family_id: familyId || null,
+        temp_family_id: tempIds.tempFamilyId,
+        temp_child_id: tempIds.tempChildId,
+        role: 'system',
+        content,
+        conversation_state: state,
+      });
+    }
+  }, [conversationId, organizationId, familyId, tempIds, state]);
 
   const addAssistantMessage = useCallback((content: string) => {
     const assistantMsg: Message = {
@@ -231,19 +353,41 @@ export function useConversation(options: UseConversationOptions) {
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, assistantMsg]);
-  }, []);
+
+    if (conversationId) {
+      saveToKairoChat({
+        conversation_id: conversationId,
+        organization_id: organizationId,
+        family_id: familyId || null,
+        temp_family_id: tempIds.tempFamilyId,
+        temp_child_id: tempIds.tempChildId,
+        role: 'assistant',
+        content,
+        conversation_state: state,
+      });
+    }
+  }, [conversationId, organizationId, familyId, tempIds, state]);
 
   const resetConversation = useCallback(() => {
     setMessages([]);
     setState('greeting');
+    setRegistrationRedirect(null);
     setContext({
       conversationId: '',
       organizationId,
       familyId,
+      tempChildId: tempIds.tempChildId,
+      tempFamilyId: tempIds.tempFamilyId,
+      isAuthenticated: isAuthenticated || false,
       currentState: 'greeting',
     });
     initializeConversation();
-  }, [organizationId, familyId, initializeConversation]);
+  }, [organizationId, familyId, tempIds, isAuthenticated, initializeConversation]);
+
+  const clearRegistrationState = useCallback(() => {
+    clearTempIds();
+    setRegistrationRedirect(null);
+  }, []);
 
   return {
     conversationId,
@@ -251,9 +395,12 @@ export function useConversation(options: UseConversationOptions) {
     context,
     messages,
     isLoading,
+    tempIds,
+    registrationRedirect,
     sendMessage,
     addSystemMessage,
     addAssistantMessage,
     resetConversation,
+    clearRegistrationState,
   };
 }

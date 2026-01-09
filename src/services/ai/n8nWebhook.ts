@@ -1,4 +1,4 @@
-import type { ConversationContext, ConversationState, SessionRecommendation } from '../../types/conversation';
+import type { ConversationContext, ConversationState, SessionRecommendation, RegistrationRedirect } from '../../types/conversation';
 
 export interface N8NMessageRequest {
   message: string;
@@ -20,6 +20,7 @@ export interface N8NMessageResponse {
     alternatives?: SessionRecommendation[];
     requestedSession?: SessionRecommendation;
     sessionIssue?: 'full' | 'wrong_age' | 'no_location_match' | null;
+    registrationRedirect?: RegistrationRedirect;
   };
   error?: {
     code: string;
@@ -65,6 +66,9 @@ export async function sendMessageToN8N(
       context: {
         organizationId: request.context.organizationId,
         familyId: request.context.familyId,
+        tempChildId: request.context.tempChildId,
+        tempFamilyId: request.context.tempFamilyId,
+        isAuthenticated: request.context.isAuthenticated || false,
         currentState: request.context.currentState,
         childName: request.context.childName,
         childAge: request.context.childAge,
@@ -132,8 +136,53 @@ export async function sendMessageToN8N(
   }
 }
 
+function extractMessage(data: Record<string, unknown>): string {
+  const possibleFields = [
+    'message',
+    'output',
+    'text',
+    'content',
+    'response',
+    'aiResponse',
+    'ai_response',
+    'reply',
+    'answer',
+  ];
+
+  for (const field of possibleFields) {
+    if (typeof data[field] === 'string' && data[field]) {
+      return data[field] as string;
+    }
+  }
+
+  if (data.response && typeof data.response === 'object') {
+    const nested = data.response as Record<string, unknown>;
+    for (const field of possibleFields) {
+      if (typeof nested[field] === 'string' && nested[field]) {
+        return nested[field] as string;
+      }
+    }
+  }
+
+  if (data.data && typeof data.data === 'object') {
+    const nested = data.data as Record<string, unknown>;
+    for (const field of possibleFields) {
+      if (typeof nested[field] === 'string' && nested[field]) {
+        return nested[field] as string;
+      }
+    }
+  }
+
+  return '';
+}
+
 function normalizeN8NResponse(data: unknown): N8NMessageResponse {
+  console.log('=== NORMALIZING N8N RESPONSE ===');
+  console.log('Raw data type:', typeof data);
+  console.log('Raw data:', JSON.stringify(data, null, 2));
+
   if (!data || typeof data !== 'object') {
+    console.log('Invalid data - not an object');
     return {
       success: false,
       error: {
@@ -147,6 +196,7 @@ function normalizeN8NResponse(data: unknown): N8NMessageResponse {
   const response = data as Record<string, unknown>;
 
   if (response.success === false) {
+    console.log('Response indicates failure');
     return {
       success: false,
       error: {
@@ -158,21 +208,46 @@ function normalizeN8NResponse(data: unknown): N8NMessageResponse {
   }
 
   const responseData = response.response as Record<string, unknown> || response;
+  console.log('Response data to parse:', JSON.stringify(responseData, null, 2));
 
-  return {
+  const extractedMessage = extractMessage(response);
+  console.log('Extracted message:', extractedMessage);
+
+  const registrationRedirect = responseData.registrationRedirect || responseData.registration_redirect;
+
+  const result = {
     success: true,
     response: {
-      message: (responseData.message as string) || "I'm here to help! What would you like to do?",
-      nextState: (responseData.nextState as ConversationState) || 'collecting_preferences',
-      extractedData: (responseData.extractedData as Record<string, unknown>) || {},
-      quickReplies: (responseData.quickReplies as string[]) || [],
-      progress: (responseData.progress as number) || 0,
-      recommendations: normalizeRecommendations(responseData.recommendations),
-      alternatives: normalizeRecommendations(responseData.alternatives),
-      requestedSession: responseData.requestedSession as SessionRecommendation | undefined,
-      sessionIssue: responseData.sessionIssue as N8NMessageResponse['response']['sessionIssue'],
+      message: extractedMessage || "I'm here to help! What would you like to do?",
+      nextState: (responseData.nextState as ConversationState) ||
+                 (response.nextState as ConversationState) ||
+                 'collecting_preferences',
+      extractedData: (responseData.extractedData as Record<string, unknown>) ||
+                     (response.extractedData as Record<string, unknown>) || {},
+      quickReplies: (responseData.quickReplies as string[]) ||
+                    (response.quickReplies as string[]) || [],
+      progress: (responseData.progress as number) || (response.progress as number) || 0,
+      recommendations: normalizeRecommendations(responseData.recommendations || response.recommendations),
+      alternatives: normalizeRecommendations(responseData.alternatives || response.alternatives),
+      requestedSession: (responseData.requestedSession || response.requestedSession) as SessionRecommendation | undefined,
+      sessionIssue: (responseData.sessionIssue || response.sessionIssue) as N8NMessageResponse['response']['sessionIssue'],
+      registrationRedirect: registrationRedirect ? {
+        registrationToken: (registrationRedirect as Record<string, unknown>).registrationToken as string ||
+                          (registrationRedirect as Record<string, unknown>).registration_token as string,
+        redirectUrl: (registrationRedirect as Record<string, unknown>).redirectUrl as string ||
+                    (registrationRedirect as Record<string, unknown>).redirect_url as string,
+        expiresAt: (registrationRedirect as Record<string, unknown>).expiresAt as string ||
+                  (registrationRedirect as Record<string, unknown>).expires_at as string,
+        amountCents: (registrationRedirect as Record<string, unknown>).amountCents as number ||
+                    (registrationRedirect as Record<string, unknown>).amount_cents as number,
+      } : undefined,
     },
   };
+
+  console.log('Final normalized result:', JSON.stringify(result, null, 2));
+  console.log('================================');
+
+  return result;
 }
 
 function normalizeRecommendations(data: unknown): SessionRecommendation[] | undefined {
