@@ -16,6 +16,8 @@ import { DemoDataInsights } from '../components/demo/DemoDataInsights';
 import { DemoBenchmarking } from '../components/demo/DemoBenchmarking';
 import { DemoInternalDashboard } from '../components/demo/DemoInternalDashboard';
 import { DemoKairoTesting } from '../components/demo/DemoKairoTesting';
+import { FeedbackForm } from '../components/feedback/FeedbackForm';
+import { FeedbackAdminDashboard } from '../components/feedback/FeedbackAdminDashboard';
 
 interface Stage {
   id: number;
@@ -239,6 +241,8 @@ type DemoView = 'overview' | 'chat' | 'payments' | 'analytics' | 'coach' | 'sche
 export function Demo() {
   const [activeView, setActiveView] = useState<DemoView>('overview');
   const [selectedStage, setSelectedStage] = useState<number | null>(null);
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const [showAdminDashboard, setShowAdminDashboard] = useState(false);
 
   const getStatusColor = (status: Stage['status']) => {
     switch (status) {
@@ -319,12 +323,26 @@ export function Demo() {
                 <p className="text-slate-400 text-sm">Interactive feature showcase</p>
               </div>
             </div>
-            <a
-              href="/"
-              className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors text-sm font-medium"
-            >
-              Go to App
-            </a>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowFeedbackForm(true)}
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors text-sm font-medium"
+              >
+                Give Feedback
+              </button>
+              <button
+                onClick={() => setShowAdminDashboard(true)}
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors text-sm font-medium"
+              >
+                View Analytics
+              </button>
+              <a
+                href="/"
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors text-sm font-medium"
+              >
+                Go to App
+              </a>
+            </div>
           </div>
         </div>
       </header>
@@ -557,6 +575,14 @@ export function Demo() {
           </div>
         </div>
       </footer>
+
+      {showFeedbackForm && (
+        <FeedbackForm onClose={() => setShowFeedbackForm(false)} />
+      )}
+
+      {showAdminDashboard && (
+        <FeedbackAdminDashboard onClose={() => setShowAdminDashboard(false)} />
+      )}
     </div>
   );
 }
