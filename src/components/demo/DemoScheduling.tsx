@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Calendar, Clock, MapPin, Users, AlertTriangle, CheckCircle, Plus,
-  ChevronLeft, ChevronRight, GripVertical, X, RefreshCw, Zap
+  ChevronLeft, ChevronRight, GripVertical, X, RefreshCw, Zap, SlidersHorizontal, ArrowUpDown
 } from 'lucide-react';
 
 interface ScheduleSlot {
@@ -57,6 +57,14 @@ export function DemoScheduling() {
   const [conflicts, setConflicts] = useState<Conflict[]>([]);
   const [showOptimizer, setShowOptimizer] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [showSortConfig, setShowSortConfig] = useState(false);
+  const [sortCriteria, setSortCriteria] = useState([
+    { id: 'availability', label: 'Availability (spots > waitlist)', enabled: true, order: 1 },
+    { id: 'proximity', label: 'Proximity to user location', enabled: true, order: 2 },
+    { id: 'coachRating', label: 'Coach rating (highest first)', enabled: true, order: 3 },
+    { id: 'sessionRating', label: 'Session rating', enabled: true, order: 4 },
+    { id: 'timePreference', label: 'Time of day preference match', enabled: true, order: 5 },
+  ]);
 
   const checkConflicts = (slot: ScheduleSlot, day: string) => {
     const newConflicts: Conflict[] = [];
@@ -123,6 +131,13 @@ export function DemoScheduling() {
         </div>
         <div className="flex items-center gap-3">
           <button
+            onClick={() => setShowSortConfig(!showSortConfig)}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition-colors"
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            Sort Options
+          </button>
+          <button
             onClick={runOptimizer}
             disabled={isOptimizing}
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-medium rounded-lg hover:opacity-90 transition-opacity disabled:opacity-70"
@@ -145,6 +160,54 @@ export function DemoScheduling() {
           </button>
         </div>
       </div>
+
+      {showSortConfig && (
+        <div className="mb-6 bg-white rounded-xl border border-slate-200 p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <ArrowUpDown className="w-5 h-5 text-slate-600" />
+              <h3 className="font-semibold text-slate-900">Session Sort & Display Criteria</h3>
+            </div>
+            <button onClick={() => setShowSortConfig(false)} className="text-slate-400 hover:text-slate-600">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <p className="text-sm text-slate-500 mb-4">Drag to reorder priority. Toggle to enable/disable. These settings determine how sessions are displayed to parents.</p>
+          <div className="space-y-2">
+            {sortCriteria.sort((a, b) => a.order - b.order).map((criterion, idx) => (
+              <div
+                key={criterion.id}
+                className={`flex items-center gap-3 p-3 rounded-lg border ${criterion.enabled ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-200'}`}
+              >
+                <div className="flex items-center gap-2 text-slate-400">
+                  <GripVertical className="w-4 h-4 cursor-grab" />
+                  <span className="w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center text-xs font-bold text-slate-600">
+                    {idx + 1}
+                  </span>
+                </div>
+                <span className={`flex-1 text-sm font-medium ${criterion.enabled ? 'text-slate-900' : 'text-slate-500'}`}>
+                  {criterion.label}
+                </span>
+                <button
+                  onClick={() => {
+                    setSortCriteria(prev => prev.map(c =>
+                      c.id === criterion.id ? { ...c, enabled: !c.enabled } : c
+                    ));
+                  }}
+                  className={`w-10 h-6 rounded-full relative transition-colors ${criterion.enabled ? 'bg-blue-500' : 'bg-slate-300'}`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${criterion.enabled ? 'right-1' : 'left-1'}`} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+            <p className="text-sm text-emerald-700">
+              <strong>Default:</strong> Sessions with available spots are shown first, sorted by proximity, coach rating, and time preference match.
+            </p>
+          </div>
+        </div>
+      )}
 
       {conflicts.length > 0 && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">

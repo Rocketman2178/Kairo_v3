@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import {
   Calendar, Users, Clock, CheckCircle, X, MessageSquare, BookOpen,
   ChevronRight, ChevronLeft, Star, Camera, AlertCircle, MapPin, Phone,
-  Video, Hash, Send, Building2, FileWarning, Play, Pause, Timer
+  Video, Hash, Send, Building2, FileWarning, Play, Pause, Timer, Settings, Eye, EyeOff,
+  ChevronDown, ChevronUp, SkipForward
 } from 'lucide-react';
 
 type CoachView = 'schedule' | 'attendance' | 'messaging' | 'team' | 'curriculum' | 'incident';
@@ -33,6 +34,8 @@ export function DemoCoachApp() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedClass, setSelectedClass] = useState<ClassSession | null>(null);
   const [attendance, setAttendance] = useState<Record<string, boolean>>({});
+  const [showRatings, setShowRatings] = useState(true);
+  const [coachMessagingEnabled, setCoachMessagingEnabled] = useState(true);
 
   const todayClasses: ClassSession[] = [
     {
@@ -92,45 +95,136 @@ export function DemoCoachApp() {
       title: 'Introduction & Ball Familiarity',
       skills: ['Toe taps', 'Ball rolls', 'Stopping the ball'],
       games: ['Shark Attack', 'Red Light Green Light'],
-      equipment: 'Size 3 balls, cones'
+      equipment: 'Size 3 balls, cones',
+      sections: [
+        { name: 'Welcome & Warm-up', allocated: 5, description: 'Greet kids, high-fives, light jogging in circle' },
+        { name: 'Skill Introduction', allocated: 8, description: 'Demonstrate toe taps and ball rolls' },
+        { name: 'Guided Practice', allocated: 10, description: 'Kids practice toe taps in pairs' },
+        { name: 'Activity 1', allocated: 8, description: 'Ball roll relay race' },
+        { name: 'Water Break', allocated: 3, description: 'Hydration and rest' },
+        { name: 'Game: Shark Attack', allocated: 10, description: 'Coach is shark, kids dribble to safety' },
+        { name: 'Scrimmage & Closing', allocated: 6, description: 'Mini scrimmage, high-fives, goodbye' },
+      ]
     },
     {
       week: 2,
       title: 'Dribbling Basics',
       skills: ['Inside foot dribble', 'Outside foot dribble', 'Speed control'],
       games: ['Dribble Tag', 'Cone Maze'],
-      equipment: 'Size 3 balls, cones, pinnies'
+      equipment: 'Size 3 balls, cones, pinnies',
+      sections: [
+        { name: 'Welcome & Warm-up', allocated: 5, description: 'Dynamic stretches, running with ball' },
+        { name: 'Skill Introduction', allocated: 8, description: 'Demonstrate inside/outside foot dribble' },
+        { name: 'Guided Practice', allocated: 10, description: 'Dribble through cone course' },
+        { name: 'Activity 1', allocated: 8, description: 'Speed dribble races' },
+        { name: 'Water Break', allocated: 3, description: 'Hydration and rest' },
+        { name: 'Game: Dribble Tag', allocated: 10, description: 'Tag while dribbling' },
+        { name: 'Scrimmage & Closing', allocated: 6, description: 'Mini scrimmage, high-fives, goodbye' },
+      ]
     },
     {
       week: 3,
       title: 'Passing Fundamentals',
       skills: ['Inside foot pass', 'Receiving the ball', 'Partner passing'],
       games: ['Passing Pairs', 'Keep Away'],
-      equipment: 'Size 3 balls, mini goals'
+      equipment: 'Size 3 balls, mini goals',
+      sections: [
+        { name: 'Welcome & Warm-up', allocated: 5, description: 'Toe taps review, light cardio' },
+        { name: 'Skill Introduction', allocated: 8, description: 'Demonstrate inside foot pass technique' },
+        { name: 'Guided Practice', allocated: 10, description: 'Partner passing back and forth' },
+        { name: 'Activity 1', allocated: 8, description: 'Pass to target game' },
+        { name: 'Water Break', allocated: 3, description: 'Hydration and rest' },
+        { name: 'Game: Keep Away', allocated: 10, description: '3v1 keep away circles' },
+        { name: 'Scrimmage & Closing', allocated: 6, description: 'Mini scrimmage, high-fives, goodbye' },
+      ]
     },
     {
       week: 4,
       title: 'Shooting & Scoring',
       skills: ['Laces kick', 'Aiming', 'Follow through'],
       games: ['Target Practice', 'Mini Scrimmage'],
-      equipment: 'Size 3 balls, portable goals, cones'
+      equipment: 'Size 3 balls, portable goals, cones',
+      sections: [
+        { name: 'Welcome & Warm-up', allocated: 5, description: 'Ball touches, dynamic stretches' },
+        { name: 'Skill Introduction', allocated: 8, description: 'Demonstrate shooting with laces' },
+        { name: 'Guided Practice', allocated: 10, description: 'Shooting at targets from 5 yards' },
+        { name: 'Activity 1', allocated: 8, description: 'Aim for corners competition' },
+        { name: 'Water Break', allocated: 3, description: 'Hydration and rest' },
+        { name: 'Game: Target Practice', allocated: 10, description: 'Points for hitting targets' },
+        { name: 'Scrimmage & Closing', allocated: 6, description: 'Full scrimmage with goals, goodbye' },
+      ]
+    },
+    {
+      week: 5,
+      title: 'Defense & Positioning',
+      skills: ['Defensive stance', 'Staying goal-side', 'Blocking shots'],
+      games: ['Steal the Bacon', 'Goalie Wars'],
+      equipment: 'Size 3 balls, cones, pinnies',
+      sections: [
+        { name: 'Welcome & Warm-up', allocated: 5, description: 'Quick feet drills, lateral movement' },
+        { name: 'Skill Introduction', allocated: 8, description: 'Defensive positioning demo' },
+        { name: 'Guided Practice', allocated: 10, description: '1v1 defensive drills' },
+        { name: 'Activity 1', allocated: 8, description: 'Shadow defense game' },
+        { name: 'Water Break', allocated: 3, description: 'Hydration and rest' },
+        { name: 'Game: Steal the Bacon', allocated: 10, description: 'Race to ball, defend goal' },
+        { name: 'Scrimmage & Closing', allocated: 6, description: 'Scrimmage focusing on defense' },
+      ]
+    },
+    {
+      week: 6,
+      title: 'Teamwork & Communication',
+      skills: ['Calling for ball', 'Making space', 'Supporting teammates'],
+      games: ['Triangle Passing', 'Team Relay'],
+      equipment: 'Size 3 balls, cones, pinnies',
+      sections: [
+        { name: 'Welcome & Warm-up', allocated: 5, description: 'Partner stretches, team circle' },
+        { name: 'Skill Introduction', allocated: 8, description: 'Communication phrases: "man on", "time"' },
+        { name: 'Guided Practice', allocated: 10, description: 'Triangle passing with calling' },
+        { name: 'Activity 1', allocated: 8, description: 'Making space exercises' },
+        { name: 'Water Break', allocated: 3, description: 'Hydration and rest' },
+        { name: 'Game: Team Relay', allocated: 10, description: 'Passing relay with communication' },
+        { name: 'Scrimmage & Closing', allocated: 6, description: 'Scrimmage with bonus for calling' },
+      ]
+    },
+    {
+      week: 7,
+      title: 'Game Day Skills',
+      skills: ['Throw-ins', 'Corner kicks', 'Goal kicks'],
+      games: ['Throw-in Tournament', 'Set Piece Challenge'],
+      equipment: 'Size 3 balls, cones, full goals',
+      sections: [
+        { name: 'Welcome & Warm-up', allocated: 5, description: 'Jogging, arm stretches for throw-ins' },
+        { name: 'Skill Introduction', allocated: 8, description: 'Proper throw-in technique' },
+        { name: 'Guided Practice', allocated: 10, description: 'Practice throw-ins and restarts' },
+        { name: 'Activity 1', allocated: 8, description: 'Corner kick practice' },
+        { name: 'Water Break', allocated: 3, description: 'Hydration and rest' },
+        { name: 'Game: Set Piece Challenge', allocated: 10, description: 'Score from set pieces' },
+        { name: 'Scrimmage & Closing', allocated: 6, description: 'Full game with proper restarts' },
+      ]
+    },
+    {
+      week: 8,
+      title: 'Championship Day',
+      skills: ['All skills review', 'Game awareness', 'Celebration!'],
+      games: ['Skills Showcase', 'Championship Match'],
+      equipment: 'Size 3 balls, cones, goals, medals',
+      sections: [
+        { name: 'Welcome & Warm-up', allocated: 5, description: 'Fun warm-up games, excitement build' },
+        { name: 'Skills Showcase', allocated: 8, description: 'Kids demonstrate favorite skill' },
+        { name: 'Mini Competitions', allocated: 10, description: 'Dribble race, shooting contest' },
+        { name: 'Team Photos', allocated: 8, description: 'Individual and team photos' },
+        { name: 'Water Break', allocated: 3, description: 'Hydration and snacks' },
+        { name: 'Championship Match', allocated: 10, description: 'Final fun scrimmage' },
+        { name: 'Awards & Closing', allocated: 6, description: 'Medals, high-fives, goodbyes!' },
+      ]
     }
   ];
 
-  const curriculumSections = [
-    { name: 'Welcome & Warm-up', duration: 5, allocated: 5 },
-    { name: 'Skill Introduction', duration: 0, allocated: 8 },
-    { name: 'Guided Practice', duration: 0, allocated: 10 },
-    { name: 'Activity 1', duration: 0, allocated: 8 },
-    { name: 'Water Break', duration: 0, allocated: 3 },
-    { name: 'Activity 2 / Game', duration: 0, allocated: 10 },
-    { name: 'Scrimmage & Closing', duration: 0, allocated: 6 },
-  ];
+  const [expandedWeek, setExpandedWeek] = useState<number | null>(2);
+  const [sectionTimers, setSectionTimers] = useState<Record<string, number>>({});
+  const [activeSectionKey, setActiveSectionKey] = useState<string | null>(null);
 
   const [timerEnabled, setTimerEnabled] = useState(true);
-  const [currentSection, setCurrentSection] = useState(0);
-  const [sectionTime, setSectionTime] = useState(curriculumSections[0].allocated * 60);
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
 
   const [incidentForm, setIncidentForm] = useState({
     childInvolved: '',
@@ -141,27 +235,36 @@ export function DemoCoachApp() {
     whatObserved: '',
   });
   const [incidentSubmitted, setIncidentSubmitted] = useState(false);
+  const [supervisorDelayMinutes, setSupervisorDelayMinutes] = useState(90);
   const [supervisorCountdown, setSupervisorCountdown] = useState(90);
+  const [groupPrivacyEnabled, setGroupPrivacyEnabled] = useState(true);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isTimerRunning && sectionTime > 0) {
+    if (activeSectionKey) {
       interval = setInterval(() => {
-        setSectionTime(prev => {
-          if (prev <= 1) {
-            if (currentSection < curriculumSections.length - 1) {
-              setCurrentSection(curr => curr + 1);
-              return curriculumSections[currentSection + 1].allocated * 60;
+        setSectionTimers(prev => {
+          const currentTime = prev[activeSectionKey] ?? 0;
+          if (currentTime <= 1) {
+            const [weekStr, sectionStr] = activeSectionKey.split('-');
+            const weekIndex = parseInt(weekStr);
+            const sectionIndex = parseInt(sectionStr);
+            const currentWeek = lessonPlans[weekIndex];
+            if (sectionIndex < currentWeek.sections.length - 1) {
+              const nextKey = `${weekIndex}-${sectionIndex + 1}`;
+              const nextAllocated = currentWeek.sections[sectionIndex + 1].allocated * 60;
+              setActiveSectionKey(nextKey);
+              return { ...prev, [activeSectionKey]: 0, [nextKey]: nextAllocated };
             }
-            setIsTimerRunning(false);
-            return 0;
+            setActiveSectionKey(null);
+            return { ...prev, [activeSectionKey]: 0 };
           }
-          return prev - 1;
+          return { ...prev, [activeSectionKey]: currentTime - 1 };
         });
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isTimerRunning, sectionTime, currentSection]);
+  }, [activeSectionKey]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -174,18 +277,44 @@ export function DemoCoachApp() {
   }, [incidentSubmitted, supervisorCountdown]);
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    const mins = Math.floor(Math.abs(seconds) / 60);
+    const secs = Math.abs(seconds) % 60;
+    const prefix = seconds < 0 ? '-' : '';
+    return `${prefix}${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const getTimerColor = () => {
-    const allocated = curriculumSections[currentSection].allocated * 60;
-    const percentRemaining = (sectionTime / allocated) * 100;
-    if (percentRemaining <= 0) return 'bg-red-500 text-white';
+  const getSectionTimerColor = (sectionKey: string, allocated: number) => {
+    const currentTime = sectionTimers[sectionKey] ?? allocated * 60;
+    const percentRemaining = (currentTime / (allocated * 60)) * 100;
+    if (currentTime <= 0) return 'bg-red-500 text-white border-red-500';
     if (percentRemaining <= 20) return 'bg-red-100 text-red-700 border-red-300';
     if (percentRemaining <= 40) return 'bg-amber-100 text-amber-700 border-amber-300';
-    return 'bg-emerald-100 text-emerald-700 border-emerald-300';
+    return 'bg-teal-100 text-teal-700 border-teal-300';
+  };
+
+  const startSectionTimer = (weekIndex: number, sectionIndex: number) => {
+    const key = `${weekIndex}-${sectionIndex}`;
+    const allocated = lessonPlans[weekIndex].sections[sectionIndex].allocated * 60;
+    if (!sectionTimers[key]) {
+      setSectionTimers(prev => ({ ...prev, [key]: allocated }));
+    }
+    setActiveSectionKey(key);
+  };
+
+  const pauseSectionTimer = () => {
+    setActiveSectionKey(null);
+  };
+
+  const skipToNextSection = (weekIndex: number, currentSectionIndex: number) => {
+    const currentWeek = lessonPlans[weekIndex];
+    if (currentSectionIndex < currentWeek.sections.length - 1) {
+      const nextKey = `${weekIndex}-${currentSectionIndex + 1}`;
+      const nextAllocated = currentWeek.sections[currentSectionIndex + 1].allocated * 60;
+      setSectionTimers(prev => ({ ...prev, [nextKey]: nextAllocated }));
+      setActiveSectionKey(nextKey);
+    } else {
+      setActiveSectionKey(null);
+    }
   };
 
   const toggleAttendance = (studentId: string, present: boolean) => {
@@ -202,19 +331,32 @@ export function DemoCoachApp() {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="bg-gradient-to-r from-emerald-600 to-teal-500 px-4 py-6 text-white">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
-            M
-          </div>
-          <div>
-            <h1 className="text-xl font-bold">Coach Mike</h1>
-            <div className="flex items-center gap-1 text-emerald-100">
-              <Star className="w-4 h-4 fill-current" />
-              <span>4.9 rating</span>
-              <span className="mx-2">|</span>
-              <span>127 reviews</span>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
+              M
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">Coach Mike</h1>
+              {showRatings ? (
+                <div className="flex items-center gap-1 text-emerald-100">
+                  <Star className="w-4 h-4 fill-current" />
+                  <span>4.9 rating</span>
+                  <span className="mx-2">|</span>
+                  <span>127 reviews</span>
+                </div>
+              ) : (
+                <p className="text-emerald-100 text-sm">Soccer Shots OC</p>
+              )}
             </div>
           </div>
+          <button
+            onClick={() => setShowRatings(!showRatings)}
+            className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+            title={showRatings ? "Hide public ratings" : "Show public ratings"}
+          >
+            {showRatings ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+          </button>
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2">
           {[
@@ -398,6 +540,39 @@ export function DemoCoachApp() {
 
         {view === 'messaging' && (
           <div>
+            <div className="mb-4 p-3 bg-slate-100 border border-slate-200 rounded-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Settings className="w-5 h-5 text-slate-500" />
+                  <div>
+                    <p className="font-medium text-slate-900 text-sm">Coach-to-Parent Messaging</p>
+                    <p className="text-xs text-slate-500">
+                      {coachMessagingEnabled ? "Coaches can send updates directly to parents" : "Direct messaging is disabled by organization"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setCoachMessagingEnabled(!coachMessagingEnabled)}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${
+                    coachMessagingEnabled ? 'bg-emerald-500' : 'bg-slate-300'
+                  }`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow ${
+                    coachMessagingEnabled ? 'left-7' : 'left-1'
+                  }`} />
+                </button>
+              </div>
+            </div>
+
+            {!coachMessagingEnabled && (
+              <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-center">
+                <p className="text-amber-800 font-medium">Direct parent messaging is disabled</p>
+                <p className="text-amber-600 text-sm">Contact your administrator to enable this feature</p>
+              </div>
+            )}
+
+            {coachMessagingEnabled && (
+            <>
             <div className="mb-4">
               <h2 className="text-lg font-semibold text-slate-900 mb-2">Quick Messages</h2>
               <div className="grid grid-cols-2 gap-2">
@@ -476,6 +651,8 @@ export function DemoCoachApp() {
                 ))}
               </div>
             </div>
+            </>
+            )}
           </div>
         )}
 
@@ -489,6 +666,31 @@ export function DemoCoachApp() {
               <p className="text-sm text-emerald-600">
                 Connect with your team instantly. No more switching between apps.
               </p>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Settings className="w-5 h-5 text-slate-500" />
+                  <div>
+                    <p className="font-medium text-slate-900 text-sm">Group Messaging Privacy</p>
+                    <p className="text-xs text-slate-500">
+                      {groupPrivacyEnabled ? "Phone numbers hidden in group chats (names only)" : "Phone numbers visible to all group members"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setGroupPrivacyEnabled(!groupPrivacyEnabled)}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${
+                    groupPrivacyEnabled ? 'bg-emerald-500' : 'bg-slate-300'
+                  }`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow ${
+                    groupPrivacyEnabled ? 'left-7' : 'left-1'
+                  }`} />
+                </button>
+              </div>
+              <p className="text-xs text-emerald-600 mt-2">Enabled by default to protect staff privacy</p>
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden mb-4">
@@ -615,7 +817,7 @@ export function DemoCoachApp() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Timer className="w-4 h-4 text-slate-500" />
-                  <span className="text-sm text-slate-600">Timer</span>
+                  <span className="text-sm text-slate-600">Section Timers</span>
                   <button
                     onClick={() => setTimerEnabled(!timerEnabled)}
                     className={`w-10 h-6 rounded-full relative transition-colors ${timerEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`}
@@ -624,113 +826,182 @@ export function DemoCoachApp() {
                   </button>
                 </div>
               </div>
+              {timerEnabled && (
+                <p className="text-xs text-emerald-600 mt-1">Enabled by default - helps new coaches manage class timing for each section</p>
+              )}
             </div>
 
-            {timerEnabled && (
-              <div className="bg-white rounded-xl border border-slate-200 p-4 mb-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-slate-900">Class Timer</h3>
-                  <div className="flex items-center gap-2">
+            <div className="space-y-3">
+              {lessonPlans.map((lesson, weekIdx) => {
+                const isExpanded = expandedWeek === lesson.week;
+                const isCurrentWeek = lesson.week === 2;
+                const isCompleted = lesson.week < 2;
+
+                return (
+                  <div
+                    key={weekIdx}
+                    className={`bg-white rounded-xl border overflow-hidden transition-all ${
+                      isCurrentWeek ? 'border-emerald-300 ring-2 ring-emerald-100' : 'border-slate-200'
+                    }`}
+                  >
                     <button
-                      onClick={() => setIsTimerRunning(!isTimerRunning)}
-                      className={`p-2 rounded-lg transition-colors ${isTimerRunning ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}
+                      onClick={() => setExpandedWeek(isExpanded ? null : lesson.week)}
+                      className={`w-full p-4 text-left ${isCurrentWeek ? 'bg-emerald-50' : ''}`}
                     >
-                      {isTimerRunning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold ${
+                            isCompleted ? 'bg-slate-100 text-slate-400' :
+                            isCurrentWeek ? 'bg-emerald-500 text-white' :
+                            'bg-slate-100 text-slate-600'
+                          }`}>
+                            {lesson.week}
+                          </span>
+                          <div>
+                            <h3 className="font-semibold text-slate-900">{lesson.title}</h3>
+                            <p className="text-sm text-slate-500">7 sections | {lesson.sections.reduce((acc, s) => acc + s.allocated, 0)} min total</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isCurrentWeek && (
+                            <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">
+                              Current
+                            </span>
+                          )}
+                          {isCompleted && <CheckCircle className="w-5 h-5 text-slate-400" />}
+                          {isExpanded ? (
+                            <ChevronUp className="w-5 h-5 text-slate-400" />
+                          ) : (
+                            <ChevronDown className="w-5 h-5 text-slate-400" />
+                          )}
+                        </div>
+                      </div>
                     </button>
-                  </div>
-                </div>
-                <div className={`text-center p-4 rounded-xl border-2 transition-colors ${getTimerColor()}`}>
-                  <p className="text-sm font-medium opacity-80">
-                    Section {currentSection + 1} of {curriculumSections.length}
-                  </p>
-                  <p className="text-lg font-semibold">{curriculumSections[currentSection].name}</p>
-                  <p className="text-4xl font-bold my-2">{formatTime(sectionTime)}</p>
-                  <p className="text-sm opacity-80">of {curriculumSections[currentSection].allocated}:00 allocated</p>
-                </div>
-                <div className="flex gap-1 mt-3">
-                  {curriculumSections.map((section, idx) => (
-                    <div
-                      key={idx}
-                      className={`flex-1 h-2 rounded-full ${
-                        idx < currentSection ? 'bg-emerald-500' :
-                        idx === currentSection ? 'bg-emerald-300' :
-                        'bg-slate-200'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <div className="grid grid-cols-7 gap-1 mt-2 text-xs text-slate-500">
-                  {curriculumSections.map((section, idx) => (
-                    <div key={idx} className="text-center truncate">{section.allocated}m</div>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            <div className="space-y-4">
-              {lessonPlans.map((lesson, idx) => (
-                <div
-                  key={idx}
-                  className={`bg-white rounded-xl border overflow-hidden ${
-                    idx === 1 ? 'border-emerald-300 ring-2 ring-emerald-100' : 'border-slate-200'
-                  }`}
-                >
-                  <div className={`p-4 ${idx === 1 ? 'bg-emerald-50' : ''}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                          idx < 1 ? 'bg-slate-100 text-slate-400' :
-                          idx === 1 ? 'bg-emerald-500 text-white' :
-                          'bg-slate-100 text-slate-600'
-                        }`}>
-                          {idx + 1}
-                        </span>
-                        <h3 className="font-semibold text-slate-900">{lesson.title}</h3>
-                      </div>
-                      {idx === 1 && (
-                        <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">
-                          Current Week
-                        </span>
-                      )}
-                      {idx < 1 && (
-                        <CheckCircle className="w-5 h-5 text-slate-400" />
-                      )}
-                    </div>
+                    {isExpanded && (
+                      <div className="border-t border-slate-100">
+                        <div className="p-4 bg-slate-50 border-b border-slate-100">
+                          <div className="flex flex-wrap gap-4 text-sm">
+                            <div>
+                              <span className="text-slate-500">Skills: </span>
+                              {lesson.skills.map((skill, i) => (
+                                <span key={i} className="inline-block px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded mr-1 mb-1">
+                                  {skill}
+                                </span>
+                              ))}
+                            </div>
+                            <div>
+                              <span className="text-slate-500">Games: </span>
+                              {lesson.games.map((game, i) => (
+                                <span key={i} className="inline-block px-2 py-0.5 bg-amber-50 text-amber-700 text-xs rounded mr-1 mb-1">
+                                  {game}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-2">Equipment: {lesson.equipment}</p>
+                        </div>
 
-                    <div className="ml-10 space-y-3">
-                      <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase mb-1">Skills</p>
-                        <div className="flex flex-wrap gap-1">
-                          {lesson.skills.map((skill, i) => (
-                            <span key={i} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded">
-                              {skill}
-                            </span>
-                          ))}
+                        <div className="divide-y divide-slate-100">
+                          {lesson.sections.map((section, sectionIdx) => {
+                            const sectionKey = `${weekIdx}-${sectionIdx}`;
+                            const isActive = activeSectionKey === sectionKey;
+                            const timeRemaining = sectionTimers[sectionKey] ?? section.allocated * 60;
+                            const hasStarted = sectionTimers[sectionKey] !== undefined;
+
+                            return (
+                              <div
+                                key={sectionIdx}
+                                className={`p-4 ${isActive ? 'bg-teal-50' : ''}`}
+                              >
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex items-start gap-3 flex-1">
+                                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                                      hasStarted && timeRemaining <= 0 ? 'bg-red-100 text-red-700' :
+                                      isActive ? 'bg-teal-500 text-white' :
+                                      'bg-slate-100 text-slate-500'
+                                    }`}>
+                                      {sectionIdx + 1}
+                                    </span>
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="font-medium text-slate-900 text-sm">{section.name}</h4>
+                                      <p className="text-xs text-slate-500 mt-0.5">{section.description}</p>
+                                    </div>
+                                  </div>
+
+                                  {timerEnabled && (
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                      <div className={`px-3 py-1.5 rounded-lg border text-sm font-mono font-bold min-w-[70px] text-center transition-colors ${
+                                        getSectionTimerColor(sectionKey, section.allocated)
+                                      }`}>
+                                        {hasStarted ? formatTime(timeRemaining) : `${section.allocated}:00`}
+                                      </div>
+
+                                      {isActive ? (
+                                        <div className="flex gap-1">
+                                          <button
+                                            onClick={pauseSectionTimer}
+                                            className="p-2 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg transition-colors"
+                                            title="Pause"
+                                          >
+                                            <Pause className="w-4 h-4" />
+                                          </button>
+                                          <button
+                                            onClick={() => skipToNextSection(weekIdx, sectionIdx)}
+                                            className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors"
+                                            title="Skip to next"
+                                          >
+                                            <SkipForward className="w-4 h-4" />
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <button
+                                          onClick={() => startSectionTimer(weekIdx, sectionIdx)}
+                                          className="p-2 bg-teal-100 hover:bg-teal-200 text-teal-700 rounded-lg transition-colors"
+                                          title="Start timer"
+                                        >
+                                          <Play className="w-4 h-4" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        <div className="p-3 bg-slate-50 border-t border-slate-100">
+                          <div className="flex gap-1">
+                            {lesson.sections.map((section, idx) => {
+                              const key = `${weekIdx}-${idx}`;
+                              const time = sectionTimers[key];
+                              const isComplete = time !== undefined && time <= 0;
+                              const isActive = activeSectionKey === key;
+                              return (
+                                <div
+                                  key={idx}
+                                  className={`flex-1 h-2 rounded-full transition-colors ${
+                                    isComplete ? 'bg-emerald-500' :
+                                    isActive ? 'bg-teal-400' :
+                                    'bg-slate-200'
+                                  }`}
+                                  title={`${section.name} (${section.allocated}min)`}
+                                />
+                              );
+                            })}
+                          </div>
+                          <div className="flex justify-between mt-1 text-xs text-slate-400">
+                            <span>Section 1</span>
+                            <span>Section 7</span>
+                          </div>
                         </div>
                       </div>
-                      <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase mb-1">Games</p>
-                        <div className="flex flex-wrap gap-1">
-                          {lesson.games.map((game, i) => (
-                            <span key={i} className="px-2 py-1 bg-amber-50 text-amber-700 text-xs rounded">
-                              {game}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <span className="font-medium">Equipment:</span>
-                        <span>{lesson.equipment}</span>
-                      </div>
-                    </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
-
-            <button className="w-full mt-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition-colors">
-              View Full 8-Week Curriculum
-            </button>
           </div>
         )}
 
@@ -746,6 +1017,31 @@ export function DemoCoachApp() {
                       <p className="text-sm text-red-700">Document any incidents that occur during class. Reports are sent to your supervisor for review before being forwarded to the school.</p>
                     </div>
                   </div>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-slate-500" />
+                      <span className="text-sm text-slate-700">Supervisor review delay:</span>
+                    </div>
+                    <select
+                      value={supervisorDelayMinutes}
+                      onChange={(e) => {
+                        setSupervisorDelayMinutes(Number(e.target.value));
+                        setSupervisorCountdown(Number(e.target.value));
+                      }}
+                      className="px-2 py-1 border border-slate-200 rounded text-sm"
+                    >
+                      <option value={30}>30 minutes</option>
+                      <option value={60}>1 hour</option>
+                      <option value={90}>90 minutes (default)</option>
+                      <option value={120}>2 hours</option>
+                      <option value={180}>3 hours</option>
+                      <option value={360}>6 hours</option>
+                    </select>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">Organization can configure this delay (default: 90 min)</p>
                 </div>
 
                 <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-4">
@@ -833,7 +1129,7 @@ export function DemoCoachApp() {
                     <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                     <div>
                       <h3 className="font-semibold text-emerald-900">Report Submitted</h3>
-                      <p className="text-sm text-emerald-700">Your supervisor has been notified and has 90 minutes to review before it is sent to the school.</p>
+                      <p className="text-sm text-emerald-700">Your supervisor has been notified and has {supervisorDelayMinutes} minutes to review before it is sent to the school.</p>
                     </div>
                   </div>
                 </div>
@@ -843,6 +1139,7 @@ export function DemoCoachApp() {
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
                     <p className="text-sm text-amber-700 mb-1">Time remaining before auto-send to school</p>
                     <p className="text-3xl font-bold text-amber-900">{Math.floor(supervisorCountdown / 60)}:{(supervisorCountdown % 60).toString().padStart(2, '0')}</p>
+                    <p className="text-xs text-amber-600 mt-1">Configured delay: {supervisorDelayMinutes} minutes</p>
                   </div>
                   <div className="mt-4 p-3 bg-slate-50 rounded-lg">
                     <p className="text-sm text-slate-600 mb-2">SMS sent to supervisor:</p>
@@ -865,7 +1162,7 @@ export function DemoCoachApp() {
                 </div>
 
                 <button
-                  onClick={() => { setIncidentSubmitted(false); setSupervisorCountdown(90); setIncidentForm({...incidentForm, childInvolved: '', whatObserved: ''}); }}
+                  onClick={() => { setIncidentSubmitted(false); setSupervisorCountdown(supervisorDelayMinutes); setIncidentForm({...incidentForm, childInvolved: '', whatObserved: ''}); }}
                   className="w-full mt-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition-colors"
                 >
                   File Another Report

@@ -3,7 +3,7 @@ import {
   BarChart3, TrendingUp, TrendingDown, Users, DollarSign,
   Filter, Lock, Sparkles, ArrowUpRight, ArrowDownRight,
   Target, Zap, Building2, MapPin, Calendar, ChevronDown,
-  AlertTriangle, CheckCircle, Info, Crown
+  AlertTriangle, CheckCircle, Info, Crown, ToggleRight, Shield
 } from 'lucide-react';
 
 type TabId = 'dashboard' | 'enrollment' | 'revenue' | 'operations' | 'recommendations';
@@ -309,9 +309,48 @@ export function DemoBenchmarking() {
           <p className="text-slate-500 text-sm">
             Powered by <span className="text-cyan-400">Kairo Benchmarking</span> - Anonymous peer data from 47 businesses
           </p>
-          <p className="text-slate-600 text-xs mt-1">AI Recommendations by Gemini 2.5 Flash - Data updated January 2026</p>
+          <p className="text-slate-600 text-xs mt-1">AI Recommendations by Gemini 3 Flash - Data updated January 2026</p>
         </div>
       </footer>
+    </div>
+  );
+}
+
+function DataSharingToggle() {
+  const [isEnabled, setIsEnabled] = useState(true);
+  return (
+    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+            <Shield className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div>
+            <h4 className="text-white font-medium mb-1">Data Sharing Settings</h4>
+            <p className="text-slate-400 text-sm">
+              {isEnabled
+                ? "Your anonymized data contributes to peer benchmarks. To access industry insights, data sharing must be enabled."
+                : "Data sharing is disabled. Enable to access benchmarking insights and contribute to the peer network."}
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => setIsEnabled(!isEnabled)}
+          className={`relative w-14 h-7 rounded-full transition-colors flex-shrink-0 ${
+            isEnabled ? 'bg-emerald-500' : 'bg-slate-600'
+          }`}
+        >
+          <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform shadow ${
+            isEnabled ? 'left-8' : 'left-1'
+          }`} />
+        </button>
+      </div>
+      {isEnabled && (
+        <div className="mt-3 pt-3 border-t border-slate-700 flex items-center gap-2 text-xs text-slate-500">
+          <ToggleRight className="w-4 h-4 text-emerald-400" />
+          <span>Your data is anonymized and aggregated - competitors cannot see your individual metrics</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -329,6 +368,8 @@ function DashboardTab({ tier }: { tier: SubscriptionTier }) {
           See how your business compares to similar youth sports organizations. Anonymous, aggregated data from 47 peer businesses.
         </p>
       </div>
+
+      <DataSharingToggle />
 
       <FilterBar />
 
@@ -683,7 +724,7 @@ function RecommendationsTab({ tier }: { tier: SubscriptionTier }) {
           <div className="bg-gradient-to-r from-amber-600 to-orange-500 rounded-2xl p-6 text-white">
             <h3 className="text-xl font-bold mb-2">AI-Powered Recommendations</h3>
             <p className="text-amber-100">
-              Get personalized recommendations based on your benchmarking data, powered by Gemini 2.5 Flash
+              Get personalized recommendations based on your benchmarking data, powered by Gemini 3 Flash
             </p>
           </div>
           <div className="grid md:grid-cols-2 gap-4">
@@ -705,7 +746,7 @@ function RecommendationsTab({ tier }: { tier: SubscriptionTier }) {
       <div className="bg-gradient-to-r from-amber-600 to-orange-500 rounded-2xl p-6 text-white relative overflow-hidden">
         <div className="absolute top-2 right-2 px-2 py-1 bg-white/20 rounded-full text-xs font-medium flex items-center gap-1">
           <Zap className="w-3 h-3" />
-          Powered by Gemini 2.5 Flash
+          Powered by Gemini 3 Flash
         </div>
         <h3 className="text-xl font-bold mb-2">AI-Powered Recommendations</h3>
         <p className="text-amber-100">

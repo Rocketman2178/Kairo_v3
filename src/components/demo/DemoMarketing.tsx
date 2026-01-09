@@ -85,11 +85,11 @@ export function DemoMarketing() {
       steps: ['SMS reminder', 'Email with saved cart', 'Final urgency message']
     },
     {
-      name: 'Birthday Campaign',
+      name: 'Birthday Campaign + Loyalty Tiers',
       trigger: 'Child birthday this month',
       status: 'active',
       stats: { sent: 45, converted: 12 },
-      steps: ['Birthday wishes + discount code']
+      steps: ['Tier 1 (New): 5% off', 'Tier 2 (2-3 seasons): 10% + merch', 'Tier 3 (4-5 seasons): 15% + priority', 'Tier 4 VIP (6+): 20% + exclusive perks']
     }
   ];
 
@@ -106,6 +106,20 @@ export function DemoMarketing() {
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8">
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 mb-6">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600 flex-shrink-0">
+            <Calendar className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-amber-900">Roadmap Preview</h3>
+            <p className="text-sm text-amber-700 mt-1">
+              Marketing automation features shown here represent our planned roadmap. These capabilities will be developed after core registration, payments, and coach tools are complete. This preview demonstrates the platform's full potential.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Marketing Hub</h1>

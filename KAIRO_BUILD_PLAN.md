@@ -1,6 +1,6 @@
 # Kairo Platform - Strategic Build Plan
 
-**Version:** 2.9
+**Version:** 2.10
 **Last Updated:** January 9, 2026
 **Current Stage:** Stage 2 COMPLETE | Stage 3 Starting (Payments & Registration Flow)
 
@@ -56,9 +56,16 @@ This platform supports family livelihoods - business owners depend on it for the
 
 ## Mission Statement
 
-Transform youth sports registration from an 18-20 minute painful process into a seamless sub-5-minute (targeting 3 minutes) conversational experience using AI-powered registration with voice and text support.
+Transform youth sports registration from a painful, complicated process into a seamless conversational experience using AI-powered registration with voice and text support. Eliminate the frustration of legacy systems and capture revenue lost to abandoned registrations.
 
-**Core Value Proposition:** "Registration in 3 Minutes, Not 20"
+**Core Value Proposition:** "Registration Made Simple"
+
+### Key Differentiators (Tiger Tank January 2026)
+1. **Simple & Easy** - Most requested feature: complexity and difficulty have cost businesses money
+2. **Platform Transition Support** - Address the fear of switching platforms (Soccer Shots/NBC experience)
+3. **Cost Elimination** - Replace 6+ disconnected subscriptions (Slack, Connecteam, etc.)
+4. **Feature Flexibility** - Toggle features on/off per organization (coach ratings, direct messaging)
+5. **Intelligent Waitlist Management** - Funnel customers to available classes before they fixate on full ones
 
 ---
 
@@ -157,6 +164,28 @@ Transform youth sports registration from an 18-20 minute painful process into a 
 ## Data Integration Priority
 
 Integration with existing registration platforms is critical for customer migration.
+
+### Platform Transition Support (CRITICAL - Tiger Tank Feedback Jan 2026)
+
+**The Fear Factor:**
+Business owners have been burned by platform transitions. Soccer Shots took 3 years to select NBC platform which failed ("absolute bomb"). Leaders are now "navigating within fear" about any platform change. Addressing this fear is essential for adoption.
+
+**Key Pain Points to Address:**
+1. **Expensive Transitions** - Previous migrations have been costly in time and money
+2. **No Next Step** - Organizations stay on failing platforms because they don't see a clear path forward
+3. **Historical Trauma** - Past selection processes resulted in catastrophic failures
+4. **Data Continuity** - Fear of losing customer data, registration history, payment info
+
+**KAIRO's Transition Strategy:**
+- [ ] Clear migration timeline with defined phases
+- [ ] Parallel running period (old + new systems simultaneously)
+- [ ] Automated data import from legacy systems
+- [ ] Training materials and support for staff
+- [ ] Rollback capability during transition period
+- [ ] Dedicated transition support team
+- [ ] Success metrics and checkpoints during migration
+
+**Messaging:** "We understand that platform transition has been painful everywhere. We've designed KAIRO specifically to make switching easy and risk-free."
 
 | Source | Priority | Status | Notes |
 |--------|----------|--------|-------|
@@ -640,14 +669,16 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Minimal free-text fields for consistency
 
 **Workflow & Notifications:**
-- [ ] 90-minute delay before auto-send to school (NOT 6 hours)
+- [ ] **DEFAULT 90-minute delay** before auto-send to school (configurable by organization)
+- [ ] Organization can adjust delay time (30 min - 6 hours range)
 - [ ] Immediate editable attachment sent to coach's direct supervisor
 - [ ] SMS alert to supervisor: "ALERT: Incident Report Filed by [name] at [location]"
-- [ ] Supervisor review window during 90-minute delay
-- [ ] Supervisor can manually PAUSE the send timer
+- [ ] Supervisor review window during delay period
+- [ ] Supervisor can manually PAUSE the send timer (indefinitely)
 - [ ] Supervisor can manually SEND EARLY before timer expires
-- [ ] Auto-send to school after 90 minutes if no action taken
+- [ ] Auto-send to school after configured delay if no action taken
 - [ ] Audit trail of all actions and modifications
+- [ ] Email notification option in addition to SMS
 
 #### 5.5 Coach Mobile App Core
 - [ ] Native-like PWA experience
@@ -661,25 +692,92 @@ Registration Form → Payment → Confirmed Registration → Return User
 #### 5.6 Curriculum Timer System (Priority: MEDIUM-HIGH) - NEW Jan 2026
 **Customer Context:** One of the hardest things for new coaches is managing class timing. They often spend too much time on early sections and miss the scrimmage at the end.
 
+**Program Structure:**
+- [ ] Each program has **8 classes** (typically 8 weeks)
+- [ ] Each class has **7 sections** (e.g., warm-up, skill drill 1, skill drill 2, game 1, game 2, scrimmage, cool down)
+- [ ] Expandable class view: tap a week to see that class's 7 sections
+- [ ] Each section has its own configurable duration
+
 **Timer Features:**
-- [ ] Timer integration with lesson plan view (7 sections per lesson)
-- [ ] Running timer per section
-- [ ] Visual time indicators:
-  - Normal: Default color
-  - Yellow: Time approaching limit (warning)
-  - Red: Section time expired
+- [ ] Timer integration with lesson plan view (7 sections per class)
+- [ ] **Individual timer per section** (not just one timer for the whole class)
+- [ ] Visual time indicators per section:
+  - Normal: Default color (green/teal)
+  - Yellow: Time approaching limit (warning, e.g., <30% remaining)
+  - Red: Section time expired (0:00 or negative)
 - [ ] Auto-advance to next section when timer expires
 - [ ] Next section timer starts automatically
 - [ ] Audio/haptic notification at section transitions
-- [ ] Pause/resume functionality
+- [ ] Pause/resume functionality per section
 - [ ] Time remaining display per section
+- [ ] Progress bar showing section completion
+
+**User Flow:**
+1. Coach opens curriculum for "Mini Soccer (Ages 3-5)"
+2. Sees 8 weeks/classes listed (Week 1, Week 2, etc.)
+3. Taps "Week 2" to expand and view that class
+4. Sees 7 sections with time allocations and section-specific timers
+5. Starts timer for Section 1 (e.g., "Warm-Up" - 5 min)
+6. Timer turns yellow at ~1:30 remaining, red at 0:00
+7. Auto-advances to Section 2 timer when Section 1 expires
+8. Can pause/skip sections as needed
 
 **Configuration:**
-- [ ] Enable/disable toggle at organization level (business owner)
-- [ ] Enable/disable toggle at coach level (optional for individual coaches)
+- [ ] **ENABLED BY DEFAULT** at organization level (recommended for new coaches)
+- [ ] Enable/disable toggle at organization level (business owner can turn off)
+- [ ] Enable/disable toggle at coach level (experienced coaches can disable)
 - [ ] Business owner sets time allotted for each section
-- [ ] Different time lengths per section (e.g., rule review vs. scrimmage)
+- [ ] Different time lengths per section (e.g., warm-up 5 min, scrimmage 10 min)
 - [ ] Per-curriculum time configuration
+- [ ] Default time allocations provided out-of-box (can be customized)
+
+#### 5.7 Knowledge Base (ConnectTeam-Inspired) - NEW Jan 2026
+**Purpose:** Central repository for company documents, training materials, and SOPs
+
+**Features:**
+- [ ] Organized document library with categories
+- [ ] Training manuals and safety guidelines
+- [ ] Quick reference cards for coaches
+- [ ] Video tutorials and how-to guides
+- [ ] Searchable content
+- [ ] Mobile-optimized reading experience
+- [ ] Version control for documents
+- [ ] Access control by role/position
+
+#### 5.8 Staff Time Off Management (ConnectTeam-Inspired) - NEW Jan 2026
+**Purpose:** Streamline time-off requests and availability management
+
+**Features:**
+- [ ] Time-off request submission (vacation, sick, personal)
+- [ ] Approval workflow for managers
+- [ ] Calendar view of team availability
+- [ ] Balance tracking (if applicable)
+- [ ] Automatic schedule conflict detection
+- [ ] Substitute suggestion when requesting time off
+- [ ] Push notifications for request status updates
+
+#### 5.9 Internal Help Desk (ConnectTeam-Inspired) - NEW Jan 2026
+**Purpose:** Internal ticketing system for staff support requests
+
+**Features:**
+- [ ] Ticket submission from app
+- [ ] Categories: IT, HR, Scheduling, Equipment, Other
+- [ ] Priority levels (Low, Medium, High, Urgent)
+- [ ] Assignment to appropriate admin/manager
+- [ ] Status tracking (Open, In Progress, Resolved)
+- [ ] Response time metrics
+- [ ] Knowledge base integration (suggest articles before ticket creation)
+
+#### 5.10 Group Messaging Privacy Controls - NEW Jan 2026
+**Purpose:** Protect staff privacy in group communications
+
+**Features:**
+- [ ] Phone number masking in group chats (staff see names, not numbers)
+- [ ] Admin-only access to contact details
+- [ ] Opt-in/opt-out for personal contact sharing
+- [ ] Message deletion controls (who can delete, time limits)
+- [ ] Read receipt visibility settings (configurable by org)
+- [ ] **ENABLED BY DEFAULT**: Phone number masking for all group communications
 
 ---
 
@@ -737,6 +835,30 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Conflict detection with existing assignments
 - [ ] Substitute coach recommendations when primary unavailable
 
+#### 6.4 Session Sort & Display Criteria - NEW Jan 2026
+**Purpose:** Give parents the best options first when browsing available sessions
+
+**Default Sort Order (Configurable by Org):**
+- [ ] **Primary**: Availability (sessions with spots > waitlist)
+- [ ] **Secondary**: Proximity to user location (if shared)
+- [ ] **Tertiary**: Coach rating (highest first)
+- [ ] **Quaternary**: Session rating (highest first)
+- [ ] **Fifth**: Time of day preference match
+
+**Advanced Sort Options:**
+- [ ] Sort by price (low to high, high to low)
+- [ ] Sort by start date (soonest first)
+- [ ] Sort by spots remaining (urgency-based)
+- [ ] Group by location
+- [ ] Group by program type
+- [ ] Filter by day of week
+
+**Organization Configuration:**
+- [ ] Set default sort order at org level
+- [ ] Toggle which sort options are visible to parents
+- [ ] Set proximity radius for location-based sorting
+- [ ] Enable/disable urgency messaging for low-availability sessions
+
 ---
 
 ### Stage 7: Upselling & Engagement (PLANNED)
@@ -744,6 +866,29 @@ Registration Form → Payment → Confirmed Registration → Return User
 **Updated:** January 2026 with customer feedback enhancements
 
 **Key Features:**
+
+#### 7.0 Birthday Campaign with Loyalty Tiers - NEW Jan 2026
+**Purpose:** Increase engagement and reward loyal families with birthday campaigns
+
+**Birthday Campaign Features:**
+- [ ] Automated birthday detection from child profiles
+- [ ] Customizable birthday message templates
+- [ ] Birthday discount code generation
+- [ ] Multi-child family handling (separate messages per child)
+- [ ] Scheduling options (day of, week before, etc.)
+
+**Loyalty Tier Integration:**
+- [ ] **Tier 1 - New Family** (0-1 seasons): Standard birthday greeting + 5% off next session
+- [ ] **Tier 2 - Returning** (2-3 seasons): Personalized message + 10% off + free merchandise item
+- [ ] **Tier 3 - Loyal** (4-5 seasons): Premium message + 15% off + priority registration access
+- [ ] **Tier 4 - VIP** (6+ seasons): VIP treatment + 20% off + exclusive perks + coach shoutout
+
+**Configuration:**
+- [ ] Organization defines tier thresholds (seasons or years)
+- [ ] Organization sets discount amounts per tier
+- [ ] Custom perks per tier (merchandise, priority access, etc.)
+- [ ] Enable/disable loyalty tiers (can use flat discount instead)
+- [ ] Birthday campaign ON by default (can be disabled per org)
 
 #### 7.1 Season-End Feedback & Tipping System (Priority: MEDIUM) - NEW Jan 2026
 **Customer Requirement:** Automated end-of-season feedback collection and coach tipping
@@ -918,10 +1063,13 @@ Registration Form → Payment → Confirmed Registration → Return User
 
 ---
 
-### Stage 9: Marketing Automation (PLANNED)
+### Stage 9: Marketing Automation (PLANNED - ROADMAP ITEM)
 **Goals:** Social media, advertising, lead generation, ROI optimization
 **Business Value:** Potentially eliminates need for dedicated marketing director
 **Updated:** January 2026 with customer feedback enhancements
+**Demo Status:** Shown as future capability roadmap item - not yet in active development
+
+**Important Note:** Marketing automation features shown in demos represent the planned vision and roadmap. These features will be developed after core registration, payments, and coach tools are complete. Demo serves to illustrate the platform's full potential and gather feedback on priorities.
 
 **Key Features:**
 
@@ -1050,7 +1198,36 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Voice speed adjustment
 - [ ] Voice gender selection
 
-#### 10.4 API & Integrations
+#### 10.4 Organization Feature Toggles (Tiger Tank Feedback)
+**Purpose:** Allow organizations to enable/disable features based on their needs and staff training level
+
+**Rationale (from Jan 2026 customer feedback):**
+- Some owners don't trust staff for direct parent communication
+- Franchises want to control what data competitors can see in benchmarking
+- Coach ratings may be controversial if location issues affect scores
+
+**Configurable Features:**
+- [ ] Coach-to-Parent Direct Messaging (on/off)
+  - Some organizations prefer centralized office communication only
+  - Concern: Younger staff may say inappropriate things
+- [ ] Public Coach Ratings (on/off)
+  - Internal ratings always visible to management
+  - External/parent-facing ratings can be hidden
+- [ ] Location Ratings (separate from coach ratings)
+- [ ] Benchmarking Data Sharing (opt-in required)
+  - Must contribute data to receive aggregate insights
+  - Addresses franchise competitive concerns (i9 vs Soccer Shots)
+- [ ] Birthday Campaign Automation (on/off)
+- [ ] Re-enrollment Reminders (on/off)
+- [ ] Sibling Discount Auto-Apply (on/off)
+
+**Implementation:**
+- Organization settings table with boolean flags
+- Admin dashboard to configure toggles
+- Features gracefully degrade when disabled
+- Clear messaging when feature is disabled by organization
+
+#### 10.5 API & Integrations
 - [ ] Public REST API
 - [ ] Webhook notifications
 - [ ] Third-party calendar sync
@@ -1060,7 +1237,96 @@ Registration Form → Payment → Confirmed Registration → Return User
 ---
 
 ### Stage 11: Data & Compliance (PLANNED)
-**Goals:** COPPA/GDPR compliance, data portability
+**Goals:** COPPA/GDPR compliance, data portability, enterprise-grade data security
+**Updated:** January 2026 with enhanced compliance details
+
+#### 11.1 COPPA Compliance (Children's Online Privacy Protection Act)
+**Required for:** Any platform collecting data from children under 13
+
+**Key Requirements:**
+- [ ] Verifiable parental consent before collecting child data
+- [ ] Clear privacy policy accessible to parents
+- [ ] Limited data collection (only what's necessary)
+- [ ] Data retention limits and automatic deletion
+- [ ] Parent access to review/delete child data
+- [ ] No behavioral advertising targeting children
+- [ ] Secure data storage and transmission
+
+**Implementation:**
+- [ ] Parent/guardian account required for child registration
+- [ ] Age verification at child profile creation
+- [ ] Consent checkboxes with clear language
+- [ ] Data deletion workflow for families
+- [ ] Annual consent renewal reminders
+
+#### 11.2 GDPR Compliance (General Data Protection Regulation)
+**Required for:** EU customers or processing EU resident data
+
+**Key Requirements:**
+- [ ] Lawful basis for data processing documented
+- [ ] Right to access (data export)
+- [ ] Right to erasure ("right to be forgotten")
+- [ ] Right to data portability
+- [ ] Data Processing Agreements (DPAs) with vendors
+- [ ] 72-hour breach notification capability
+- [ ] Privacy by design principles
+
+**Implementation:**
+- [ ] Self-service data export tool
+- [ ] Account deletion with cascading data removal
+- [ ] Cookie consent banner
+- [ ] Privacy preference center
+- [ ] Data processing inventory maintained
+
+#### 11.3 CCPA Compliance (California Consumer Privacy Act)
+**Required for:** California residents
+
+**Key Requirements:**
+- [ ] "Do Not Sell My Personal Information" option
+- [ ] Right to know what data is collected
+- [ ] Right to delete personal information
+- [ ] Non-discrimination for exercising rights
+
+#### 11.4 Data Security Standards
+**Enterprise-Grade Security:**
+- [ ] SOC 2 Type II compliance (via Supabase)
+- [ ] Encryption at rest and in transit (AES-256, TLS 1.3)
+- [ ] Regular security audits
+- [ ] Penetration testing (annual)
+- [ ] Multi-factor authentication support
+- [ ] Role-based access control (RBAC)
+- [ ] Audit logging for sensitive operations
+- [ ] Backup and disaster recovery procedures
+
+#### 11.5 Data Portability
+**Family Data Export:**
+- [ ] Full registration history
+- [ ] Payment records
+- [ ] Child profiles and progress
+- [ ] Communication history
+- [ ] Standard formats (CSV, JSON, PDF)
+
+**Organization Data Export:**
+- [ ] Complete customer database
+- [ ] Financial reports
+- [ ] Analytics data
+- [ ] Communication templates
+- [ ] Configuration settings
+
+#### 11.6 Q&A Readiness - Common Questions
+**Prepared answers for compliance inquiries:**
+
+| Question | Answer |
+|----------|--------|
+| Where is data stored? | Supabase (AWS US infrastructure), SOC 2 Type II certified |
+| Is data encrypted? | Yes, AES-256 at rest, TLS 1.3 in transit |
+| Can families delete their data? | Yes, full account deletion with data removal |
+| Do you sell user data? | No, never |
+| COPPA compliant? | Yes, parental consent required for minors |
+| GDPR compliant? | Yes, full compliance for EU customers |
+| Breach notification? | 72-hour notification to affected parties |
+| Data retention policy? | Configurable per org, default 7 years for financial records |
+| Third-party data sharing? | Only payment processor (Stripe), no advertising |
 
 ---
 
@@ -1992,6 +2258,47 @@ import { supabase } from './lib/supabase'
   - Frontend temp ID generation: NOT YET IMPLEMENTED
   - Registration form component: NOT YET CREATED
   - Next steps: Build registration flow infrastructure
+
+### January 9, 2026 - Tiger Tank Meeting & Demo Updates
+
+**Tiger Tank Preparation Meeting Insights:**
+
+1. **Marketing Messaging Updated:**
+   - Changed from "Registration in 3 Minutes" to "Registration Made Simple"
+   - Removed specific time commitments to avoid over-promising
+   - Emphasis on simplicity and ease of use (recurring customer feedback)
+
+2. **Key Selling Points Confirmed:**
+   - Simple registration that captures lost revenue
+   - Internal communication to replace Slack/Connecteam (cost elimination)
+   - Coach curriculum feature
+   - Incident report functionality
+   - Marketing dashboard with ROI tracking
+
+3. **Platform Transition Fear Addressed:**
+   - Soccer Shots/NBC platform failure creating industry-wide hesitation
+   - Added transition support section to build plan
+   - Messaging: "We understand transition has been painful"
+
+4. **Feature Toggles Added:**
+   - Coach-to-parent messaging (some orgs don't trust staff)
+   - Public coach ratings (can show internally only)
+   - Benchmarking data sharing (opt-in/opt-out)
+   - Demo now shows toggle examples inline
+
+5. **Benchmarking Data Strategy:**
+   - Two-way street: If you want insights, you contribute data
+   - Data is anonymized and aggregated
+   - Addresses franchise competitive concerns
+
+6. **Kai Agent Description:**
+   - Added to demo: "complex series of AI agent workflows that comprehend questions in real-time"
+   - Brief behind-scenes view planned for Tiger Tank (10-15 seconds)
+   - "Duck analogy" - calm on surface, paddling furiously underneath
+
+7. **AI Model Standardized:**
+   - All references updated to "Gemini 3 Flash"
+   - Removed inconsistent version references (2.0, 2.5)
 
 ---
 

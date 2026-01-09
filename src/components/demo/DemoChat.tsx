@@ -536,7 +536,7 @@ export function DemoChat() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-emerald-400 text-sm">Registration Complete!</h3>
-                      <p className="text-emerald-300 text-xs">Total time: 2 minutes 34 seconds</p>
+                      <p className="text-emerald-300 text-xs">Quick and easy - just like it should be</p>
                     </div>
                   </div>
                 </div>

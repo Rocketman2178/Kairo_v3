@@ -334,12 +334,13 @@ export function Demo() {
           <div className="bg-gradient-to-r from-blue-600 to-cyan-500 rounded-2xl p-8 text-white">
             <div className="max-w-3xl">
               <h2 className="text-3xl font-bold mb-4">
-                Registration in 3 Minutes, Not 20
+                Registration Made Simple
               </h2>
               <p className="text-blue-100 text-lg mb-6">
-                Kairo transforms youth sports registration from an 18-20 minute painful process
-                into a seamless conversational experience. Explore interactive demos of every
-                planned feature below.
+                Kairo transforms youth sports registration from a painful, complicated process
+                into a seamless conversational experience. Powered by Kai - a complex series of
+                AI agent workflows that comprehend questions in real-time, provide friendly answers,
+                and take actions to complete registration effortlessly.
               </p>
               <div className="flex flex-wrap gap-3">
                 {demoButtons.slice(0, 3).map((btn) => (
@@ -492,10 +493,10 @@ export function Demo() {
               <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4">
                 <Clock className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-bold mb-2">3-Minute Registration</h3>
+              <h3 className="text-xl font-bold mb-2">Registration Made Simple</h3>
               <p className="text-emerald-100">
-                Down from 18-20 minutes with traditional platforms. Parents complete
-                registration while juggling kids.
+                Traditional platforms take 18-20 minutes. Kairo's conversational AI
+                lets parents complete registration while juggling kids.
               </p>
             </div>
 

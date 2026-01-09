@@ -82,7 +82,7 @@ const testCategories: TestCategory[] = [
       },
       {
         name: 'AI Agent Node',
-        description: 'Gemini 2.0 Flash integration',
+        description: 'Gemini 3 Flash integration',
         status: 'in_progress',
         details: ['System prompt configuration', 'Tool definitions', 'Response parsing']
       },
@@ -395,7 +395,7 @@ export function DemoKairoTesting() {
               <h3 className="text-white font-semibold text-lg mb-2">What's Being Tested</h3>
               <p className="text-slate-300 mb-4">
                 The Kai registration agent uses a sophisticated architecture combining n8n workflows,
-                Supabase edge functions, and Gemini 2.0 Flash AI. This testing infrastructure ensures
+                Supabase edge functions, and Gemini 3 Flash AI. This testing infrastructure ensures
                 reliable conversation handling across diverse registration scenarios.
               </p>
               <div className="grid sm:grid-cols-3 gap-4">
@@ -423,7 +423,7 @@ export function DemoKairoTesting() {
                     AI Agent
                   </div>
                   <p className="text-slate-400 text-sm">
-                    Gemini 2.0 Flash with 6 context files and database tools
+                    Gemini 3 Flash with 6 context files and database tools
                   </p>
                 </div>
               </div>
