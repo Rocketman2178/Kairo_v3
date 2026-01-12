@@ -3,7 +3,9 @@ import {
   MessageCircle, CreditCard, BarChart3, Users, Calendar, TrendingUp,
   Building2, Megaphone, Palette, Shield, Brain, ChevronRight, Check,
   Mic, Globe, Zap, Clock, MapPin, Star, Phone, Mail,
-  DollarSign, UserCheck, Bell, Target, Sparkles, Play, LayoutDashboard
+  DollarSign, UserCheck, Bell, Target, Sparkles, Play, LayoutDashboard,
+  ArrowRight, Rocket, XCircle, CheckCircle2, RefreshCw, Bot, Database,
+  MessageSquare, Smartphone, Monitor, PhoneCall, Infinity, HeartHandshake, Network
 } from 'lucide-react';
 import { DemoChat } from '../components/demo/DemoChat';
 import { DemoPayments } from '../components/demo/DemoPayments';
@@ -15,8 +17,7 @@ import { DemoWhiteLabel } from '../components/demo/DemoWhiteLabel';
 import { DemoDataInsights } from '../components/demo/DemoDataInsights';
 import { DemoBenchmarking } from '../components/demo/DemoBenchmarking';
 import { DemoInternalDashboard } from '../components/demo/DemoInternalDashboard';
-import { DemoKairoTesting } from '../components/demo/DemoKairoTesting';
-import { FeedbackForm } from '../components/feedback/FeedbackForm';
+import { DemoKaiAgent } from '../components/demo/DemoKaiAgent';
 import { FeedbackAdminDashboard } from '../components/feedback/FeedbackAdminDashboard';
 
 interface Stage {
@@ -43,8 +44,7 @@ const stages: Stage[] = [
       'Add programs, sessions, and locations',
       'Set up staff/coach profiles',
       'View and manage family registrations'
-    ],
-    badge: 'improved'
+    ]
   },
   {
     id: 2,
@@ -58,8 +58,7 @@ const stages: Stage[] = [
       'Receive smart class recommendations',
       'Get alternative suggestions when classes are full',
       'Use voice input for hands-free registration'
-    ],
-    badge: 'improved'
+    ]
   },
   {
     id: 3,
@@ -87,8 +86,7 @@ const stages: Stage[] = [
       'Analyze revenue trends and forecasts',
       'Identify at-risk families before they churn',
       'See where parents drop off during registration'
-    ],
-    badge: 'new'
+    ]
   },
   {
     id: 5,
@@ -102,8 +100,7 @@ const stages: Stage[] = [
       'Send video updates to parents from class',
       'Message team via location and company channels',
       'Access lesson plans and curriculum'
-    ],
-    badge: 'improved'
+    ]
   },
   {
     id: 6,
@@ -117,8 +114,7 @@ const stages: Stage[] = [
       'Get AI suggestions based on waitlist demand',
       'See revenue potential per time slot',
       'Detect and resolve scheduling conflicts'
-    ],
-    badge: 'improved'
+    ]
   },
   {
     id: 7,
@@ -160,8 +156,7 @@ const stages: Stage[] = [
       'See where you rank vs. 50th and 75th percentile benchmarks',
       'Get AI recommendations for revenue opportunities',
       'Filter by business size, geography, and sport type'
-    ],
-    badge: 'new'
+    ]
   },
   {
     id: 9,
@@ -231,17 +226,15 @@ const stages: Stage[] = [
       'Track customer health by transaction volume, not logins',
       'Get prioritized action list with MRR at risk',
       'Protect revenue with proactive payment monitoring'
-    ],
-    badge: 'new'
+    ]
   }
 ];
 
-type DemoView = 'overview' | 'chat' | 'payments' | 'analytics' | 'coach' | 'scheduling' | 'marketing' | 'whitelabel' | 'datainsights' | 'benchmarking' | 'internal' | 'testing';
+type DemoView = 'overview' | 'chat' | 'payments' | 'analytics' | 'coach' | 'scheduling' | 'marketing' | 'whitelabel' | 'datainsights' | 'benchmarking' | 'internal' | 'kaiagent';
 
 export function Demo() {
   const [activeView, setActiveView] = useState<DemoView>('overview');
   const [selectedStage, setSelectedStage] = useState<number | null>(null);
-  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
 
   const getStatusColor = (status: Stage['status']) => {
@@ -261,21 +254,21 @@ export function Demo() {
   };
 
   const demoButtons = [
-    { view: 'chat' as DemoView, label: 'Try Kai Chat', icon: <MessageCircle className="w-4 h-4" />, stage: 2, badge: 'improved' as const },
+    { view: 'chat' as DemoView, label: 'Try Kai Chat', icon: <MessageCircle className="w-4 h-4" />, stage: 2 },
     { view: 'payments' as DemoView, label: 'Payments Demo', icon: <CreditCard className="w-4 h-4" />, stage: 3 },
-    { view: 'analytics' as DemoView, label: 'Analytics Demo', icon: <BarChart3 className="w-4 h-4" />, stage: 4, badge: 'improved' as const },
-    { view: 'coach' as DemoView, label: 'Coach App Demo', icon: <Users className="w-4 h-4" />, stage: 5, badge: 'improved' as const },
-    { view: 'scheduling' as DemoView, label: 'Scheduling Demo', icon: <Calendar className="w-4 h-4" />, stage: 6, badge: 'improved' as const },
+    { view: 'analytics' as DemoView, label: 'Analytics Demo', icon: <BarChart3 className="w-4 h-4" />, stage: 4 },
+    { view: 'coach' as DemoView, label: 'Coach App Demo', icon: <Users className="w-4 h-4" />, stage: 5 },
+    { view: 'scheduling' as DemoView, label: 'Scheduling Demo', icon: <Calendar className="w-4 h-4" />, stage: 6 },
     { view: 'marketing' as DemoView, label: 'Marketing Demo', icon: <Megaphone className="w-4 h-4" />, stage: 9 },
     { view: 'whitelabel' as DemoView, label: 'White-Label Demo', icon: <Palette className="w-4 h-4" />, stage: 10 },
-    { view: 'datainsights' as DemoView, label: 'Data Insights', icon: <TrendingUp className="w-4 h-4" />, stage: 4, badge: 'new' as const },
-    { view: 'benchmarking' as DemoView, label: 'Benchmarking', icon: <BarChart3 className="w-4 h-4" />, stage: 8.5, badge: 'new' as const },
-    { view: 'internal' as DemoView, label: 'Internal Ops', icon: <LayoutDashboard className="w-4 h-4" />, stage: 13, badge: 'new' as const },
-    { view: 'testing' as DemoView, label: 'Kai Testing', icon: <Brain className="w-4 h-4" />, stage: 2, badge: 'new' as const },
+    { view: 'datainsights' as DemoView, label: 'Data Insights', icon: <TrendingUp className="w-4 h-4" />, stage: 4 },
+    { view: 'benchmarking' as DemoView, label: 'Benchmarking', icon: <BarChart3 className="w-4 h-4" />, stage: 8.5 },
+    { view: 'internal' as DemoView, label: 'Internal Ops', icon: <LayoutDashboard className="w-4 h-4" />, stage: 13 },
+    { view: 'kaiagent' as DemoView, label: 'Kai Agent', icon: <Bot className="w-4 h-4" />, stage: 2, badge: 'new' as const },
   ];
 
   if (activeView !== 'overview') {
-    const isDarkView = activeView === 'chat' || activeView === 'datainsights' || activeView === 'benchmarking' || activeView === 'internal' || activeView === 'testing';
+    const isDarkView = activeView === 'chat' || activeView === 'datainsights' || activeView === 'benchmarking' || activeView === 'internal' || activeView === 'kaiagent';
     return (
       <div className={`min-h-screen ${isDarkView ? 'bg-slate-900' : 'bg-slate-50'}`}>
         <header className={`${isDarkView ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} border-b sticky top-0 z-50`}>
@@ -304,7 +297,7 @@ export function Demo() {
         {activeView === 'datainsights' && <DemoDataInsights />}
         {activeView === 'benchmarking' && <DemoBenchmarking />}
         {activeView === 'internal' && <DemoInternalDashboard />}
-        {activeView === 'testing' && <DemoKairoTesting />}
+        {activeView === 'kaiagent' && <DemoKaiAgent />}
       </div>
     );
   }
@@ -325,12 +318,6 @@ export function Demo() {
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => setShowFeedbackForm(true)}
-                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors text-sm font-medium"
-              >
-                Give Feedback
-              </button>
-              <button
                 onClick={() => setShowAdminDashboard(true)}
                 className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors text-sm font-medium"
               >
@@ -350,35 +337,178 @@ export function Demo() {
       <main className="max-w-7xl mx-auto px-4 py-8">
         <section className="mb-12">
           <div className="bg-gradient-to-r from-blue-600 to-cyan-500 rounded-2xl p-8 text-white">
-            <div className="max-w-3xl">
-              <h2 className="text-3xl font-bold mb-4">
-                Registration Made Simple
-              </h2>
-              <p className="text-blue-100 text-lg mb-6">
-                Kairo transforms youth sports registration from a painful, complicated process
-                into a seamless conversational experience. Powered by Kai - a complex series of
-                AI agent workflows that comprehend questions in real-time, provide friendly answers,
-                and take actions to complete registration effortlessly.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                {demoButtons.slice(0, 3).map((btn) => (
-                  <button
-                    key={btn.view}
-                    onClick={() => setActiveView(btn.view)}
-                    className="relative flex items-center gap-2 px-5 py-2.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors font-medium backdrop-blur-sm"
-                  >
-                    {btn.badge && (
-                      <span className={`absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px] font-bold uppercase rounded ${
-                        btn.badge === 'new' ? 'bg-emerald-400 text-emerald-900' : 'bg-amber-400 text-amber-900'
-                      }`}>
-                        {btn.badge === 'new' ? 'New' : 'Updated'}
-                      </span>
-                    )}
-                    {btn.icon}
-                    {btn.label}
-                    <Play className="w-3 h-3" />
-                  </button>
-                ))}
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold mb-2">Registration Made Simple</h2>
+              <p className="text-blue-100 text-lg">Powered by Kai AI Agent</p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-4 backdrop-blur-sm">
+                  <MessageCircle className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">Conversational</h3>
+                <p className="text-blue-100 text-sm">Natural language chat that understands parents and guides them through registration</p>
+              </div>
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-4 backdrop-blur-sm">
+                  <Brain className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">Intelligent</h3>
+                <p className="text-blue-100 text-sm">Smart recommendations based on child age, location preferences, and availability</p>
+              </div>
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-4 backdrop-blur-sm">
+                  <Zap className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">Effortless</h3>
+                <p className="text-blue-100 text-sm">Complete registration in minutes while multitasking with the kids</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mb-12">
+          <div className="flex items-center gap-3 mb-6">
+            <h2 className="text-xl font-bold text-white">Why Switch to Kairo?</h2>
+            <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-emerald-400 text-emerald-900">
+              New
+            </span>
+          </div>
+          <div className="grid lg:grid-cols-2 gap-6">
+            <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700 overflow-hidden">
+              <span className="absolute top-3 right-3 px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-emerald-400 text-emerald-900">
+                New
+              </span>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+                  <Rocket className="w-6 h-6 text-emerald-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Seamless Migration</h3>
+                  <p className="text-slate-400 text-sm">We make switching painless and quick</p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-slate-300 font-medium">Single Location Business</span>
+                    <span className="text-emerald-400 font-bold">24-48 hours</span>
+                  </div>
+                  <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div className="h-full w-1/4 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" />
+                  </div>
+                  <p className="text-slate-500 text-xs mt-2">Full data migration, staff training, and go-live</p>
+                </div>
+                <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-slate-300 font-medium">Multi-Location (10-50)</span>
+                    <span className="text-emerald-400 font-bold">1-2 weeks</span>
+                  </div>
+                  <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div className="h-full w-1/2 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" />
+                  </div>
+                  <p className="text-slate-500 text-xs mt-2">Phased rollout with dedicated support</p>
+                </div>
+                <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-slate-300 font-medium">Franchise System (200+)</span>
+                    <span className="text-emerald-400 font-bold">2-4 weeks</span>
+                  </div>
+                  <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div className="h-full w-3/4 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" />
+                  </div>
+                  <p className="text-slate-500 text-xs mt-2">White-glove onboarding with train-the-trainer</p>
+                </div>
+              </div>
+              <div className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-emerald-300 text-sm font-medium">White-Glove Migration Included</p>
+                    <p className="text-emerald-200/70 text-xs">We handle everything: data import, configuration, staff training, and parallel testing</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700 overflow-hidden">
+              <span className="absolute top-3 right-3 px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-emerald-400 text-emerald-900">
+                New
+              </span>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                  <DollarSign className="w-6 h-6 text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Eliminate Software Expenses</h3>
+                  <p className="text-slate-400 text-sm">One platform replaces many tools</p>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                  <div className="flex items-center gap-3">
+                    <XCircle className="w-5 h-5 text-red-400" />
+                    <span className="text-slate-300">Email Marketing Tools</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-500 line-through text-sm">$200-500/mo</span>
+                    <ArrowRight className="w-4 h-4 text-emerald-400" />
+                    <span className="text-emerald-400 font-medium">Included</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                  <div className="flex items-center gap-3">
+                    <XCircle className="w-5 h-5 text-red-400" />
+                    <span className="text-slate-300">Team Communication</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-500 line-through text-sm">$100-300/mo</span>
+                    <ArrowRight className="w-4 h-4 text-emerald-400" />
+                    <span className="text-emerald-400 font-medium">Included</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                  <div className="flex items-center gap-3">
+                    <XCircle className="w-5 h-5 text-red-400" />
+                    <span className="text-slate-300">Scheduling Software</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-500 line-through text-sm">$50-150/mo</span>
+                    <ArrowRight className="w-4 h-4 text-emerald-400" />
+                    <span className="text-emerald-400 font-medium">Included</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                  <div className="flex items-center gap-3">
+                    <XCircle className="w-5 h-5 text-red-400" />
+                    <span className="text-slate-300">Re-enrollment Campaigns</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-500 line-through text-sm">$500+/season</span>
+                    <ArrowRight className="w-4 h-4 text-emerald-400" />
+                    <span className="text-emerald-400 font-medium">Automated</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                  <div className="flex items-center gap-3">
+                    <XCircle className="w-5 h-5 text-red-400" />
+                    <span className="text-slate-300">Marketing Agency Fees</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-500 line-through text-sm">$1,000+/mo</span>
+                    <ArrowRight className="w-4 h-4 text-emerald-400" />
+                    <span className="text-emerald-400 font-medium">Trackable ROI</span>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <RefreshCw className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-blue-300 text-sm font-medium">True Marketing ROI Visibility</p>
+                    <p className="text-blue-200/70 text-xs">No more vague agency reports. See exactly which campaigns drive registrations.</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -393,11 +523,9 @@ export function Demo() {
                 onClick={() => setActiveView(btn.view)}
                 className="relative flex flex-col items-center gap-2 p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-all hover:scale-105 border border-slate-700"
               >
-                {btn.badge && (
-                  <span className={`absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px] font-bold uppercase rounded shadow-lg ${
-                    btn.badge === 'new' ? 'bg-emerald-400 text-emerald-900' : 'bg-amber-400 text-amber-900'
-                  }`}>
-                    {btn.badge === 'new' ? 'New' : 'Updated'}
+                {'badge' in btn && btn.badge && (
+                  <span className="absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px] font-bold uppercase rounded shadow-lg bg-emerald-400 text-emerald-900">
+                    New
                   </span>
                 )}
                 <div className="w-10 h-10 bg-blue-600/20 rounded-lg flex items-center justify-center text-blue-400">
@@ -575,10 +703,6 @@ export function Demo() {
           </div>
         </div>
       </footer>
-
-      {showFeedbackForm && (
-        <FeedbackForm onClose={() => setShowFeedbackForm(false)} />
-      )}
 
       {showAdminDashboard && (
         <FeedbackAdminDashboard onClose={() => setShowAdminDashboard(false)} />
