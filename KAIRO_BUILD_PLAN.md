@@ -1,14 +1,44 @@
 # Kairo Platform - Strategic Build Plan
 
-**Version:** 2.10
-**Last Updated:** January 9, 2026
+**Version:** 2.11
+**Last Updated:** January 22, 2026
 **Current Stage:** Stage 2 COMPLETE | Stage 3 Starting (Payments & Registration Flow)
 
 ---
 
-## Customer Feedback Integration (January 2026)
+## Tiger Tank Feedback Integration (January 12, 2026)
 
-This version incorporates detailed customer feedback received in January 2026, adding significant enhancements to:
+**Meeting:** 25-30 industry veterans from 15 organizations | **Pain Score:** 8.5/10 average
+
+This version incorporates comprehensive feedback from the Tiger Tank session including:
+- **Compliance Requirements** - CAN-SPAM, TCPA, PII storage (CRITICAL for franchise adoption)
+- **Reporting Engine** - Custom reports, printable schedules, staff analytics
+- **Migration Toolkit** - Realistic timelines, training materials, data import wizard
+- **Language Support** - Multi-language + accent variations (Cantonese, Spanish accents)
+- **Private Lesson Handling** - UX for high-volume private lesson businesses
+- **Ongoing Communication** - Expand Kai beyond registration to daily customer support
+
+### Key Validation Metrics
+| Metric | Result |
+|--------|--------|
+| Average Pain Score | 8.5/10 |
+| Would Recommend (if conditions met) | 10/12 (83%) |
+| Willing to Continue Advising | 10/12 (83%) |
+| Cart Abandonment Improvement Threshold | 25-30% to justify switch |
+| Competitive Disadvantage if Not Adopted | "Significant" (majority response) |
+
+### Critical Gaps Identified (Must Address Before Beta)
+1. **Compliance Documentation** - Legal blocker for enterprise/franchise
+2. **Reporting & Data Export** - Printable schedules, custom reports, Excel export
+3. **Complex Payment Workflows** - Custom plans during registration, financial aid integration
+4. **Migration Safety Net** - Credit card preservation, make-up credits, rollback capability
+5. **Private Lesson Complexity** - Filter-first approach for 10+ slot presentations
+
+---
+
+## Previous Customer Feedback (January 2026)
+
+Previous version incorporated detailed customer feedback adding:
 - Coach App (Incident Reports, Curriculum Timer, Smart Scheduling)
 - Payments (3 Payment Plan Types, Fees, Apple Pay, Biometric Login)
 - Business Intelligence (Proactive Chat, Churn Prevention)
@@ -18,15 +48,40 @@ This version incorporates detailed customer feedback received in January 2026, a
 
 ## Project Timeline & Milestones
 
+### Revised Timeline (Post-Tiger Tank)
+
 | Milestone | Target Date | Status |
 |-----------|-------------|--------|
 | Stage 1: Foundation | December 2, 2025 | COMPLETE |
 | Stage 2: Kai Intelligence (Core) | January 9, 2026 | COMPLETE |
-| Stage 3: Payments & Registration Flow | January 2026 | IN PROGRESS |
-| Stage 2B: Voice & Multi-Language | TBD | PLANNED |
-| Entrepreneur Feedback Session | After January 8, 2026 | SCHEDULED |
-| Full Platform Capability | February 2026 | TARGET |
-| Adjustments & Enhancements | March 2026 | TARGET |
+| Tiger Tank Feedback Session | January 12, 2026 | COMPLETE |
+| Stage 3: Payments & Registration Flow | January-February 2026 | IN PROGRESS |
+| Stage 2B: Voice & Multi-Language | March 2026 | PLANNED |
+| V1 Beta Ready (5 pilot customers) | March 15, 2026 | TARGET |
+| V2 with Reporting + Staff Scheduling | May 2026 | TARGET |
+| V3 with Compliance Package | August 2026 | TARGET |
+| Franchise Pilot Conversations | September 2026 | TARGET |
+| Enterprise Ready (V4) | November 2026 | TARGET |
+
+### Realistic Migration Timelines (From Tiger Tank Survey)
+
+**IMPORTANT:** Do NOT promise "30-day" or similar quick timelines. Industry veterans have been burned before.
+
+| Business Type | Realistic Timeline | Notes |
+|---------------|-------------------|-------|
+| Single Location | 1-2 months | Full data migration, staff training, go-live |
+| Multi-Unit (3-10 locations) | 3-6 months | Phased rollout with dedicated support |
+| Multi-Unit (10+ locations) | 6-12 months | Complex coordination, parallel running |
+| Franchise Systems (100+ locations) | 12+ months | Enterprise approval cycles, white-glove support |
+
+### Wave Release Strategy
+
+| Version | Target | Features |
+|---------|--------|----------|
+| V1 | March 2026 | Registration AI + basic scheduling + analytics dashboard |
+| V2 | May 2026 | Staff scheduling + reporting engine + payment flexibility |
+| V3 | August 2026 | Compliance package + integrations + ongoing communication AI |
+| V4 | November 2026 | Skill tracking + churn prediction + AI self-improvement |
 
 ---
 
@@ -186,6 +241,70 @@ Business owners have been burned by platform transitions. Soccer Shots took 3 ye
 - [ ] Success metrics and checkpoints during migration
 
 **Messaging:** "We understand that platform transition has been painful everywhere. We've designed KAIRO specifically to make switching easy and risk-free."
+
+### Migration Toolkit (NEW - Tiger Tank Critical)
+**Priority:** CRITICAL - Major barrier to adoption identified in every interview
+**Status:** NOT YET BUILT - Must be ready for V1 Beta
+
+**Tiger Tank Insight:** Scott Monson (5,000 families) expressed major concern about data migration. Nathanael Najarian highlighted credit card re-entry burden (4,000 families).
+
+#### Pre-Migration Phase
+
+**Migration Assessment Tool:**
+- [ ] Platform compatibility checker (iClass Pro, NBC Sports Engine, TeamSnap)
+- [ ] Data volume estimator
+- [ ] Timeline generator based on complexity
+- [ ] Risk assessment report
+- [ ] Customized migration plan generator
+
+**Training Materials Library:**
+- [ ] Video training library (customer-facing: 5-min overview)
+- [ ] Video training library (staff-facing: 15-min deep dive)
+- [ ] Operations manual with screenshots
+- [ ] Quick reference cards for common tasks
+- [ ] FAQ document ("Why are we switching?")
+- [ ] Troubleshooting guide
+
+**Communication Templates:**
+- [ ] Pre-written customer announcement emails
+- [ ] Social media announcement posts
+- [ ] Parent FAQ template
+- [ ] Staff FAQ template
+- [ ] "How to update your payment info" guide
+
+#### During Migration
+
+**Data Import Wizard:**
+- [ ] CSV import with visual field mapping
+- [ ] Validation checks before commit (highlight errors)
+- [ ] Preview of imported data before finalizing
+- [ ] Rollback capability if issues detected
+- [ ] Progress tracking with estimated completion time
+- [ ] Support for: iClass Pro, NBC Sports Engine, TeamSnap, generic CSV
+
+**Critical Data Preservation:**
+- [ ] Credit card handling (investigate Stripe customer import API)
+- [ ] If re-entry needed: Branded self-service card update flow
+- [ ] Make-up lesson credits preservation (swim schools)
+- [ ] Registration history retention
+- [ ] Communication history import (optional)
+
+**Parallel Running Support:**
+- [ ] Side-by-side comparison dashboard
+- [ ] Data sync validation tools
+- [ ] Conversion rate comparison (old vs new)
+- [ ] Cart abandonment comparison
+- [ ] Support ticket volume comparison
+
+#### Post-Migration
+
+**90-Day Success Program:**
+- [ ] Week 1-4: Weekly check-in calls
+- [ ] Week 5-12: Bi-weekly check-in calls
+- [ ] Issue escalation hotline
+- [ ] Feature request prioritization for beta customers
+- [ ] Success metrics dashboard
+- [ ] Satisfaction survey at 30/60/90 days
 
 | Source | Priority | Status | Notes |
 |--------|----------|--------|-------|
@@ -372,13 +491,15 @@ Research required to inform Kairo's tiered pricing model.
 
 ---
 
-### Stage 2B: Voice & Multi-Language (PLANNED - Future)
+### Stage 2B: Voice & Multi-Language (PLANNED - Tiger Tank Priority)
 **Status:** PLANNED
-**Priority:** Medium - After core payment flow is complete
+**Priority:** HIGH - Specific customer requests from Tiger Tank
+**Target:** March 2026
 
 **Goals:**
 - Voice input capability for hands-free registration
-- Multi-language support starting with Spanish
+- Multi-language support with cultural adaptation
+- Accent variations for market-specific engagement
 
 #### 2B.1 Voice Registration
 - [ ] Web Speech API integration
@@ -387,16 +508,32 @@ Research required to inform Kairo's tiered pricing model.
 - [ ] Text-to-speech responses
 - [ ] Fallback to text input
 - [ ] Visual waveform feedback
+- [ ] Phone system integration option (IVR hybrid: "Press 1 for Kai, Press 2 for office")
 
-#### 2B.2 Multi-Language
+#### 2B.2 Multi-Language Support (Tiger Tank Priority)
+**Tiger Tank Insight:** Call data analysis identified Cantonese as needed language
+
 - [ ] English (primary)
-- [ ] Spanish (secondary)
-- [ ] Language detection
-- [ ] Translation layer
+- [ ] Spanish (secondary) - HIGH PRIORITY
+- [ ] Cantonese (tertiary) - Identified from call data analysis
+- [ ] Language detection (automatic)
+- [ ] Translation layer with cultural adaptation
+- [ ] Language preference saved to family profile
+
+#### 2B.3 Accent Variations (Tiger Tank Request)
+**Customer Request:** English with Spanish accent for Miami market, British for soccer
+
+- [ ] Standard American English (default)
+- [ ] British English accent (ideal for soccer/football programs)
+- [ ] Latin American Spanish accent (ideal for Miami, Southwest markets)
+- [ ] Voice speed adjustment
+- [ ] Voice gender selection
+- [ ] Preview before saving preference
 
 **Files to Create:**
 - `src/hooks/useVoiceInput.ts` - Voice capture hook
 - `src/components/registration/VoiceIndicator.tsx` - Voice recording UI feedback
+- `src/services/ai/languageService.ts` - Language detection and translation
 
 ---
 
@@ -588,6 +725,40 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Dashboard showing conversion lift from interventions
 - [ ] Manual override for popup placement
 - [ ] Popup frequency controls (don't annoy users)
+
+#### 4.2.5 Reporting Engine (NEW - Tiger Tank Critical)
+**Priority:** HIGH - Mentioned by 7/12 reviewers as deal-breaker
+**Tiger Tank Insight:** Operators need printable schedules (poolside/fieldside), custom reports, Excel export
+
+**Custom Report Builder:**
+- [ ] Drag-and-drop report designer
+- [ ] Pre-built report templates (enrollment, revenue, attendance)
+- [ ] Custom field selection
+- [ ] Grouping and aggregation options
+- [ ] Date range filtering
+- [ ] Multi-format export (Excel, PDF, CSV)
+
+**Printable Schedules (Critical for Swim/Sports):**
+- [ ] Single-page daily schedule view
+- [ ] Print-optimized layouts (no wasted space)
+- [ ] Student names visible for attendance
+- [ ] Skill level indicators (for swim schools)
+- [ ] Make-up student highlighting
+- [ ] TV/display mode for fieldside/poolside monitors
+
+**Staff Performance Analytics:**
+- [ ] Instructor retention metrics (how long students stay with each coach)
+- [ ] Average skill progression time per instructor
+- [ ] Coach utilization rates
+- [ ] Parent satisfaction by coach
+- [ ] Schedule adherence metrics
+
+**Financial Reporting:**
+- [ ] Revenue by program/location/time period
+- [ ] Payment method breakdown
+- [ ] Outstanding balance reports
+- [ ] Refund and credit tracking
+- [ ] QuickBooks reconciliation reports (revenue timing alignment)
 
 #### 4.3 Intelligent Churn Prevention & Retention (Priority: HIGH) - ENHANCED Jan 2026
 **Customer Request:** Automations that learn from experience and automatically help reduce churn with auto-initiated retention campaigns
@@ -1236,9 +1407,39 @@ Registration Form → Payment → Confirmed Registration → Return User
 
 ---
 
-### Stage 11: Data & Compliance (PLANNED)
+### Stage 11: Data & Compliance (PLANNED - CRITICAL PRIORITY)
 **Goals:** COPPA/GDPR compliance, data portability, enterprise-grade data security
-**Updated:** January 2026 with enhanced compliance details
+**Updated:** January 22, 2026 with Tiger Tank feedback
+**Priority:** CRITICAL - Legal blocker for franchise adoption (Kevin Stumpf feedback)
+
+**Tiger Tank Insight:** Kevin Stumpf (President, Stronger Youth Brands - 1000+ locations) identified compliance as deal-breaker. Cannot proceed without CAN-SPAM, TCPA, and PII documentation.
+
+#### 11.0 Communication Compliance (NEW - Tiger Tank Critical)
+**Required for:** Any platform sending marketing communications
+
+**CAN-SPAM Compliance:**
+- [ ] Valid physical postal address in all emails
+- [ ] Clear "From" identification
+- [ ] Accurate subject lines (no deception)
+- [ ] Opt-out mechanism that works within 10 days
+- [ ] Honor opt-out requests promptly
+- [ ] Monitor third-party email activities
+
+**TCPA Compliance (Telephone Consumer Protection Act):**
+- [ ] Prior express written consent for marketing calls/texts
+- [ ] Clear consent language at point of collection
+- [ ] Opt-out mechanism for SMS (reply STOP)
+- [ ] Do-not-call list maintenance
+- [ ] Time-of-day calling restrictions
+- [ ] Caller ID requirements
+
+**PII Storage & Control:**
+- [ ] Data inventory documentation (what PII, where stored, who accesses)
+- [ ] Access controls and audit logging
+- [ ] Encryption standards documentation
+- [ ] Data retention and deletion policies
+- [ ] Breach notification procedures
+- [ ] Third-party data sharing agreements
 
 #### 11.1 COPPA Compliance (Children's Online Privacy Protection Act)
 **Required for:** Any platform collecting data from children under 13
@@ -2258,6 +2459,53 @@ import { supabase } from './lib/supabase'
   - Frontend temp ID generation: NOT YET IMPLEMENTED
   - Registration form component: NOT YET CREATED
   - Next steps: Build registration flow infrastructure
+
+### January 22, 2026 - Tiger Tank Feedback Analysis Complete
+- **Build Plan Version:** Updated to 2.11
+- **Source:** 12 survey responses + meeting transcript analysis
+
+**Key Updates Made:**
+1. **Compliance Section Added (Stage 11.0):**
+   - CAN-SPAM, TCPA, PII requirements documented
+   - Identified as blocker for franchise adoption (Kevin Stumpf)
+
+2. **Migration Toolkit Added:**
+   - Pre-migration assessment tools
+   - Training materials library
+   - Communication templates
+   - Data import wizard specifications
+   - 90-day success program
+
+3. **Reporting Engine Added (Stage 4.2.5):**
+   - Custom report builder
+   - Printable schedules (poolside/fieldside)
+   - Staff performance analytics
+   - Financial reporting with QuickBooks alignment
+
+4. **Language Support Updated (Stage 2B):**
+   - Cantonese added (identified from call data)
+   - Accent variations (British, Latin American Spanish)
+   - Phone system integration (IVR hybrid)
+
+5. **Timeline Revised:**
+   - Realistic migration timelines added (1-2 months to 12+ months)
+   - Wave release strategy (V1-V4)
+   - Removed "30-day" promises per JoBen's directive
+
+**Tiger Tank Participants Who Offered Continued Advisory:**
+- Ramez Fawaz (Soccer Shots Orange County)
+- Scott Monson & Jessi Cortes (AquaDuks)
+- Zack Whittaker (Sauce N Summer Hockey)
+- Matt Kurowski (i9 Sports)
+- Kevin Stumpf (Stronger Youth Brands)
+- Lynn Perez & Barry Saunders (SoCal Reds FC)
+- Nathanael Najarian (Watersafe Swim School)
+- Joel Newman (Soccer Shots PDX)
+- Nick Curl (Propel Swim Academy)
+- Pedro Lopez (Pete's Sports Academy)
+- Lena Bishara (Soccer Shots)
+
+---
 
 ### January 9, 2026 - Tiger Tank Meeting & Demo Updates
 

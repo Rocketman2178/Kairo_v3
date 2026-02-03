@@ -14,7 +14,6 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
   const [showFallbackForm, setShowFallbackForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const lastAssistantMessageRef = useRef<string | null>(null);
   const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const {
@@ -52,40 +51,36 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
   useEffect(() => {
     if (messages.length === 0) return;
 
-    const lastMessage = messages[messages.length - 1];
-
-    if (lastMessage.role === 'assistant' && lastMessage.id !== lastAssistantMessageRef.current) {
-      lastAssistantMessageRef.current = lastMessage.id;
-
-      requestAnimationFrame(() => {
-        const messageEl = messageRefs.current.get(lastMessage.id);
-        if (messageEl && messagesContainerRef.current) {
-          const containerRect = messagesContainerRef.current.getBoundingClientRect();
-          const messageRect = messageEl.getBoundingClientRect();
-          const scrollTop = messagesContainerRef.current.scrollTop + (messageRect.top - containerRect.top) - 16;
-
-          messagesContainerRef.current.scrollTo({
-            top: scrollTop,
-            behavior: 'smooth'
-          });
+    const scrollToBottom = () => {
+      if (messagesContainerRef.current) {
+        const scrollContainer = messagesContainerRef.current.querySelector('.overflow-y-auto');
+        if (scrollContainer) {
+          scrollContainer.scrollTop = scrollContainer.scrollHeight;
         }
-      });
-    } else if (lastMessage.role === 'user') {
-      requestAnimationFrame(() => {
-        const messageEl = messageRefs.current.get(lastMessage.id);
-        if (messageEl && messagesContainerRef.current) {
-          const containerRect = messagesContainerRef.current.getBoundingClientRect();
-          const messageRect = messageEl.getBoundingClientRect();
-          const scrollTop = messagesContainerRef.current.scrollTop + (messageRect.top - containerRect.top) - 16;
+      }
+    };
 
-          messagesContainerRef.current.scrollTo({
-            top: scrollTop,
-            behavior: 'smooth'
-          });
-        }
-      });
-    }
+    requestAnimationFrame(() => {
+      setTimeout(scrollToBottom, 100);
+    });
   }, [messages]);
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const scrollToBottom = () => {
+      if (messagesContainerRef.current) {
+        const scrollContainer = messagesContainerRef.current.querySelector('.overflow-y-auto');
+        if (scrollContainer) {
+          scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
+      }
+    };
+
+    requestAnimationFrame(() => {
+      setTimeout(scrollToBottom, 100);
+    });
+  }, [isLoading]);
 
   const hasAddedInitialMessage = useRef(false);
 

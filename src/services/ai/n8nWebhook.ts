@@ -88,6 +88,13 @@ export async function sendMessageToN8N(
     console.log('URL:', N8N_WEBHOOK_URL);
     console.log('Message:', request.message);
     console.log('Context:', JSON.stringify(payload.context, null, 2));
+    console.log('CRITICAL - Extracted fields being sent:');
+    console.log('  childName:', payload.context.childName);
+    console.log('  childAge:', payload.context.childAge);
+    console.log('  preferredDays:', payload.context.preferredDays);
+    console.log('  preferredProgram:', payload.context.preferredProgram);
+    console.log('  preferredTime:', payload.context.preferredTime);
+    console.log('  preferredTimeOfDay:', payload.context.preferredTimeOfDay);
     console.log('==============================');
 
     const response = await fetch(N8N_WEBHOOK_URL, {

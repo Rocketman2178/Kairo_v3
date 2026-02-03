@@ -109,14 +109,34 @@ Deno.serve(async (req: Request) => {
     }
 
     const conversationHistory = context.messages || [];
+    console.log('=== BUILDING SYSTEM PROMPT ===');
+    console.log('Context being passed to buildSystemContext:', JSON.stringify(context, null, 2));
     const systemContext = await buildSystemContext(context, conversationHistory);
+    console.log('System prompt first 500 chars:', systemContext.substring(0, 500));
+    console.log('==============================');
 
     const geminiResponse = await callGeminiAPI(systemContext, conversationHistory, message);
 
-    console.log('Gemini response:', JSON.stringify(geminiResponse, null, 2));
+    console.log('=== GEMINI FULL RESPONSE ===');
+    console.log(JSON.stringify(geminiResponse, null, 2));
+    console.log('============================');
 
     const extractedData = geminiResponse.extractedData || {};
+    console.log('=== EXTRACTING DATA FROM GEMINI ===');
+    console.log('ExtractedData from Gemini:', JSON.stringify(extractedData, null, 2));
+    console.log('Current context before merge:', JSON.stringify(context, null, 2));
+
     const updatedContext = { ...context, ...extractedData };
+    console.log('Updated context after merge:', JSON.stringify(updatedContext, null, 2));
+    console.log('Updated context fields:', {
+      childName: updatedContext.childName,
+      childAge: updatedContext.childAge,
+      preferredDays: updatedContext.preferredDays,
+      preferredProgram: updatedContext.preferredProgram,
+      preferredTime: updatedContext.preferredTime,
+      preferredTimeOfDay: updatedContext.preferredTimeOfDay,
+    });
+    console.log('===================================');
 
     if (context.selectedSessionId) {
       console.log('User selected specific session:', context.selectedSessionId);
@@ -339,23 +359,30 @@ ${conversationSummary}
   systemPrompt += `
 
 ## CRITICAL: Data Extraction Rules
-ALWAYS extract structured data from the ENTIRE CONVERSATION, including ALL previous messages!
+ALWAYS extract ALL structured data from the ENTIRE CONVERSATION!
 
-If a parent mentioned "Monday night basketball at Oakwood Recreation Center" in message #1, then in message #2 just said "Johnny age 9", you MUST extract:
-- From message #1: preferredDays: [1], preferredTimeOfDay: "evening", preferredProgram: "basketball", preferredLocation: "Oakwood Recreation Center"
-- From message #2: childName: "Johnny", childAge: 9
+**YOU MUST INCLUDE ALL EXTRACTED DATA IN EVERY RESPONSE**, even if it was extracted in previous turns!
 
-DO NOT ask about information the parent has ALREADY provided in ANY message!
+Example conversation:
+- Message #1: "My five-year-old wants soccer on Monday mornings"
+  → Extract: childAge: 5, preferredDays: [1], preferredTimeOfDay: "morning", preferredProgram: "soccer"
+- Message #2: "His name is Johnny"
+  → Extract: childName: "Johnny", childAge: 5, preferredDays: [1], preferredTimeOfDay: "morning", preferredProgram: "soccer"
+- Message #3: "And also Saturday mornings"
+  → Extract: childName: "Johnny", childAge: 5, preferredDays: [1, 6], preferredTimeOfDay: "morning", preferredProgram: "soccer"
 
+**ALWAYS RETURN extractedData WITH ALL KNOWN VALUES!** The system needs this data to search for sessions.
+
+Response Format:
 {
   "message": "Your conversational response here",
   "extractedData": {
-    "childName": "extracted name or OMIT if already stored",
-    "childAge": extracted_number or OMIT if already stored,
-    "preferredDays": [array of day numbers 0-6] or OMIT if already stored,
-    "preferredTimeOfDay": "morning|afternoon|evening|any" or OMIT if already stored,
-    "preferredProgram": "sport name" or OMIT if already stored,
-    "preferredLocation": "location name" or OMIT if already stored
+    "childName": "name if known, otherwise OMIT this key entirely",
+    "childAge": number if known, otherwise OMIT this key entirely,
+    "preferredDays": [array of day numbers 0-6] if known, otherwise OMIT this key entirely,
+    "preferredTimeOfDay": "morning|afternoon|evening|any" if known, otherwise OMIT this key entirely,
+    "preferredProgram": "sport name" if known, otherwise OMIT this key entirely,
+    "preferredLocation": "location name" if known, otherwise OMIT this key entirely
   },
   "nextState": "greeting|collecting_child_info|collecting_preferences|showing_recommendations",
   "quickReplies": ["suggestion 1", "suggestion 2"]

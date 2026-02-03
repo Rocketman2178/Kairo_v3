@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import type { ConversationContext, ConversationState, Message, RegistrationRedirect } from '../types/conversation';
 import { sendMessageToN8N, isN8NConfigured } from '../services/ai/n8nWebhook';
@@ -95,9 +95,34 @@ export function useConversation(options: UseConversationOptions) {
   const [isLoading, setIsLoading] = useState(false);
   const [registrationRedirect, setRegistrationRedirect] = useState<RegistrationRedirect | null>(null);
 
+  const contextRef = useRef(context);
+  const messagesRef = useRef(messages);
+
+  useEffect(() => {
+    contextRef.current = context;
+  }, [context]);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
   useEffect(() => {
     initializeConversation();
   }, [organizationId, familyId]);
+
+  useEffect(() => {
+    console.log('=== CONTEXT STATE CHANGED ===');
+    console.log('New context state:', JSON.stringify(context, null, 2));
+    console.log('Context fields:', {
+      childName: context.childName,
+      childAge: context.childAge,
+      preferredDays: context.preferredDays,
+      preferredProgram: context.preferredProgram,
+      preferredTime: context.preferredTime,
+      preferredTimeOfDay: context.preferredTimeOfDay,
+    });
+    console.log('==============================');
+  }, [context]);
 
   const initializeConversation = useCallback(async () => {
     try {
@@ -144,6 +169,13 @@ export function useConversation(options: UseConversationOptions) {
         return null;
       }
 
+      const currentContext = contextRef.current;
+      const currentMessages = messagesRef.current;
+
+      console.log('=== SEND MESSAGE CALLED ===');
+      console.log('Current context from ref:', JSON.stringify(currentContext, null, 2));
+      console.log('Context override:', JSON.stringify(contextOverride, null, 2));
+
       setIsLoading(true);
 
       try {
@@ -167,22 +199,38 @@ export function useConversation(options: UseConversationOptions) {
           conversation_state: state,
         });
 
-        const messageHistory = messages.map((m) => ({
-          role: m.role,
-          content: m.content,
-        }));
+        const messageHistory = [
+          ...currentMessages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
+          {
+            role: 'user' as const,
+            content: userMessage,
+          }
+        ];
 
         const updatedContext = {
-          ...context,
+          ...currentContext,
           ...contextOverride,
           messages: messageHistory,
         };
+
+        console.log('Context after merge with override:', JSON.stringify(updatedContext, null, 2));
 
         const isUsingN8N = isN8NConfigured();
         console.log('=== SENDING TO N8N WEBHOOK ===');
         console.log('N8N Configured:', isUsingN8N);
         console.log('Message:', userMessage);
         console.log('Context being sent:', JSON.stringify(updatedContext, null, 2));
+        console.log('Context extracted fields:', {
+          childName: updatedContext.childName,
+          childAge: updatedContext.childAge,
+          preferredDays: updatedContext.preferredDays,
+          preferredProgram: updatedContext.preferredProgram,
+          preferredTime: updatedContext.preferredTime,
+          preferredTimeOfDay: updatedContext.preferredTimeOfDay,
+        });
         console.log('Message History Count:', messageHistory.length);
         console.log('==============================');
 
@@ -204,6 +252,7 @@ export function useConversation(options: UseConversationOptions) {
         console.log('============================');
 
         if (response.success && response.response) {
+          console.log('=== BUILDING NEW CONTEXT ===');
           const aiMsg: Message = {
             id: (Date.now() + 1).toString(),
             role: 'assistant',
@@ -223,6 +272,48 @@ export function useConversation(options: UseConversationOptions) {
           const newState = response.response.nextState;
           setState(newState);
 
+          const extractedData = response.response.extractedData || {};
+          console.log('=== EXTRACTED DATA FROM AI ===');
+          console.log('ExtractedData from response:', JSON.stringify(extractedData, null, 2));
+          console.log('Context before extraction:', JSON.stringify(updatedContext, null, 2));
+
+          const newContext: ConversationContext = {
+            ...updatedContext,
+            currentState: newState,
+          };
+
+          if (extractedData.childName !== undefined) {
+            newContext.childName = String(extractedData.childName);
+            console.log('Set childName:', newContext.childName);
+          }
+          if (extractedData.childAge !== undefined) {
+            newContext.childAge = Number(extractedData.childAge);
+            console.log('Set childAge:', newContext.childAge);
+          }
+          if (extractedData.preferredDays !== undefined) {
+            if (Array.isArray(extractedData.preferredDays)) {
+              newContext.preferredDays = extractedData.preferredDays.map(d => Number(d));
+            } else {
+              newContext.preferredDays = extractedData.preferredDays as number[];
+            }
+            console.log('Set preferredDays:', newContext.preferredDays);
+          }
+          if (extractedData.preferredTime !== undefined) {
+            newContext.preferredTime = String(extractedData.preferredTime);
+            console.log('Set preferredTime:', newContext.preferredTime);
+          }
+          if (extractedData.preferredTimeOfDay !== undefined) {
+            newContext.preferredTimeOfDay = String(extractedData.preferredTimeOfDay);
+            console.log('Set preferredTimeOfDay:', newContext.preferredTimeOfDay);
+          }
+          if (extractedData.preferredProgram !== undefined) {
+            newContext.preferredProgram = String(extractedData.preferredProgram);
+            console.log('Set preferredProgram:', newContext.preferredProgram);
+          }
+
+          console.log('New context after extraction:', JSON.stringify(newContext, null, 2));
+          console.log('Setting context state with new values...');
+
           saveToKairoChat({
             conversation_id: conversationId,
             organization_id: organizationId,
@@ -231,7 +322,7 @@ export function useConversation(options: UseConversationOptions) {
             temp_child_id: tempIds.tempChildId,
             role: 'assistant',
             content: response.response.message,
-            extracted_data: response.response.extractedData || {},
+            extracted_data: extractedData,
             metadata: {
               quickReplies: response.response.quickReplies,
               recommendations: response.response.recommendations,
@@ -241,32 +332,6 @@ export function useConversation(options: UseConversationOptions) {
             },
             conversation_state: newState,
           });
-
-          const newContext: ConversationContext = {
-            ...context,
-            currentState: newState,
-          };
-
-          if (response.response.extractedData) {
-            if (response.response.extractedData.childName) {
-              newContext.childName = response.response.extractedData.childName;
-            }
-            if (response.response.extractedData.childAge) {
-              newContext.childAge = response.response.extractedData.childAge;
-            }
-            if (response.response.extractedData.preferredDays) {
-              newContext.preferredDays = response.response.extractedData.preferredDays;
-            }
-            if (response.response.extractedData.preferredTime) {
-              newContext.preferredTime = response.response.extractedData.preferredTime;
-            }
-            if (response.response.extractedData.preferredTimeOfDay) {
-              newContext.preferredTimeOfDay = response.response.extractedData.preferredTimeOfDay;
-            }
-            if (response.response.extractedData.preferredProgram) {
-              newContext.preferredProgram = response.response.extractedData.preferredProgram;
-            }
-          }
 
           if (response.response.alternatives && response.response.alternatives.length > 0) {
             newContext.storedAlternatives = response.response.alternatives;
@@ -287,7 +352,7 @@ export function useConversation(options: UseConversationOptions) {
             .update({
               state: newState,
               context: newContext as any,
-              messages: [...messages, userMsg, aiMsg] as any,
+              messages: [...currentMessages, userMsg, aiMsg] as any,
               updated_at: new Date().toISOString(),
             })
             .eq('id', conversationId);
@@ -319,7 +384,7 @@ export function useConversation(options: UseConversationOptions) {
         return null;
       }
     },
-    [conversationId, context, messages, organizationId, familyId, tempIds, state, onError, onFallbackToForm, onRegistrationRedirect]
+    [conversationId, organizationId, familyId, tempIds, state, onError, onFallbackToForm, onRegistrationRedirect]
   );
 
   const addSystemMessage = useCallback((content: string) => {

@@ -49,58 +49,76 @@ const stages: Stage[] = [
   {
     id: 2,
     name: 'Kai Intelligence',
-    status: 'in_progress',
+    status: 'completed',
     icon: <MessageCircle className="w-5 h-5" />,
-    description: 'Conversational AI registration with 99% accuracy target',
-    features: ['AI chat with Kai', 'Smart recommendations', 'Waitlist prevention', 'Voice input'],
+    description: 'Conversational AI registration with 99% accuracy (14/14 tests passed)',
+    features: ['AI chat with Kai', 'Smart recommendations', 'Waitlist prevention', 'Sub-2s response'],
     tigerTank: [
       'Register children via AI conversation',
       'Receive smart class recommendations',
       'Get alternative suggestions when classes are full',
-      'Use voice input for hands-free registration'
+      'Experience sub-2-second AI response times'
     ]
+  },
+  {
+    id: 2.5,
+    name: 'Voice & Languages',
+    status: 'planned',
+    icon: <Mic className="w-5 h-5" />,
+    description: 'Multi-language support with accent variations',
+    features: ['Voice input', 'Spanish', 'Cantonese', 'Accent options'],
+    tigerTank: [
+      'Use voice input for hands-free registration',
+      'Register in Spanish or Cantonese',
+      'Choose voice accent (British, Latin American)',
+      'Phone system integration (IVR hybrid)'
+    ],
+    badge: 'new'
   },
   {
     id: 3,
     name: 'Payments & Retention',
-    status: 'planned',
+    status: 'in_progress',
     icon: <CreditCard className="w-5 h-5" />,
-    description: 'Complete payment processing and cart recovery',
-    features: ['Stripe integration', 'Apple/Google Pay', 'Payment plans', 'Cart recovery'],
+    description: 'Complete payment processing with custom payment plans',
+    features: ['Stripe integration', 'Apple/Google Pay', 'Custom plans', 'Financial aid'],
     tigerTank: [
       'Accept payments via Stripe (cards, Apple Pay, Google Pay)',
-      'Offer payment plans to families',
-      'Automatically recover abandoned carts',
-      'Process refunds and issue credits'
-    ]
+      'Create custom payment plans during registration',
+      'Apply financial aid within enrollment flow',
+      'Automatically recover abandoned carts (25-30% improvement target)'
+    ],
+    badge: 'improved'
   },
   {
     id: 4,
     name: 'Business Intelligence',
     status: 'planned',
     icon: <BarChart3 className="w-5 h-5" />,
-    description: 'Analytics, reporting, and predictive insights',
-    features: ['Conversion funnel', 'Revenue forecasting', 'Churn prediction', 'Drop-off analysis'],
+    description: 'Analytics, reporting, and printable schedules',
+    features: ['Custom reports', 'Printable schedules', 'Excel export', 'Churn prediction'],
     tigerTank: [
-      'View registration conversion funnel',
-      'Analyze revenue trends and forecasts',
-      'Identify at-risk families before they churn',
-      'See where parents drop off during registration'
-    ]
+      'Build custom reports with drag-and-drop',
+      'Print poolside/fieldside schedules',
+      'Export to Excel, PDF, CSV',
+      'Track staff performance and instructor retention'
+    ],
+    badge: 'improved'
   },
   {
     id: 5,
     name: 'Staff & Coach Tools',
     status: 'planned',
     icon: <Users className="w-5 h-5" />,
-    description: 'Coach mobile app with messaging and attendance',
-    features: ['In-company messaging', 'Parent video updates', 'Mobile attendance', 'Curriculum library'],
+    description: 'Coach mobile app, staff scheduling, and internal messaging',
+    features: ['Staff scheduling', 'In-company messaging', 'Time-off requests', 'Mobile attendance'],
     tigerTank: [
-      'Coaches take attendance on mobile (large touch targets)',
-      'Send video updates to parents from class',
-      'Message team via location and company channels',
-      'Access lesson plans and curriculum'
-    ]
+      'Schedule staff, refs, scorekeepers, and photographers',
+      'Replace Slack/Connecteam with built-in team chat',
+      'Manage time-off requests with conflict detection',
+      'Coaches take attendance on mobile (large touch targets)'
+    ],
+    badge: 'improved'
   },
   {
     id: 6,
@@ -159,6 +177,21 @@ const stages: Stage[] = [
     ]
   },
   {
+    id: 8.6,
+    name: 'Migration Toolkit',
+    status: 'planned',
+    icon: <RefreshCw className="w-5 h-5" />,
+    description: 'Complete data migration with training materials and parallel running',
+    features: ['Data import wizard', 'Training videos', 'Parallel testing', '90-day support'],
+    tigerTank: [
+      'Import from iClass Pro, NBC Sports Engine, TeamSnap',
+      'Access video training library for staff and customers',
+      'Run old and new systems in parallel for comparison',
+      'Get dedicated 90-day success program support'
+    ],
+    badge: 'new'
+  },
+  {
     id: 9,
     name: 'Marketing Automation',
     status: 'planned',
@@ -191,14 +224,15 @@ const stages: Stage[] = [
     name: 'Data & Compliance',
     status: 'planned',
     icon: <Shield className="w-5 h-5" />,
-    description: 'COPPA/GDPR compliance and data portability',
-    features: ['COPPA compliance', 'GDPR tools', 'Data export', 'Consent management'],
+    description: 'CAN-SPAM, TCPA, COPPA/GDPR compliance and data portability',
+    features: ['CAN-SPAM/TCPA', 'COPPA compliance', 'PII controls', 'Data export'],
     tigerTank: [
+      'Full CAN-SPAM and TCPA compliance for marketing',
+      'Documented PII storage and access controls',
       'Ensure COPPA compliance for child data',
-      'Handle GDPR data requests automatically',
-      'Export all family and registration data',
-      'Manage consent and privacy preferences'
-    ]
+      'Export all family and registration data on demand'
+    ],
+    badge: 'improved'
   },
   {
     id: 12,
@@ -264,7 +298,7 @@ export function Demo() {
     { view: 'datainsights' as DemoView, label: 'Data Insights', icon: <TrendingUp className="w-4 h-4" />, stage: 4 },
     { view: 'benchmarking' as DemoView, label: 'Benchmarking', icon: <BarChart3 className="w-4 h-4" />, stage: 8.5 },
     { view: 'internal' as DemoView, label: 'Internal Ops', icon: <LayoutDashboard className="w-4 h-4" />, stage: 13 },
-    { view: 'kaiagent' as DemoView, label: 'Kai Agent', icon: <Bot className="w-4 h-4" />, stage: 2, badge: 'new' as const },
+    { view: 'kaiagent' as DemoView, label: 'Kai Agent', icon: <Bot className="w-4 h-4" />, stage: 2 },
   ];
 
   if (activeView !== 'overview') {
@@ -370,54 +404,54 @@ export function Demo() {
         <section className="mb-12">
           <div className="flex items-center gap-3 mb-6">
             <h2 className="text-xl font-bold text-white">Why Switch to Kairo?</h2>
-            <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-emerald-400 text-emerald-900">
-              New
+            <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-blue-400 text-blue-900">
+              Tiger Tank Validated
             </span>
           </div>
           <div className="grid lg:grid-cols-2 gap-6">
             <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700 overflow-hidden">
-              <span className="absolute top-3 right-3 px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-emerald-400 text-emerald-900">
-                New
+              <span className="absolute top-3 right-3 px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-amber-400 text-amber-900">
+                Updated
               </span>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center">
                   <Rocket className="w-6 h-6 text-emerald-400" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Seamless Migration</h3>
-                  <p className="text-slate-400 text-sm">We make switching painless and quick</p>
+                  <h3 className="text-xl font-bold text-white">Realistic Migration Timeline</h3>
+                  <p className="text-slate-400 text-sm">Honest timelines based on industry feedback</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-slate-300 font-medium">Single Location Business</span>
-                    <span className="text-emerald-400 font-bold">24-48 hours</span>
+                    <span className="text-emerald-400 font-bold">1-2 months</span>
                   </div>
                   <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
                     <div className="h-full w-1/4 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" />
                   </div>
-                  <p className="text-slate-500 text-xs mt-2">Full data migration, staff training, and go-live</p>
+                  <p className="text-slate-500 text-xs mt-2">Full data migration, staff training, parallel testing, and go-live</p>
                 </div>
                 <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-slate-300 font-medium">Multi-Location (10-50)</span>
-                    <span className="text-emerald-400 font-bold">1-2 weeks</span>
+                    <span className="text-slate-300 font-medium">Multi-Location (3-10)</span>
+                    <span className="text-emerald-400 font-bold">3-6 months</span>
                   </div>
                   <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
                     <div className="h-full w-1/2 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" />
                   </div>
-                  <p className="text-slate-500 text-xs mt-2">Phased rollout with dedicated support</p>
+                  <p className="text-slate-500 text-xs mt-2">Phased rollout with dedicated support and parallel running</p>
                 </div>
                 <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-slate-300 font-medium">Franchise System (200+)</span>
-                    <span className="text-emerald-400 font-bold">2-4 weeks</span>
+                    <span className="text-slate-300 font-medium">Franchise System (100+)</span>
+                    <span className="text-emerald-400 font-bold">6-12 months</span>
                   </div>
                   <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
                     <div className="h-full w-3/4 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" />
                   </div>
-                  <p className="text-slate-500 text-xs mt-2">White-glove onboarding with train-the-trainer</p>
+                  <p className="text-slate-500 text-xs mt-2">White-glove onboarding, train-the-trainer, enterprise approval cycles</p>
                 </div>
               </div>
               <div className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
@@ -432,9 +466,6 @@ export function Demo() {
             </div>
 
             <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700 overflow-hidden">
-              <span className="absolute top-3 right-3 px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-emerald-400 text-emerald-900">
-                New
-              </span>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
                   <DollarSign className="w-6 h-6 text-blue-400" />
@@ -540,7 +571,7 @@ export function Demo() {
 
         <section className="mb-12">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-white">14-Stage Development Roadmap</h2>
+            <h2 className="text-xl font-bold text-white">Development Roadmap (Tiger Tank Validated)</h2>
             <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
@@ -671,17 +702,17 @@ export function Demo() {
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-white mb-6">Key Capabilities</h2>
+          <h2 className="text-xl font-bold text-white mb-6">Key Capabilities (Tiger Tank Validated)</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { icon: <Mic className="w-5 h-5" />, title: 'Voice Registration', desc: 'Hands-free enrollment via voice commands' },
-              { icon: <Globe className="w-5 h-5" />, title: 'Multi-Language', desc: 'English and Spanish support' },
-              { icon: <Bell className="w-5 h-5" />, title: 'Smart Notifications', desc: 'Automated reminders and updates' },
+              { icon: <Globe className="w-5 h-5" />, title: 'Multi-Language', desc: 'English, Spanish, and Cantonese support' },
+              { icon: <MapPin className="w-5 h-5" />, title: 'Drive Radius Search', desc: 'Find classes within your preferred distance' },
               { icon: <UserCheck className="w-5 h-5" />, title: 'Family Profiles', desc: 'Remember preferences across registrations' },
-              { icon: <MapPin className="w-5 h-5" />, title: 'Location Matching', desc: 'Find classes near you automatically' },
-              { icon: <Star className="w-5 h-5" />, title: 'Coach Ratings', desc: 'See ratings before enrolling' },
+              { icon: <Star className="w-5 h-5" />, title: 'Skill Tracking', desc: 'Monitor student progress and plateau detection' },
+              { icon: <Bell className="w-5 h-5" />, title: 'Smart Notifications', desc: 'Automated reminders and re-enrollment' },
               { icon: <Phone className="w-5 h-5" />, title: 'Mobile-First', desc: 'Designed for one-handed use' },
-              { icon: <Mail className="w-5 h-5" />, title: 'Instant Confirmations', desc: 'Email and calendar invites' },
+              { icon: <Mail className="w-5 h-5" />, title: 'Printable Schedules', desc: 'Poolside/fieldside ready formats' },
             ].map((item, idx) => (
               <div key={idx} className="bg-slate-800 rounded-xl p-4 border border-slate-700">
                 <div className="w-10 h-10 bg-slate-700 rounded-lg flex items-center justify-center text-slate-300 mb-3">
