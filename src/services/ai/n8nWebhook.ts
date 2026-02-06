@@ -200,7 +200,25 @@ function normalizeN8NResponse(data: unknown): N8NMessageResponse {
     };
   }
 
-  const response = data as Record<string, unknown>;
+  let unwrapped = data;
+  if (Array.isArray(unwrapped)) {
+    unwrapped = unwrapped[0] || {};
+  }
+
+  if (typeof unwrapped === 'string') {
+    return {
+      success: true,
+      response: {
+        message: unwrapped,
+        nextState: 'collecting_preferences',
+        extractedData: {},
+        quickReplies: [],
+        progress: 0,
+      },
+    };
+  }
+
+  const response = unwrapped as Record<string, unknown>;
 
   if (response.success === false) {
     console.log('Response indicates failure');
