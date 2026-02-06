@@ -2,6 +2,8 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import type { ConversationContext, ConversationState, Message, RegistrationRedirect } from '../types/conversation';
 import { sendMessageToN8N, isN8NConfigured } from '../services/ai/n8nWebhook';
+import type { N8NMessageResponse } from '../services/ai/n8nWebhook';
+import { sendMessageToKai } from '../services/ai/kaiAgent';
 
 const TEMP_IDS_STORAGE_KEY = 'kairo_temp_ids';
 
@@ -223,26 +225,42 @@ export function useConversation(options: UseConversationOptions) {
         console.log('Context after merge with override:', JSON.stringify(updatedContext, null, 2));
 
         const isUsingN8N = isN8NConfigured();
-        console.log('=== SENDING TO N8N WEBHOOK ===');
+        console.log('=== SENDING MESSAGE ===');
         console.log('N8N Configured:', isUsingN8N);
         console.log('Message:', userMessage);
-        console.log('Context being sent:', JSON.stringify(updatedContext, null, 2));
-        console.log('Context extracted fields:', {
-          childName: updatedContext.childName,
-          childAge: updatedContext.childAge,
-          preferredDays: updatedContext.preferredDays,
-          preferredProgram: updatedContext.preferredProgram,
-          preferredTime: updatedContext.preferredTime,
-          preferredTimeOfDay: updatedContext.preferredTimeOfDay,
-        });
-        console.log('Message History Count:', messageHistory.length);
-        console.log('==============================');
 
-        const response = await sendMessageToN8N({
-          message: userMessage,
-          conversationId,
-          context: updatedContext,
-        });
+        let response: N8NMessageResponse;
+
+        if (isUsingN8N) {
+          response = await sendMessageToN8N({
+            message: userMessage,
+            conversationId,
+            context: updatedContext,
+          });
+        } else {
+          const edgeResponse = await sendMessageToKai({
+            message: userMessage,
+            conversationId,
+            context: updatedContext,
+          });
+
+          response = {
+            success: edgeResponse.success,
+            response: edgeResponse.response ? {
+              message: edgeResponse.response.message,
+              nextState: edgeResponse.response.nextState,
+              extractedData: edgeResponse.response.extractedData || {},
+              quickReplies: edgeResponse.response.quickReplies,
+              progress: edgeResponse.response.progress,
+              recommendations: (edgeResponse.response as any).recommendations,
+              alternatives: (edgeResponse.response as any).alternatives,
+              requestedSession: (edgeResponse.response as any).requestedSession,
+              sessionIssue: (edgeResponse.response as any).sessionIssue,
+              registrationRedirect: (edgeResponse.response as any).registrationRedirect,
+            } : undefined,
+            error: edgeResponse.error,
+          };
+        }
 
         console.log('=== N8N WEBHOOK RESPONSE ===');
         console.log('Success:', response.success);
