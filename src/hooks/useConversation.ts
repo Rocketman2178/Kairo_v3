@@ -99,7 +99,6 @@ export function useConversation(options: UseConversationOptions) {
 
   const contextRef = useRef(context);
   const messagesRef = useRef(messages);
-  const initializingRef = useRef(false);
   const onErrorRef = useRef(onError);
 
   useEffect(() => {
@@ -115,9 +114,6 @@ export function useConversation(options: UseConversationOptions) {
   }, [messages]);
 
   useEffect(() => {
-    if (initializingRef.current) return;
-    initializingRef.current = true;
-
     let cancelled = false;
 
     const init = async () => {
