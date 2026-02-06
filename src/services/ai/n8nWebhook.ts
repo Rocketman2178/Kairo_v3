@@ -110,12 +110,17 @@ export async function sendMessageToN8N(
       throw new Error(`N8N Webhook failed: ${response.status}`);
     }
 
-    const data = await response.json();
-
-    console.log('=== N8N WEBHOOK RESPONSE ===');
-    console.log('Success:', data.success);
-    console.log('Response:', JSON.stringify(data.response, null, 2));
+    const responseText = await response.text();
+    console.log('=== N8N RAW RESPONSE TEXT ===');
+    console.log(responseText);
     console.log('============================');
+
+    let data: unknown;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      data = responseText;
+    }
 
     return normalizeN8NResponse(data);
   } catch (error) {
@@ -188,6 +193,20 @@ function normalizeN8NResponse(data: unknown): N8NMessageResponse {
   console.log('Raw data type:', typeof data);
   console.log('Raw data:', JSON.stringify(data, null, 2));
 
+  if (typeof data === 'string' && data.trim()) {
+    console.log('Response is plain string');
+    return {
+      success: true,
+      response: {
+        message: data.trim(),
+        nextState: 'collecting_preferences',
+        extractedData: {},
+        quickReplies: [],
+        progress: 0,
+      },
+    };
+  }
+
   if (!data || typeof data !== 'object') {
     console.log('Invalid data - not an object');
     return {
@@ -202,14 +221,15 @@ function normalizeN8NResponse(data: unknown): N8NMessageResponse {
 
   let unwrapped = data;
   if (Array.isArray(unwrapped)) {
+    console.log('Response is array, unwrapping first element');
     unwrapped = unwrapped[0] || {};
   }
 
-  if (typeof unwrapped === 'string') {
+  if (typeof unwrapped === 'string' && unwrapped.trim()) {
     return {
       success: true,
       response: {
-        message: unwrapped,
+        message: unwrapped.trim(),
         nextState: 'collecting_preferences',
         extractedData: {},
         quickReplies: [],

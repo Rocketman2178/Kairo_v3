@@ -29,6 +29,7 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
   }, []);
 
   const {
+    conversationId,
     messages,
     isLoading,
     sendMessage,
@@ -102,9 +103,11 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
     }
   }, [messages.length]);
 
+  const isReady = Boolean(conversationId);
+
   const handleSendMessage = async (messageOverride?: string) => {
     const messageContent = messageOverride || inputValue;
-    if (!messageContent.trim() || isLoading) return;
+    if (!messageContent.trim() || isLoading || !isReady) return;
 
     setInputValue('');
     setError(null);
@@ -228,12 +231,12 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Type your message..."
-                disabled={isLoading}
+                disabled={isLoading || !isReady}
                 className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               />
               <button
                 onClick={() => handleSendMessage()}
-                disabled={!inputValue.trim() || isLoading}
+                disabled={!inputValue.trim() || isLoading || !isReady}
                 className="px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
               >
                 <Send className="w-4 h-4" />
