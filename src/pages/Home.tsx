@@ -21,12 +21,6 @@ export function Home() {
               >
                 <span>Test Scenarios</span>
               </Link>
-              <Link
-                to="/test-n8n"
-                className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white text-sm font-medium rounded-lg hover:bg-slate-600 transition-colors"
-              >
-                <span>Test N8N</span>
-              </Link>
               <a
                 href="/demo"
                 target="_blank"

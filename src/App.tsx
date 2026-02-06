@@ -6,7 +6,6 @@ import { TermsConditions } from './pages/TermsConditions';
 import { TestDataDashboard } from './pages/TestDataDashboard';
 import { Demo } from './pages/Demo';
 import Register from './pages/Register';
-import { TestN8N } from './pages/TestN8N';
 import { TestScenarios } from './pages/TestScenarios';
 
 function App() {
@@ -20,7 +19,6 @@ function App() {
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsConditions />} />
           <Route path="/test-data" element={<TestDataDashboard />} />
-          <Route path="/test-n8n" element={<TestN8N />} />
           <Route path="/test-scenarios" element={<TestScenarios />} />
         </Routes>
       </BrowserRouter>
