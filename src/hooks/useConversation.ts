@@ -97,6 +97,12 @@ export function useConversation(options: UseConversationOptions) {
 
   const contextRef = useRef(context);
   const messagesRef = useRef(messages);
+  const initializingRef = useRef(false);
+  const onErrorRef = useRef(onError);
+
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
 
   useEffect(() => {
     contextRef.current = context;
@@ -107,60 +113,58 @@ export function useConversation(options: UseConversationOptions) {
   }, [messages]);
 
   useEffect(() => {
-    initializeConversation();
-  }, [organizationId, familyId]);
+    if (initializingRef.current) return;
+    initializingRef.current = true;
 
-  useEffect(() => {
-    console.log('=== CONTEXT STATE CHANGED ===');
-    console.log('New context state:', JSON.stringify(context, null, 2));
-    console.log('Context fields:', {
-      childName: context.childName,
-      childAge: context.childAge,
-      preferredDays: context.preferredDays,
-      preferredProgram: context.preferredProgram,
-      preferredTime: context.preferredTime,
-      preferredTimeOfDay: context.preferredTimeOfDay,
-    });
-    console.log('==============================');
-  }, [context]);
+    let cancelled = false;
 
-  const initializeConversation = useCallback(async () => {
-    try {
-      const initialContext = {
-        organizationId,
-        familyId,
-        tempChildId: tempIds.tempChildId,
-        tempFamilyId: tempIds.tempFamilyId,
-        isAuthenticated: isAuthenticated || false,
-        currentState: 'greeting',
-      };
+    const init = async () => {
+      try {
+        const initialContext = {
+          organizationId,
+          familyId,
+          tempChildId: tempIds.tempChildId,
+          tempFamilyId: tempIds.tempFamilyId,
+          isAuthenticated: isAuthenticated || false,
+          currentState: 'greeting',
+        };
 
-      const { data, error } = await (supabase
-        .from('conversations')
-        .insert({
-          family_id: familyId || null,
-          channel: 'web',
-          state: 'greeting',
-          context: initialContext as any,
-          messages: [] as any,
-        })
-        .select()
-        .single() as any);
+        const { data, error } = await (supabase
+          .from('conversations')
+          .insert({
+            family_id: familyId || null,
+            channel: 'web',
+            state: 'greeting',
+            context: initialContext as any,
+            messages: [] as any,
+          })
+          .select()
+          .single() as any);
 
-      if (error) throw error;
+        if (cancelled) return;
+        if (error) throw error;
 
-      if (data) {
-        setConversationId(data.id);
-        setContext({
-          conversationId: data.id,
-          ...initialContext,
-        });
+        if (data) {
+          setConversationId(data.id);
+          setContext({
+            conversationId: data.id,
+            ...initialContext,
+          });
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to initialize conversation:', error);
+          onErrorRef.current?.(error as Error);
+        }
       }
-    } catch (error) {
-      console.error('Failed to initialize conversation:', error);
-      onError?.(error as Error);
-    }
-  }, [organizationId, familyId, tempIds, isAuthenticated, onError]);
+    };
+
+    init();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [organizationId, familyId, tempIds, isAuthenticated]);
 
   const sendMessage = useCallback(
     async (userMessage: string, contextOverride?: Partial<ConversationContext>): Promise<Message | null> => {
@@ -433,21 +437,47 @@ export function useConversation(options: UseConversationOptions) {
     }
   }, [conversationId, organizationId, familyId, tempIds, state]);
 
-  const resetConversation = useCallback(() => {
+  const resetConversation = useCallback(async () => {
     setMessages([]);
     setState('greeting');
     setRegistrationRedirect(null);
-    setContext({
-      conversationId: '',
-      organizationId,
-      familyId,
-      tempChildId: tempIds.tempChildId,
-      tempFamilyId: tempIds.tempFamilyId,
-      isAuthenticated: isAuthenticated || false,
-      currentState: 'greeting',
-    });
-    initializeConversation();
-  }, [organizationId, familyId, tempIds, isAuthenticated, initializeConversation]);
+
+    try {
+      const initialContext = {
+        organizationId,
+        familyId,
+        tempChildId: tempIds.tempChildId,
+        tempFamilyId: tempIds.tempFamilyId,
+        isAuthenticated: isAuthenticated || false,
+        currentState: 'greeting',
+      };
+
+      const { data, error } = await (supabase
+        .from('conversations')
+        .insert({
+          family_id: familyId || null,
+          channel: 'web',
+          state: 'greeting',
+          context: initialContext as any,
+          messages: [] as any,
+        })
+        .select()
+        .single() as any);
+
+      if (error) throw error;
+
+      if (data) {
+        setConversationId(data.id);
+        setContext({
+          conversationId: data.id,
+          ...initialContext,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to reset conversation:', error);
+      onErrorRef.current?.(error as Error);
+    }
+  }, [organizationId, familyId, tempIds, isAuthenticated]);
 
   const clearRegistrationState = useCallback(() => {
     clearTempIds();

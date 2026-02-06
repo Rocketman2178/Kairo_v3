@@ -15,6 +15,18 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
   const [error, setError] = useState<string | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const hasAddedInitialMessage = useRef(false);
+  const hasAddedFallbackMessage = useRef(false);
+
+  const onErrorCallback = useCallback((err: Error) => {
+    console.error('Conversation error:', err);
+    const errorMessage = err.message || 'Something went wrong. Please try again.';
+    setError(errorMessage);
+  }, []);
+
+  const onFallbackCallback = useCallback(() => {
+    setShowFallbackForm(true);
+  }, []);
 
   const {
     messages,
@@ -24,21 +36,21 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
   } = useConversation({
     organizationId,
     familyId,
-    onError: (err) => {
-      console.error('Conversation error:', err);
-      const errorMessage = err.message || 'Something went wrong. Please try again.';
-      setError(errorMessage);
-    },
-    onFallbackToForm: () => {
-      setShowFallbackForm(true);
-    },
+    onError: onErrorCallback,
+    onFallbackToForm: onFallbackCallback,
   });
 
+  const addAssistantMessageRef = useRef(addAssistantMessage);
   useEffect(() => {
-    if (showFallbackForm) {
-      addAssistantMessage('Let me show you a form to complete your registration.');
+    addAssistantMessageRef.current = addAssistantMessage;
+  }, [addAssistantMessage]);
+
+  useEffect(() => {
+    if (showFallbackForm && !hasAddedFallbackMessage.current) {
+      hasAddedFallbackMessage.current = true;
+      addAssistantMessageRef.current('Let me show you a form to complete your registration.');
     }
-  }, [showFallbackForm, addAssistantMessage]);
+  }, [showFallbackForm]);
 
   const setMessageRef = useCallback((id: string, el: HTMLDivElement | null) => {
     if (el) {
@@ -82,16 +94,13 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
     });
   }, [isLoading]);
 
-  const hasAddedInitialMessage = useRef(false);
-
   useEffect(() => {
     if (hasAddedInitialMessage.current) return;
-
     if (messages.length === 0) {
-      addAssistantMessage("Hi there! I'm Kai, your registration assistant for Soccer Stars. I can help you find the perfect soccer program for your child and get them signed up in just a few minutes. What would you like help with today?");
       hasAddedInitialMessage.current = true;
+      addAssistantMessageRef.current("Hi there! I'm Kai, your registration assistant for Soccer Stars. I can help you find the perfect soccer program for your child and get them signed up in just a few minutes. What would you like help with today?");
     }
-  }, [messages.length, addAssistantMessage]);
+  }, [messages.length]);
 
   const handleSendMessage = async (messageOverride?: string) => {
     const messageContent = messageOverride || inputValue;
