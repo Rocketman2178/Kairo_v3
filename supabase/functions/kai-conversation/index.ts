@@ -398,7 +398,7 @@ Response Format:
 Look for sport/activity names: soccer, basketball, swim, tennis, art, dance, etc.
 
 ### Location Extraction
-Look for location names like: "Oakwood Recreation Center", "North Field", "Springfield Community Center", etc.
+Look for location names like: "Oakwood Recreation Center", "North Field", "RSM Community Center", etc.
 Extract the full location name as mentioned by the parent.
 
 ### Time of Day

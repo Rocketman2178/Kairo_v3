@@ -96,12 +96,12 @@ const fallbackCategories: ScenarioCategory[] = [
           "We prefer weekends",
           "Rancho Santa Margarita area"
         ],
-        expectedBehavior: 'Should recommend Premier Soccer in RSM. Saturday options: Springfield Community Center at 9am (4 spots) or 10:30am (2 spots, filling fast). Sunday at 9:45am (5 spots).',
+        expectedBehavior: 'Should recommend Premier Soccer in RSM. Saturday options: RSM Community Center at 9am (4 spots) or 10:30am (2 spots, filling fast). Sunday at 9:45am (5 spots).',
         dataPoints: [
           'Premier Soccer: ages 7-11, $240/season',
-          'Springfield CC Sat 9am: 8/12 enrolled (moderate)',
-          'Springfield CC Sat 10:30am: 10/12 enrolled (filling fast)',
-          'Springfield CC Sun 9:45am: 7/12 enrolled (moderate)',
+          'RSM CC Sat 9am: 8/12 enrolled (moderate)',
+          'RSM CC Sat 10:30am: 10/12 enrolled (filling fast)',
+          'RSM CC Sun 9:45am: 7/12 enrolled (moderate)',
         ],
         tags: ['premier', 'older-child', 'rsm', 'weekend'],
       },
@@ -132,12 +132,12 @@ const fallbackCategories: ScenarioCategory[] = [
           "She's available after school on weekdays",
           "Fullerton area"
         ],
-        expectedBehavior: 'Should recommend High School Soccer in Fullerton. North Field Location options: Wed 7pm (5 spots), Fri 2pm (4 spots). Also Springfield CC in RSM and other locations.',
+        expectedBehavior: 'Should recommend High School Soccer in Fullerton. North Field Location options: Wed 7pm (5 spots), Fri 2pm (4 spots). Also RSM CC in RSM and other locations.',
         dataPoints: [
           'High School Soccer: ages 15-19, $201/season',
           'North Field Fullerton Wed 7pm: 7/12 enrolled',
           'North Field Fullerton Fri 2pm: 8/12 enrolled',
-          'Springfield CC Mon 3pm is FULL',
+          'RSM CC Mon 3pm is FULL',
         ],
         tags: ['high-school', 'teen', 'fullerton', 'weekday'],
       },
@@ -163,7 +163,7 @@ const fallbackCategories: ScenarioCategory[] = [
         dataPoints: [
           'Youth Basketball: ages 5-9, $202/season',
           'Main Sports Complex has many open sessions',
-          'Springfield CC also has sessions in RSM',
+          'RSM CC also has sessions in RSM',
         ],
         tags: ['basketball', 'youth', 'orange'],
       },
@@ -233,18 +233,18 @@ const fallbackCategories: ScenarioCategory[] = [
       {
         id: 'rsm-family',
         title: 'Rancho Santa Margarita Family',
-        description: 'RSM has Springfield Community Center and Central Park',
+        description: 'RSM has RSM Community Center and Central Park',
         prompts: [
           "Looking for soccer for my 3-year-old in Rancho Santa Margarita",
           "Her name is Ava",
           "Saturday morning if possible"
         ],
-        expectedBehavior: 'Mini Soccer in RSM. Central Park Sat 9am (3 spots), Springfield CC Sat 9am (2 spots, moderate), Springfield CC Sat 10:30am (1 spot, filling fast).',
+        expectedBehavior: 'Mini Soccer in RSM. Central Park Sat 9am (3 spots), RSM CC Sat 9am (2 spots, moderate), RSM CC Sat 10:30am (1 spot, filling fast).',
         dataPoints: [
-          'RSM locations: Central Park, Springfield Community Center',
+          'RSM locations: Central Park, RSM Community Center',
           'Central Park Sat 9am: 5/8 enrolled',
-          'Springfield CC Sat 9am: 6/8 enrolled',
-          'Springfield CC Sat 10:30am: 7/8 enrolled (filling fast)',
+          'RSM CC Sat 9am: 6/8 enrolled',
+          'RSM CC Sat 10:30am: 7/8 enrolled (filling fast)',
         ],
         tags: ['rsm', 'mini', 'saturday'],
       },
@@ -361,11 +361,11 @@ const fallbackCategories: ScenarioCategory[] = [
           "Sunday morning in Fullerton please",
           "His name is Oliver"
         ],
-        expectedBehavior: 'Should inform that Sunday 10am at North Field is full. Offer waitlist option. Suggest alternatives: Sunday 9:45am at Oakwood Irvine or Springfield CC RSM (both have 5 spots).',
+        expectedBehavior: 'Should inform that Sunday 10am at North Field is full. Offer waitlist option. Suggest alternatives: Sunday 9:45am at Oakwood Irvine or RSM CC RSM (both have 5 spots).',
         dataPoints: [
           'Junior Soccer Sun 10am North Field: FULL (12/12)',
           'Alternative: Sun 9:45am Oakwood Irvine: 7/12',
-          'Alternative: Sun 9:45am Springfield CC RSM: 7/12',
+          'Alternative: Sun 9:45am RSM CC RSM: 7/12',
           'Waitlist should be offered for the full session',
         ],
         tags: ['full', 'waitlist', 'junior', 'fullerton', 'alternatives'],
@@ -379,11 +379,11 @@ const fallbackCategories: ScenarioCategory[] = [
           "Her name is Mia",
           "Morning time works best"
         ],
-        expectedBehavior: 'Should report Fri 9:30am at Oakwood is full. Suggest: Mon 4pm at North Field Fullerton, or Thu 9am at Springfield CC RSM. May need to expand location radius.',
+        expectedBehavior: 'Should report Fri 9:30am at Oakwood is full. Suggest: Mon 4pm at North Field Fullerton, or Thu 9am at RSM CC RSM. May need to expand location radius.',
         dataPoints: [
           'Learn to Swim Fri 9:30am Oakwood: FULL (8/8)',
           'Alternative: Mon 4pm North Field Fullerton: 2/8',
-          'Alternative: Thu 9am Springfield CC RSM: 1/8',
+          'Alternative: Thu 9am RSM CC RSM: 1/8',
           'Learn to Swim classes have 8-person max (smaller)',
         ],
         tags: ['full', 'swimming', 'irvine', 'small-class'],
@@ -534,7 +534,7 @@ const fallbackCategories: ScenarioCategory[] = [
           "We want to sign up our 6-year-old with her",
           "What sessions does she teach?"
         ],
-        expectedBehavior: 'Sarah Mitchell (5.0 rating) teaches Learn to Swim and Advanced Swimming. For a 6-year-old, Learn to Swim is the match. Mon 4pm North Field, Wed 11am East Park, Thu 9am Springfield CC.',
+        expectedBehavior: 'Sarah Mitchell (5.0 rating) teaches Learn to Swim and Advanced Swimming. For a 6-year-old, Learn to Swim is the match. Mon 4pm North Field, Wed 11am East Park, Thu 9am RSM CC.',
         dataPoints: [
           'Sarah Mitchell: 5.0 rating (highest rated coach)',
           'Teaches: Learn to Swim, Advanced Swimming, Intermediate Swimming',
