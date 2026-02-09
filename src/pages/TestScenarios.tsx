@@ -698,6 +698,15 @@ function CopyButton({ text }: { text: string }) {
 
 function ScenarioCard({ scenario }: { scenario: TestScenario }) {
   const [expanded, setExpanded] = useState(false);
+  const [copiedAll, setCopiedAll] = useState(false);
+
+  const handleCopyAll = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const allPrompts = scenario.prompts.join('\n\n');
+    navigator.clipboard.writeText(allPrompts);
+    setCopiedAll(true);
+    setTimeout(() => setCopiedAll(false), 2000);
+  };
 
   return (
     <div className="bg-slate-800/50 rounded-lg border border-slate-700/50 overflow-hidden">
@@ -729,9 +738,27 @@ function ScenarioCard({ scenario }: { scenario: TestScenario }) {
       {expanded && (
         <div className="px-4 pb-4 space-y-4 border-t border-slate-700/50 pt-4">
           <div>
-            <h5 className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-              Test Prompts (send in order)
-            </h5>
+            <div className="flex items-center justify-between mb-2">
+              <h5 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                Test Prompts (send in order)
+              </h5>
+              <button
+                onClick={handleCopyAll}
+                className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 text-xs font-medium rounded-md transition-colors"
+              >
+                {copiedAll ? (
+                  <>
+                    <Check className="w-3 h-3" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3 h-3" />
+                    Copy All Prompts
+                  </>
+                )}
+              </button>
+            </div>
             <div className="space-y-2">
               {scenario.prompts.map((prompt, i) => (
                 <div
@@ -913,9 +940,10 @@ export function TestScenarios() {
           <ol className="text-xs text-slate-400 space-y-1 list-decimal list-inside">
             <li>Open the chat interface by clicking "Open Chat" above</li>
             <li>Pick a scenario category below and expand a test case</li>
-            <li>Copy and send the test prompts in order (use the copy button)</li>
+            <li>Click "Copy All Prompts" to copy all prompts at once (separated by line breaks), or copy individual prompts one at a time</li>
+            <li>Paste prompts into the chat and send them (if pasted all at once, send each prompt separately in order)</li>
             <li>Compare Kai's responses against the "Expected Behavior" section</li>
-            <li>Check that the correct sessions, prices, and availability are shown</li>
+            <li>Verify that the correct sessions, prices, and availability are shown</li>
           </ol>
         </div>
 
