@@ -1,10 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Copy, Check, ChevronDown, ChevronRight, ArrowLeft,
   Users, MapPin, Clock, AlertTriangle, Star, Zap,
-  HelpCircle, Target, MessageSquare
+  HelpCircle, Target, MessageSquare, Loader2
 } from 'lucide-react';
+import {
+  fetchAllSessions,
+  generateScenariosFromSessions,
+  type SessionData,
+  type TestScenario,
+  type ScenarioCategory as DataScenarioCategory
+} from '@/services/testScenarios/sessionDataFetcher';
 
 interface TestScenario {
   id: string;
@@ -25,7 +32,19 @@ interface ScenarioCategory {
   scenarios: TestScenario[];
 }
 
-const categories: ScenarioCategory[] = [
+const iconMap: Record<string, React.ReactNode> = {
+  'users': <Users className="w-5 h-5" />,
+  'map-pin': <MapPin className="w-5 h-5" />,
+  'clock': <Clock className="w-5 h-5" />,
+  'alert-triangle': <AlertTriangle className="w-5 h-5" />,
+  'star': <Star className="w-5 h-5" />,
+  'zap': <Zap className="w-5 h-5" />,
+  'help-circle': <HelpCircle className="w-5 h-5" />,
+  'target': <Target className="w-5 h-5" />,
+  'message-square': <MessageSquare className="w-5 h-5" />,
+};
+
+const fallbackCategories: ScenarioCategory[] = [
   {
     id: 'basic-registration',
     title: 'Basic Registration Flows',
@@ -819,6 +838,46 @@ function CategorySection({ category }: { category: ScenarioCategory }) {
 }
 
 export function TestScenarios() {
+  const [categories, setCategories] = useState<ScenarioCategory[]>(fallbackCategories.slice(0, 1));
+  const [loading, setLoading] = useState(true);
+  const [sessionStats, setSessionStats] = useState({ programs: 0, sessions: 0, full: 0, locations: 0 });
+
+  useEffect(() => {
+    async function loadScenarios() {
+      try {
+        setLoading(true);
+        const sessions = await fetchAllSessions();
+
+        const programs = new Set(sessions.map(s => s.program_name)).size;
+        const fullCount = sessions.filter(s => s.urgency_level === 'full').length;
+        const locations = new Set(sessions.map(s => s.location_name)).size;
+
+        setSessionStats({
+          programs,
+          sessions: sessions.length,
+          full: fullCount,
+          locations
+        });
+
+        const dataCategories = generateScenariosFromSessions(sessions);
+
+        const categoriesWithIcons: ScenarioCategory[] = dataCategories.map(cat => ({
+          ...cat,
+          icon: iconMap[cat.icon] || <HelpCircle className="w-5 h-5" />
+        }));
+
+        setCategories(categoriesWithIcons);
+      } catch (error) {
+        console.error('Error loading scenarios:', error);
+        setCategories(fallbackCategories.slice(0, 3));
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadScenarios();
+  }, []);
+
   const totalScenarios = categories.reduce((sum, cat) => sum + cat.scenarios.length, 0);
 
   return (
@@ -835,7 +894,7 @@ export function TestScenarios() {
             <div>
               <h1 className="text-lg font-bold text-white">Test Scenarios</h1>
               <p className="text-xs text-slate-400">
-                {totalScenarios} scenarios across {categories.length} categories -- based on live Supabase data
+                {loading ? 'Loading scenarios from database...' : `${totalScenarios} scenarios across ${categories.length} categories - based on live Supabase data`}
               </p>
             </div>
           </div>
@@ -860,28 +919,36 @@ export function TestScenarios() {
           </ol>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="bg-slate-800/30 rounded-lg border border-slate-700/50 p-3 text-center">
-            <p className="text-2xl font-bold text-white">15</p>
-            <p className="text-xs text-slate-400">Programs</p>
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
           </div>
-          <div className="bg-slate-800/30 rounded-lg border border-slate-700/50 p-3 text-center">
-            <p className="text-2xl font-bold text-white">96</p>
-            <p className="text-xs text-slate-400">Active Sessions</p>
-          </div>
-          <div className="bg-slate-800/30 rounded-lg border border-slate-700/50 p-3 text-center">
-            <p className="text-2xl font-bold text-white">7</p>
-            <p className="text-xs text-slate-400">Full Sessions</p>
-          </div>
-          <div className="bg-slate-800/30 rounded-lg border border-slate-700/50 p-3 text-center">
-            <p className="text-2xl font-bold text-white">20</p>
-            <p className="text-xs text-slate-400">Locations</p>
-          </div>
-        </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-slate-800/30 rounded-lg border border-slate-700/50 p-3 text-center">
+                <p className="text-2xl font-bold text-white">{sessionStats.programs}</p>
+                <p className="text-xs text-slate-400">Programs</p>
+              </div>
+              <div className="bg-slate-800/30 rounded-lg border border-slate-700/50 p-3 text-center">
+                <p className="text-2xl font-bold text-white">{sessionStats.sessions}</p>
+                <p className="text-xs text-slate-400">Active Sessions</p>
+              </div>
+              <div className="bg-slate-800/30 rounded-lg border border-slate-700/50 p-3 text-center">
+                <p className="text-2xl font-bold text-white">{sessionStats.full}</p>
+                <p className="text-xs text-slate-400">Full Sessions</p>
+              </div>
+              <div className="bg-slate-800/30 rounded-lg border border-slate-700/50 p-3 text-center">
+                <p className="text-2xl font-bold text-white">{sessionStats.locations}</p>
+                <p className="text-xs text-slate-400">Locations</p>
+              </div>
+            </div>
 
-        {categories.map((category) => (
-          <CategorySection key={category.id} category={category} />
-        ))}
+            {categories.map((category) => (
+              <CategorySection key={category.id} category={category} />
+            ))}
+          </>
+        )}
       </main>
     </div>
   );
