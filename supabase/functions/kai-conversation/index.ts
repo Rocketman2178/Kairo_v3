@@ -136,7 +136,30 @@ Deno.serve(async (req: Request) => {
     console.log('Current context before merge:', JSON.stringify(context, null, 2));
 
     const updatedContext = { ...context, ...extractedData };
-    console.log('Updated context after merge:', JSON.stringify(updatedContext, null, 2));
+
+    const fallbackExtracted = fallbackExtractFromMessage(message);
+    if (!updatedContext.childName && fallbackExtracted.childName) {
+      updatedContext.childName = fallbackExtracted.childName;
+    }
+    if (!updatedContext.childAge && fallbackExtracted.childAge) {
+      updatedContext.childAge = fallbackExtracted.childAge;
+    }
+    if ((!updatedContext.preferredDays || updatedContext.preferredDays.length === 0) && fallbackExtracted.preferredDays) {
+      updatedContext.preferredDays = fallbackExtracted.preferredDays;
+    }
+    if (!updatedContext.preferredTimeOfDay && fallbackExtracted.preferredTimeOfDay) {
+      updatedContext.preferredTimeOfDay = fallbackExtracted.preferredTimeOfDay;
+    }
+    if (!updatedContext.preferredProgram && fallbackExtracted.preferredProgram) {
+      updatedContext.preferredProgram = fallbackExtracted.preferredProgram;
+    }
+    if (!updatedContext.preferredCity && fallbackExtracted.preferredCity) {
+      updatedContext.preferredCity = fallbackExtracted.preferredCity;
+    }
+
+    normalizeContext(updatedContext);
+
+    console.log('Updated context after normalization:', JSON.stringify(updatedContext, null, 2));
     console.log('Updated context fields:', {
       childName: updatedContext.childName,
       childAge: updatedContext.childAge,
@@ -144,6 +167,7 @@ Deno.serve(async (req: Request) => {
       preferredProgram: updatedContext.preferredProgram,
       preferredTime: updatedContext.preferredTime,
       preferredTimeOfDay: updatedContext.preferredTimeOfDay,
+      preferredCity: updatedContext.preferredCity,
     });
     console.log('===================================');
 
@@ -320,6 +344,113 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
+
+function normalizeContext(ctx: any): void {
+  if (ctx.childAge !== undefined && ctx.childAge !== null) {
+    ctx.childAge = Number(ctx.childAge);
+    if (isNaN(ctx.childAge)) ctx.childAge = undefined;
+  }
+
+  if (ctx.preferredDays) {
+    if (!Array.isArray(ctx.preferredDays)) {
+      ctx.preferredDays = [ctx.preferredDays];
+    }
+    const dayNameMap: Record<string, number> = {
+      sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
+      thursday: 4, friday: 5, saturday: 6,
+      sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6,
+    };
+    ctx.preferredDays = ctx.preferredDays
+      .map((d: any) => {
+        if (typeof d === 'number') return d;
+        if (typeof d === 'string') {
+          const lower = d.toLowerCase().trim();
+          if (dayNameMap[lower] !== undefined) return dayNameMap[lower];
+          const num = Number(d);
+          if (!isNaN(num) && num >= 0 && num <= 6) return num;
+        }
+        return null;
+      })
+      .filter((d: any) => d !== null && d >= 0 && d <= 6);
+  }
+
+  if (ctx.preferredTimeOfDay && typeof ctx.preferredTimeOfDay === 'string') {
+    const t = ctx.preferredTimeOfDay.toLowerCase().trim();
+    if (t.includes('morning') || t.includes('am') || t.includes('before noon')) {
+      ctx.preferredTimeOfDay = 'morning';
+    } else if (t.includes('afternoon') || t.includes('after lunch')) {
+      ctx.preferredTimeOfDay = 'afternoon';
+    } else if (t.includes('evening') || t.includes('night') || t.includes('after 5')) {
+      ctx.preferredTimeOfDay = 'evening';
+    } else if (t === 'any' || t === 'flexible') {
+      ctx.preferredTimeOfDay = 'any';
+    }
+  }
+
+  if (ctx.preferredCity && typeof ctx.preferredCity === 'string') {
+    ctx.preferredCity = ctx.preferredCity.toLowerCase().trim();
+  }
+}
+
+function fallbackExtractFromMessage(msg: string): Record<string, any> {
+  const result: Record<string, any> = {};
+  const lower = msg.toLowerCase();
+
+  const ageMatch = msg.match(/(\d{1,2})\s*(?:year|yr|years|yrs)[\s-]*old/i)
+    || msg.match(/(?:age|aged)\s*(\d{1,2})/i)
+    || msg.match(/he'?s\s+(\d{1,2})\b/i)
+    || msg.match(/she'?s\s+(\d{1,2})\b/i);
+  if (ageMatch) {
+    const age = parseInt(ageMatch[1]);
+    if (age >= 1 && age <= 18) result.childAge = age;
+  }
+
+  const dayMap: Record<string, number> = {
+    sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
+    thursday: 4, friday: 5, saturday: 6,
+  };
+  const foundDays: number[] = [];
+  for (const [name, num] of Object.entries(dayMap)) {
+    if (lower.includes(name)) foundDays.push(num);
+  }
+  if (lower.includes('weekend')) {
+    if (!foundDays.includes(0)) foundDays.push(0);
+    if (!foundDays.includes(6)) foundDays.push(6);
+  }
+  if (lower.includes('weekday')) {
+    [1, 2, 3, 4, 5].forEach(d => { if (!foundDays.includes(d)) foundDays.push(d); });
+  }
+  if (foundDays.length > 0) result.preferredDays = foundDays;
+
+  if (lower.includes('morning') || lower.includes('before noon')) {
+    result.preferredTimeOfDay = 'morning';
+  } else if (lower.includes('afternoon') || lower.includes('after lunch')) {
+    result.preferredTimeOfDay = 'afternoon';
+  } else if (lower.includes('evening') || lower.includes('night')) {
+    result.preferredTimeOfDay = 'evening';
+  }
+
+  const sports = ['soccer', 'basketball', 'baseball', 'tennis', 'swimming', 'swim', 'dance', 'art', 'football', 'volleyball', 'gymnastics', 'karate', 'martial arts'];
+  for (const sport of sports) {
+    if (lower.includes(sport)) {
+      result.preferredProgram = sport;
+      break;
+    }
+  }
+
+  const cities = ['irvine', 'orange', 'tustin', 'anaheim', 'costa mesa', 'newport beach', 'laguna', 'mission viejo', 'lake forest', 'santa ana'];
+  for (const city of cities) {
+    if (lower.includes(city)) {
+      result.preferredCity = city;
+      break;
+    }
+  }
+
+  const nameMatch = msg.match(/(?:name is|named|called)\s+([A-Z][a-z]+)/);
+  if (nameMatch) result.childName = nameMatch[1];
+
+  return result;
+}
 
 async function buildSystemContext(context: any, conversationHistory: any[]): string {
   const hasChildName = !!context.childName;
