@@ -298,7 +298,7 @@ async function buildSystemContext(context: any, conversationHistory: any[]): str
   const hasChildAge = !!context.childAge;
   const hasPreferences = !!(context.preferredDays && context.preferredDays.length > 0);
   const hasProgram = !!context.preferredProgram;
-  const hasLocation = !!context.preferredLocation;
+  const hasLocation = !!context.preferredCity;
 
   let conversationSummary = '';
   if (conversationHistory && conversationHistory.length > 0) {
@@ -354,7 +354,7 @@ ${conversationSummary}
   if (!hasLocation) {
     systemPrompt += `\n- Optional: Location (CHECK PREVIOUS MESSAGES - parent may have already mentioned this!)`;
   } else {
-    systemPrompt += `\n- Have: Location preference (${context.preferredLocation})`;
+    systemPrompt += `\n- Have: Location preference (${context.preferredCity})`;
   }
 
   systemPrompt += `
@@ -383,7 +383,8 @@ Response Format:
     "preferredDays": [array of day numbers 0-6] if known, otherwise OMIT this key entirely,
     "preferredTimeOfDay": "morning|afternoon|evening|any" if known, otherwise OMIT this key entirely,
     "preferredProgram": "sport name" if known, otherwise OMIT this key entirely,
-    "preferredLocation": "location name" if known, otherwise OMIT this key entirely
+    "preferredCity": "city name in lowercase" if known (e.g., "irvine", "orange"), otherwise OMIT this key entirely,
+    "preferredLocation": "specific venue name" if known (e.g., "Oakwood Recreation Center"), otherwise OMIT this key entirely
   },
   "nextState": "greeting|collecting_child_info|collecting_preferences|showing_recommendations",
   "quickReplies": ["suggestion 1", "suggestion 2"]
@@ -399,8 +400,12 @@ Response Format:
 Look for sport/activity names: soccer, basketball, swim, tennis, art, dance, etc.
 
 ### Location Extraction
-Look for location names like: "Oakwood Recreation Center", "North Field", "RSM Community Center", etc.
-Extract the full location name as mentioned by the parent.
+Extract TWO types of location data:
+1. **preferredCity**: City name in lowercase (e.g., "irvine", "orange", "anaheim", "tustin")
+   - Parent says: "We're in Irvine" → preferredCity: "irvine"
+   - Parent says: "Near Orange" → preferredCity: "orange"
+2. **preferredLocation**: Specific venue name if mentioned (e.g., "Oakwood Recreation Center")
+   - Parent says: "at Oakwood Recreation Center" → preferredLocation: "Oakwood Recreation Center"
 
 ### Time of Day
 - "night", "evening", "after 5" = "evening"
@@ -424,9 +429,13 @@ You should extract: preferredDays: [1], preferredTimeOfDay: "evening", preferred
 Response: Ask for child's name and age
 
 Message 2: "Johnny age 9"
-You should extract: childName: "Johnny", childAge: 9
+You should extract: childName: "Johnny", childAge: 9, preferredDays: [1], preferredTimeOfDay: "evening", preferredProgram: "basketball", preferredLocation: "Oakwood Recreation Center"
 Response: "Great! Let me look for Monday evening basketball classes near Oakwood Recreation Center for Johnny (age 9)."
-DO NOT ask about sport or location - parent already told you in message 1!`;
+DO NOT ask about sport or location - parent already told you in message 1!
+
+Message 3: "Hi, I'd like to sign up my son for soccer. His name is Liam and he's 3 years old. We're in Irvine, Saturday mornings work best"
+You should extract: childName: "Liam", childAge: 3, preferredProgram: "soccer", preferredCity: "irvine", preferredDays: [6], preferredTimeOfDay: "morning"
+Response: Search for Saturday morning soccer sessions in Irvine for 3-year-olds and show recommendations.`;
 
   return systemPrompt;
 }
