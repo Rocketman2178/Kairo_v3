@@ -93,6 +93,9 @@ function extractChildName(text) {
     /name\s+is\s+([A-Z][a-zA-Z]+)/,
     /(?:my\s+)?(?:son|daughter|child|kid)\s+(?:is\s+)?([A-Z][a-zA-Z]+)/,
     /([A-Z][a-zA-Z]+)\s+is\s+\d{1,2}\s*(?:years?\s*old|yrs?\s*old|yo\b)/,
+    /([A-Z][a-zA-Z]+)\s+and\s+\d{1,2}\b/,
+    /([A-Z][a-zA-Z]+)\s*,\s*\d{1,2}\b/,
+    /([A-Z][a-zA-Z]+)\s*[\/]\s*\d{1,2}\b/,
     /(?:sign\s*up|register|enroll)\s+([A-Z][a-zA-Z]+)/,
     /(?:it's|it\s+is|that's|that\s+is)\s+([A-Z][a-zA-Z]+)/,
     /(?:call\s+(?:him|her))\s+([A-Z][a-zA-Z]+)/
@@ -126,6 +129,9 @@ function extractChildAge(text) {
     /(\d{1,2})\s*[-\s]?\s*(?:years?[-\s]*old|yrs?[-\s]*old|yo\b)/i,
     /age\s*(?:is\s*)?(\d{1,2})/i,
     /(\d{1,2})\s*[-\s]*(?:year|yr)[-\s]*old/i,
+    /[A-Z][a-zA-Z]+\s+and\s+(\d{1,2})\b/,
+    /[A-Z][a-zA-Z]+\s*,\s*(\d{1,2})\b/,
+    /[A-Z][a-zA-Z]+\s*[\/]\s*(\d{1,2})\b/,
     /(?:he(?:'s|\s+is)|she(?:'s|\s+is))\s+(\d{1,2})\b/i,
     /[A-Z][a-z]+\s+is\s+(\d{1,2})\b/
   ];
