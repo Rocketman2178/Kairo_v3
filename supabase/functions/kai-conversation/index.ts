@@ -236,7 +236,8 @@ Deno.serve(async (req: Request) => {
         updatedContext.childAge,
         updatedContext.preferredDays,
         updatedContext.preferredTimeOfDay,
-        updatedContext.preferredProgram
+        updatedContext.preferredProgram,
+        updatedContext.preferredCity
       );
 
       console.log(`Found ${recommendations.length} recommendations`);
@@ -552,14 +553,16 @@ async function fetchMatchingSessions(
   childAge: number,
   preferredDays: number[],
   preferredTimeOfDay?: string,
-  preferredProgram?: string
+  preferredProgram?: string,
+  preferredCity?: string
 ): Promise<any[]> {
   console.log('Fetching sessions with criteria:', {
     organizationId,
     childAge,
     preferredDays,
     preferredTimeOfDay,
-    preferredProgram
+    preferredProgram,
+    preferredCity
   });
 
   const { data: sessions, error } = await supabase
@@ -585,7 +588,8 @@ async function fetchMatchingSessions(
       location:locations (
         id,
         name,
-        address
+        address,
+        city
       ),
       coach:staff (
         id,
@@ -677,6 +681,16 @@ async function fetchMatchingSessions(
       }
       if (preferredTimeOfDay === 'evening' && hour < 17) {
         reasons.push(`TIME_MISMATCH (evening but hour is ${hour})`);
+        console.log(`Session ${session.id} filtered: ${reasons.join(', ')}`);
+        return false;
+      }
+    }
+
+    if (preferredCity && session.location?.city) {
+      const sessionCity = session.location.city.toLowerCase();
+      const preferredCityLower = preferredCity.toLowerCase();
+      if (!sessionCity.includes(preferredCityLower)) {
+        reasons.push(`CITY_MISMATCH (session in ${session.location.city}, preferred ${preferredCity})`);
         console.log(`Session ${session.id} filtered: ${reasons.join(', ')}`);
         return false;
       }
@@ -774,7 +788,8 @@ async function fetchAlternativeSessions(
       location:locations (
         id,
         name,
-        address
+        address,
+        city
       ),
       coach:staff (
         id,
@@ -972,7 +987,8 @@ async function findRequestedSession(
       location:locations (
         id,
         name,
-        address
+        address,
+        city
       ),
       coach:staff (
         id,
@@ -1231,7 +1247,8 @@ async function fetchBroaderMatches(
       location:locations (
         id,
         name,
-        address
+        address,
+        city
       ),
       coach:staff (
         id,
@@ -1327,7 +1344,8 @@ async function fetchSessionById(supabase: any, sessionId: string): Promise<any |
       location:locations (
         id,
         name,
-        address
+        address,
+        city
       ),
       coach:staff (
         id,

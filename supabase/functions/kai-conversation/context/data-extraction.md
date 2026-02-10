@@ -58,6 +58,16 @@ You must extract structured data from parent messages AND provide a conversation
   - "Any time works" → preferredTimeOfDay: "any"
   - "We're flexible" → preferredTimeOfDay: "any"
 
+### Preferred City/Location
+- Extract city name when parent mentions their location
+- Store as lowercase city name for consistent matching
+- Examples:
+  - "We're in Irvine" → preferredCity: "irvine"
+  - "We live near Orange" → preferredCity: "orange"
+  - "Anaheim area" → preferredCity: "anaheim"
+  - "Close to Tustin" → preferredCity: "tustin"
+  - "Saturday mornings in Fullerton" → preferredDays: [6], preferredTimeOfDay: "morning", preferredCity: "fullerton"
+
 ## Multi-Information Messages
 If parent provides multiple pieces at once:
 ```
