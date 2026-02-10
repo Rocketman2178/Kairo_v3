@@ -308,7 +308,7 @@ const resolvedMinStartTime = incomingContext.minStartTime || extractedTimeConstr
 const resolvedMaxStartTime = incomingContext.maxStartTime || extractedTimeConstraints.maxStartTime || null;
 const resolvedPreferredProgram = incomingContext.preferredProgram || extractedProgram || null;
 const resolvedPreferredLocation = resolveLocationCity(
-  incomingContext.preferredLocation || extractedLocation || null
+  incomingContext.preferredCity || incomingContext.preferredLocation || extractedLocation || null
 );
 
 // ===== PROGRAM RESOLUTION =====
@@ -390,6 +390,7 @@ return {
     maxStartTime: resolvedMaxStartTime,
     preferredProgram: resolvedPreferredProgram,
     resolvedPrograms: resolvedProgramNames,
+    preferredCity: resolvedPreferredLocation,
     preferredLocation: resolvedPreferredLocation,
     cityLocations: cityLocations,
     searchReady: searchReady,

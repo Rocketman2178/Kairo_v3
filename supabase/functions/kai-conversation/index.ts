@@ -179,6 +179,8 @@ Deno.serve(async (req: Request) => {
     let requestedSessionInfo = null;
     let sessionIssue = null;
 
+    const resolvedCity = updatedContext.preferredCity || updatedContext.preferredLocation || null;
+
     if (updatedContext.childAge && updatedContext.preferredDays && updatedContext.preferredDays.length > 0) {
       console.log('Have enough info to fetch sessions');
 
@@ -246,7 +248,7 @@ Deno.serve(async (req: Request) => {
         updatedContext.preferredDays,
         updatedContext.preferredTimeOfDay,
         updatedContext.preferredProgram,
-        updatedContext.preferredCity
+        resolvedCity
       );
 
       console.log(`Found ${recommendations.length} recommendations`);
@@ -1033,6 +1035,7 @@ async function findRequestedSession(
         rating
       )
     `)
+    .in('status', ['active', 'full'])
     .gte('start_date', new Date().toISOString().split('T')[0]);
 
   if (error || !sessions) {
@@ -1074,8 +1077,12 @@ async function findRequestedSession(
 
     if (preferredLocation) {
       const locationName = session.location?.name?.toLowerCase() || '';
-      const locationMatches = locationName.includes(preferredLocation.toLowerCase()) ||
-                              preferredLocation.toLowerCase().includes(locationName);
+      const locationCity = session.location?.city?.toLowerCase() || '';
+      const prefLower = preferredLocation.toLowerCase();
+      const locationMatches = locationName.includes(prefLower) ||
+                              prefLower.includes(locationName) ||
+                              locationCity.includes(prefLower) ||
+                              prefLower.includes(locationCity);
 
       if (!locationMatches) {
         foundAtOtherLocation = true;
