@@ -365,12 +365,24 @@ CURRENT REGISTRATION DATA:
 - Organization ID: ${incomingContext.organizationId}
 ${searchReady && resolvedProgramNames.length > 0 ? `
 SESSION SEARCH INSTRUCTIONS:
-When searching for sessions, use these exact parameters:
-- program_name IN (${resolvedProgramNames.map(n => "'" + n + "'").join(', ')})
-- city = '${resolvedPreferredLocation || 'any'}'
-- day_of_week IN (${resolvedPreferredDays ? resolvedPreferredDays.join(', ') : 'any'})${resolvedPreferredTimeOfDay && resolvedPreferredTimeOfDay !== 'any' ? `\n- time_of_day = '${resolvedPreferredTimeOfDay}' (morning < 12:00, afternoon 12:00-17:00, evening >= 17:00)` : ''}
-- status = 'active'
-- enrolled_count < capacity (has spots available)
+IMPORTANT: Use the get_matching_sessions() database function to search. Call it like this:
+SELECT get_matching_sessions(
+  '${incomingContext.organizationId}'::uuid,
+  ${resolvedChildAge},
+  ${resolvedPreferredDays ? `ARRAY[${resolvedPreferredDays.join(',')}]` : 'NULL'},
+  ${resolvedPreferredTimeOfDay ? `'${resolvedPreferredTimeOfDay}'` : 'NULL'},
+  ${resolvedProgramNames.length > 0 ? `'${resolvedProgramNames[0]}'` : 'NULL'},
+  ${resolvedPreferredLocation ? `'${resolvedPreferredLocation}'` : 'NULL'},
+  5
+);
+This function returns JSON with matching sessions including program_name, location_name, location_city, coach_name, day_of_week, start_time, spots_remaining, urgency_level, and more.
+If no results, try relaxing filters: remove time_of_day or try nearby days.
+
+Alternative: Query session_recommendations_view directly using these column names:
+- program_name (e.g., '${resolvedProgramNames[0] || ''}')
+- location_city (NOT city) = '${resolvedPreferredLocation || 'any'}'
+- day_of_week (integer: ${resolvedPreferredDays ? resolvedPreferredDays.join(', ') : 'any'})
+- spots_remaining > 0
 ` : ''}
 SEARCH READINESS: ${searchReady ? 'READY - search for sessions now' : `NOT READY - still need: ${missingInfo.join(', ')}`}
 
