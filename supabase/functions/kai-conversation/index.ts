@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent';
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -108,7 +108,16 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const conversationHistory = context.messages || [];
+    let conversationHistory = context.messages || [];
+
+    if (
+      conversationHistory.length > 0 &&
+      conversationHistory[conversationHistory.length - 1].role === 'user' &&
+      conversationHistory[conversationHistory.length - 1].content === message
+    ) {
+      conversationHistory = conversationHistory.slice(0, -1);
+    }
+
     console.log('=== BUILDING SYSTEM PROMPT ===');
     console.log('Context being passed to buildSystemContext:', JSON.stringify(context, null, 2));
     const systemContext = await buildSystemContext(context, conversationHistory);
