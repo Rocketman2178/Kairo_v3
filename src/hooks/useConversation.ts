@@ -328,6 +328,14 @@ export function useConversation(options: UseConversationOptions) {
             newContext.preferredProgram = String(extractedData.preferredProgram);
             console.log('Set preferredProgram:', newContext.preferredProgram);
           }
+          if (extractedData.preferredCity !== undefined) {
+            newContext.preferredCity = String(extractedData.preferredCity);
+            console.log('Set preferredCity:', newContext.preferredCity);
+          }
+          if (extractedData.preferredLocation !== undefined) {
+            newContext.preferredLocation = String(extractedData.preferredLocation);
+            console.log('Set preferredLocation:', newContext.preferredLocation);
+          }
 
           console.log('New context after extraction:', JSON.stringify(newContext, null, 2));
           console.log('Setting context state with new values...');

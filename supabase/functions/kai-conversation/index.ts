@@ -255,14 +255,31 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    let finalMessage = geminiResponse.message;
+    let finalQuickReplies = geminiResponse.quickReplies || [];
+    let finalNextState = geminiResponse.nextState || 'collecting_preferences';
+
+    if (recommendations && recommendations.length > 0) {
+      const childName = updatedContext.childName || 'your child';
+      const sessionCount = recommendations.length;
+      const cityText = updatedContext.preferredCity ? ` in ${updatedContext.preferredCity.charAt(0).toUpperCase() + updatedContext.preferredCity.slice(1)}` : '';
+      finalMessage = `Great news! I found ${sessionCount} session${sessionCount > 1 ? 's' : ''} for ${childName}${cityText}. Here are the best options:`;
+      finalNextState = 'showing_recommendations';
+      finalQuickReplies = ['Show other programs', 'Different day/time'];
+    } else if (recommendations !== null && recommendations.length === 0 && updatedContext.childAge && updatedContext.preferredDays?.length > 0) {
+      const childName = updatedContext.childName || 'your child';
+      finalMessage = `I wasn't able to find exact matches for ${childName} with those preferences. Would you like to try different days or times, or perhaps a different location?`;
+      finalQuickReplies = ['Show all days', 'Show all locations', 'Start over'];
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         response: {
-          message: geminiResponse.message,
-          nextState: geminiResponse.nextState || 'collecting_preferences',
+          message: finalMessage,
+          nextState: finalNextState,
           extractedData: updatedContext,
-          quickReplies: geminiResponse.quickReplies || [],
+          quickReplies: finalQuickReplies,
           progress: calculateProgress(updatedContext),
           recommendations: recommendations,
         },
@@ -417,10 +434,12 @@ Extract TWO types of location data:
 1. FIRST: Check if the parent already mentioned sport, day, time, or location in previous messages - DO NOT ask again!
 2. If you don't have the child's name, ask for it warmly
 3. Once you have name, ask for age if missing
-4. Once you have name+age+sport+day/time, proceed to search for classes
+4. Once you have name+age+sport+day/time, say "Let me search for [day] [time] [sport] sessions [in city] for [name]!" - the backend will handle the actual search
 5. Keep it conversational - don't sound like a form
 6. If parent provides multiple pieces of info, acknowledge ALL before asking next question
 7. NEVER ask about something the parent has already told you!
+8. CRITICAL: NEVER say "I couldn't find any sessions" or "no sessions available" - you do NOT have access to the database. The backend searches for sessions separately. Just say you're searching and the results will be shown automatically.
+9. CRITICAL: You MUST ALWAYS include extractedData in your response with ALL known values. The backend uses extractedData to search. If you don't include it, the search won't run!
 
 ## Example: Parent provides info across multiple messages
 

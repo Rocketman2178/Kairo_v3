@@ -64,6 +64,8 @@ export interface ConversationContext {
   preferredTime?: string;
   preferredTimeOfDay?: string;
   preferredProgram?: string;
+  preferredCity?: string;
+  preferredLocation?: string;
   children?: Array<{
     firstName: string;
     age?: number;
