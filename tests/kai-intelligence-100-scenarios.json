@@ -1,0 +1,2649 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "description": "100 test scenarios for Kairo Intelligence Agent (Kai)",
+    "supabaseProject": "tatunnfxwfsyoiqoaenb",
+    "n8nWorkflowId": "WN1T9cPLJjgg4urm",
+    "organizationId": "00000000-0000-0000-0000-000000000001",
+    "webhookPath": "kai-conversation",
+    "createdAt": "2026-02-16"
+  },
+  "scenarios": [
+    {
+      "id": "T001",
+      "category": "Greeting & Onboarding",
+      "name": "Basic greeting initiates conversation",
+      "userMessage": "Hi",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "greeting",
+        "childName": null,
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": []
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {},
+        "responseShould": "Greet warmly, introduce itself as Kai, ask for child name and age",
+        "shouldNotDo": ["Call Search Sessions", "Call Get Alternatives", "Ask about day/time preferences before name/age"]
+      },
+      "dbDependency": "Organization exists with ai_agent_name='Kai'"
+    },
+    {
+      "id": "T002",
+      "category": "Greeting & Onboarding",
+      "name": "Explicit registration intent with sport",
+      "userMessage": "I'd like to register my son for soccer",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "greeting",
+        "childName": null,
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": []
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {"preferredProgram": "soccer"},
+        "responseShould": "Acknowledge soccer interest, ask for child name and age",
+        "shouldNotDo": ["Call Search Sessions without age", "Recommend specific sessions"]
+      },
+      "dbDependency": "Soccer programs exist"
+    },
+    {
+      "id": "T003",
+      "category": "Greeting & Onboarding",
+      "name": "Full info dump in first message",
+      "userMessage": "Hi, sign up my daughter Emma, she's 5, for soccer on Saturdays",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "greeting",
+        "childName": null,
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": []
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {"childName": "Emma", "childAge": 5, "preferredProgram": "soccer", "preferredDays": [6]},
+        "responseShould": "Extract all info, search for Junior Soccer Saturday sessions for age 5, present results with program/day/time/location/spots",
+        "shouldNotDo": ["Re-ask for name or age", "Ask about preferences already provided"]
+      },
+      "dbDependency": "Junior Soccer Saturday sessions exist for age 5"
+    },
+    {
+      "id": "T004",
+      "category": "Greeting & Onboarding",
+      "name": "Returning family mention",
+      "userMessage": "We did Soccer Shots last season and want to sign up again for spring",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "greeting",
+        "childName": null,
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": []
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {},
+        "responseShould": "Acknowledge returning family status, may mention returning family discount (5%), ask which child and what program/preferences",
+        "shouldNotDo": ["Search sessions without child info"]
+      },
+      "dbDependency": "Spring 2025 season exists, returning_discount_percent=5"
+    },
+    {
+      "id": "T005",
+      "category": "Greeting & Onboarding",
+      "name": "Program inquiry before registering",
+      "userMessage": "What programs do you offer?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "greeting",
+        "childName": null,
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": []
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {},
+        "responseShould": "List program categories: Soccer (Mini ages 2-3, Junior ages 4-6, Classic ages 4-7, Premier ages 7-12, Teen ages 10-14, High School ages 15-18), Basketball (Youth ages 5-8, Teen ages 9-13, High School ages 14-18), Swimming (Learn to Swim ages 4-8, Intermediate ages 8-12, Advanced ages 11-16), Creative Arts Studio (ages 6-14)",
+        "shouldNotDo": ["Search sessions without child age"]
+      },
+      "dbDependency": "All 15 programs exist"
+    },
+    {
+      "id": "T006",
+      "category": "Greeting & Onboarding",
+      "name": "Multiple children mention",
+      "userMessage": "I have two kids, ages 3 and 6, and I'm looking to get them into soccer",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "greeting",
+        "childName": null,
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": []
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {"preferredProgram": "soccer"},
+        "responseShould": "Acknowledge both children, mention sibling discount (10%), suggest handling one at a time, ask for first child's name",
+        "shouldNotDo": ["Search for both children simultaneously", "Ignore sibling discount opportunity"]
+      },
+      "dbDependency": "Mini Soccer (age 3) and Junior Soccer (age 6) exist, sibling_discount_percent=10"
+    },
+    {
+      "id": "T007",
+      "category": "Greeting & Onboarding",
+      "name": "Informal casual greeting",
+      "userMessage": "Hey there! My kid needs a sport activity",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "greeting",
+        "childName": null,
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": []
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {},
+        "responseShould": "Warm friendly greeting, ask for child name and age, ask what sport interests them",
+        "shouldNotDo": ["Be overly formal", "Search without child info"]
+      },
+      "dbDependency": "Organization exists"
+    },
+    {
+      "id": "T008",
+      "category": "Greeting & Onboarding",
+      "name": "Only child name provided",
+      "userMessage": "I want to register Jake",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "greeting",
+        "childName": null,
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": []
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {"childName": "Jake"},
+        "responseShould": "Acknowledge Jake by name, ask for age and what sport they are interested in",
+        "shouldNotDo": ["Search without age", "Re-ask for name"]
+      },
+      "dbDependency": "Organization exists"
+    },
+    {
+      "id": "T009",
+      "category": "Greeting & Onboarding",
+      "name": "Emoji and informal message",
+      "userMessage": "hey! looking for soccer for my little one",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "greeting",
+        "childName": null,
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": []
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {"preferredProgram": "soccer"},
+        "responseShould": "Warm response, acknowledge soccer interest, ask for child name and age",
+        "shouldNotDo": ["Search without age"]
+      },
+      "dbDependency": "Soccer programs exist"
+    },
+    {
+      "id": "T010",
+      "category": "Greeting & Onboarding",
+      "name": "Returning to existing conversation",
+      "userMessage": "I'm back, can we continue?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Liam",
+        "childAge": 6,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Hi, I want to register my son Liam, he is 6"},
+          {"role": "assistant", "content": "Great! I can help you find a program for Liam. What sport is he interested in?"}
+        ]
+      },
+      "conversationId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa001",
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {},
+        "responseShould": "Welcome Liam's parent back, reference Liam by name, acknowledge age 6 is known, ask about sport/day/time preferences WITHOUT re-asking name or age",
+        "shouldNotDo": ["Ask for child name again", "Ask for age again", "Start from scratch"]
+      },
+      "dbDependency": "Test conversation aaaaaaaa-...-001 exists with Liam/6 context"
+    },
+    {
+      "id": "T011",
+      "category": "Child Info Extraction",
+      "name": "Name and age together",
+      "userMessage": "Her name is Sophia and she's 7 years old",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_child_info",
+        "childName": null,
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "assistant", "content": "Welcome! What is your child's name and age?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {"childName": "Sophia", "childAge": 7},
+        "responseShould": "Acknowledge Sophia (age 7), transition to preference collection, ask about sport/day/time preferences",
+        "shouldNotDo": ["Re-ask for name or age"]
+      },
+      "dbDependency": "None"
+    },
+    {
+      "id": "T012",
+      "category": "Child Info Extraction",
+      "name": "Age only without name",
+      "userMessage": "He's 4",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_child_info",
+        "childName": null,
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "assistant", "content": "I'd love to help! What is your child's name and how old are they?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {"childAge": 4},
+        "responseShould": "Acknowledge age 4, ask for the child's name",
+        "shouldNotDo": ["Search without name", "Skip asking for name"]
+      },
+      "dbDependency": "None"
+    },
+    {
+      "id": "T013",
+      "category": "Child Info Extraction",
+      "name": "Name only without age",
+      "userMessage": "His name is Tommy",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_child_info",
+        "childName": null,
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "assistant", "content": "Welcome! What is your child's name and age?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {"childName": "Tommy"},
+        "responseShould": "Acknowledge Tommy, ask for his age",
+        "shouldNotDo": ["Search without age", "Skip asking for age"]
+      },
+      "dbDependency": "None"
+    },
+    {
+      "id": "T014",
+      "category": "Child Info Extraction",
+      "name": "Age as words not digits",
+      "userMessage": "She just turned five",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_child_info",
+        "childName": "Mia",
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Her name is Mia"},
+          {"role": "assistant", "content": "Nice to meet Mia! How old is she?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {"childAge": 5},
+        "responseShould": "Extract age 5 from word 'five', ask about sport/day/time preferences for Mia",
+        "shouldNotDo": ["Fail to parse written number", "Re-ask for age"]
+      },
+      "dbDependency": "None"
+    },
+    {
+      "id": "T015",
+      "category": "Child Info Extraction",
+      "name": "Toddler below minimum age range",
+      "userMessage": "He's 1 year old",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_child_info",
+        "childName": "Leo",
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "I want to register Leo"},
+          {"role": "assistant", "content": "How old is Leo?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {"childAge": 1},
+        "responseShould": "Politely explain youngest program (Mini Soccer) starts at age 2, suggest checking back when Leo turns 2",
+        "shouldNotDo": ["Search for sessions", "Crash or error", "Pretend programs exist for age 1"]
+      },
+      "dbDependency": "Mini Soccer age_min=2 is the lowest"
+    },
+    {
+      "id": "T016",
+      "category": "Child Info Extraction",
+      "name": "Teenager at upper bound age 18",
+      "userMessage": "She's 18",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_child_info",
+        "childName": "Sarah",
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Register Sarah please"},
+          {"role": "assistant", "content": "How old is Sarah?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {"childAge": 18},
+        "responseShould": "List eligible programs: High School Basketball [14,19) and High School Soccer [15,19), ask which sport interests Sarah",
+        "shouldNotDo": ["Say no programs are available", "Include teen programs which exclude 18"]
+      },
+      "dbDependency": "HS Basketball and HS Soccer exist with age_max=19"
+    },
+    {
+      "id": "T017",
+      "category": "Child Info Extraction",
+      "name": "Age above all program ranges",
+      "userMessage": "My son is 19, just turned",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_child_info",
+        "childName": "Brandon",
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "I want to register Brandon"},
+          {"role": "assistant", "content": "How old is Brandon?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {"childAge": 19},
+        "responseShould": "Explain all programs are for ages 2-18 (exclusive upper bound on [14,19) means 19 is excluded), politely say no programs available for age 19",
+        "shouldNotDo": ["Suggest HS programs", "Search for sessions"]
+      },
+      "dbDependency": "No programs with upper bound > 19"
+    },
+    {
+      "id": "T018",
+      "category": "Child Info Extraction",
+      "name": "Date of birth instead of age",
+      "userMessage": "He was born on March 15, 2019",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_child_info",
+        "childName": "Oliver",
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Register Oliver"},
+          {"role": "assistant", "content": "How old is Oliver?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {"childAge": 6},
+        "responseShould": "Calculate age from DOB (March 2019 = ~6 years old), acknowledge Oliver is 6, ask about preferences",
+        "shouldNotDo": ["Ask for age again", "Fail to calculate from DOB"]
+      },
+      "dbDependency": "None"
+    },
+    {
+      "id": "T019",
+      "category": "Child Info Extraction",
+      "name": "Ambiguous age statement",
+      "userMessage": "She'll be 4 next month",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_child_info",
+        "childName": "Lily",
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Register Lily for soccer"},
+          {"role": "assistant", "content": "How old is Lily?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {},
+        "responseShould": "Clarify current age vs upcoming birthday (age 3 qualifies for Mini Soccer [2,4) but age 4 does NOT - it qualifies for Junior [4,7)), ask if Lily is currently 3",
+        "shouldNotDo": ["Assume age without clarifying", "Ignore the age boundary significance"]
+      },
+      "dbDependency": "Mini Soccer [2,4) and Junior Soccer [4,7) exist"
+    },
+    {
+      "id": "T020",
+      "category": "Child Info Extraction",
+      "name": "Correcting previously provided age",
+      "userMessage": "Actually, I made a mistake. He's 6, not 5",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Max",
+        "childAge": 5,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Register Max, he's 5, for soccer"},
+          {"role": "assistant", "content": "Great! What days work for Max?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {"childAge": 6},
+        "responseShould": "Update age to 6, acknowledge the correction, note that age 6 adds Creative Arts Studio [6,15) as an option alongside Junior/Classic Soccer",
+        "shouldNotDo": ["Keep using age 5", "Ignore the correction"]
+      },
+      "dbDependency": "Programs for age 6 exist"
+    },
+    {
+      "id": "T021",
+      "category": "Preference Collection",
+      "name": "Single day preference",
+      "userMessage": "We're looking for Saturday classes",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Emma",
+        "childAge": 5,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Emma, age 5"},
+          {"role": "assistant", "content": "What days and sport interest Emma?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {"preferredDays": [6]},
+        "responseShould": "Acknowledge Saturday preference, ask about time preference and/or sport if not yet known",
+        "shouldNotDo": ["Search without knowing sport preference"]
+      },
+      "dbDependency": "Saturday sessions exist for age 5"
+    },
+    {
+      "id": "T022",
+      "category": "Preference Collection",
+      "name": "Multiple day preferences",
+      "userMessage": "Tuesday or Thursday would work best for us",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Jake",
+        "childAge": 8,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Jake, 8 years old"},
+          {"role": "assistant", "content": "What days and sport interest Jake?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {"preferredDays": [2, 4]},
+        "responseShould": "Acknowledge Tuesday/Thursday, ask about sport and time preference",
+        "shouldNotDo": ["Only capture one day"]
+      },
+      "dbDependency": "Sessions on Tue/Thu for age 8"
+    },
+    {
+      "id": "T023",
+      "category": "Preference Collection",
+      "name": "Weekday plus time combo",
+      "userMessage": "Any weekday afternoon would work",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Lily",
+        "childAge": 6,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Lily, 6, soccer"},
+          {"role": "assistant", "content": "What days and times work for Lily?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {"preferredDays": [1, 2, 3, 4, 5], "preferredTimeOfDay": "afternoon"},
+        "responseShould": "Search for Junior/Classic Soccer weekday afternoon sessions for age 6, present results",
+        "shouldNotDo": ["Only search one weekday", "Include weekend results"]
+      },
+      "dbDependency": "Junior Soccer weekday afternoon sessions exist"
+    },
+    {
+      "id": "T024",
+      "category": "Preference Collection",
+      "name": "Morning time preference",
+      "userMessage": "Morning classes only please",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Sophia",
+        "childAge": 3,
+        "preferredDays": [6],
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Sophia, 3, soccer, Saturdays"},
+          {"role": "assistant", "content": "What time of day works best?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {"preferredTimeOfDay": "morning"},
+        "responseShould": "Search for Mini Soccer Saturday morning sessions for age 3, present results",
+        "shouldNotDo": ["Include afternoon/evening sessions"]
+      },
+      "dbDependency": "Mini Soccer Sat 9AM sessions exist"
+    },
+    {
+      "id": "T025",
+      "category": "Preference Collection",
+      "name": "Evening time preference",
+      "userMessage": "After work, so evenings around 5 or 6 PM",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Ryan",
+        "childAge": 10,
+        "preferredDays": [1, 3],
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Ryan, 10, soccer, Monday and Wednesday"},
+          {"role": "assistant", "content": "What time of day works best?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {"preferredTimeOfDay": "evening"},
+        "responseShould": "Search Teen Soccer/Premier Soccer Mon/Wed evening sessions for age 10, present results",
+        "shouldNotDo": ["Return morning sessions"]
+      },
+      "dbDependency": "Teen Soccer and Premier Soccer evening sessions on Mon/Wed for age 10"
+    },
+    {
+      "id": "T026",
+      "category": "Preference Collection",
+      "name": "Basketball sport selection",
+      "userMessage": "We want to try basketball",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Ethan",
+        "childAge": 7,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Ethan, age 7"},
+          {"role": "assistant", "content": "What sport interests Ethan?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {"preferredProgram": "basketball"},
+        "responseShould": "Acknowledge basketball interest, note age 7 matches Youth Basketball [5,9), ask about day/time preferences",
+        "shouldNotDo": ["Suggest Teen Basketball for age 7"]
+      },
+      "dbDependency": "Youth Basketball sessions exist"
+    },
+    {
+      "id": "T027",
+      "category": "Preference Collection",
+      "name": "Swimming sport selection",
+      "userMessage": "Do you have swimming lessons?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Mia",
+        "childAge": 6,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Mia, 6"},
+          {"role": "assistant", "content": "What sport interests Mia?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {"preferredProgram": "swim"},
+        "responseShould": "Confirm swimming is available, note Learn to Swim [4,9) fits age 6, ask about day/time preference",
+        "shouldNotDo": ["Suggest Intermediate Swimming which starts at age 8"]
+      },
+      "dbDependency": "Learn to Swim sessions exist"
+    },
+    {
+      "id": "T028",
+      "category": "Preference Collection",
+      "name": "No sport preference asks for recommendations",
+      "userMessage": "I'm not sure what sport, what do you recommend for a 5-year-old?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Ava",
+        "childAge": 5,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Ava, age 5"},
+          {"role": "assistant", "content": "What sport interests Ava?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {},
+        "responseShould": "List all programs for age 5: Junior Soccer [4,7), Classic Soccer [4,8), Learn to Swim [4,9), Youth Basketball [5,9). Ask which sounds interesting",
+        "shouldNotDo": ["Search sessions without program selection", "Include Mini Soccer (age 5 excluded from [2,4))", "Include Creative Arts (starts at 6)"]
+      },
+      "dbDependency": "Programs with age ranges including 5"
+    },
+    {
+      "id": "T029",
+      "category": "Preference Collection",
+      "name": "Location preference",
+      "userMessage": "Is there anything in Irvine?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Noah",
+        "childAge": 4,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Noah, 4, soccer"},
+          {"role": "assistant", "content": "What days and location work best?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Search for Junior/Classic Soccer in Irvine for age 4, present sessions at Beacon Park, Oakwood, Milestones Montessori",
+        "shouldNotDo": ["Return sessions outside Irvine"]
+      },
+      "dbDependency": "Sessions at Irvine locations (Beacon Park, Oakwood Recreation Center)"
+    },
+    {
+      "id": "T030",
+      "category": "Preference Collection",
+      "name": "All preferences at once",
+      "userMessage": "We want soccer on Saturdays in the morning in Rancho Santa Margarita",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Liam",
+        "childAge": 6,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Liam, 6"},
+          {"role": "assistant", "content": "What are Liam's preferences?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {"preferredDays": [6], "preferredTimeOfDay": "morning", "preferredProgram": "soccer"},
+        "responseShould": "Search with all filters: age 6, Saturday, morning, soccer, RSM. Return Junior/Classic Soccer at Central Park or RSM Community Center",
+        "shouldNotDo": ["Ask for more info when all preferences are provided"]
+      },
+      "dbDependency": "Junior/Classic Soccer Saturday morning sessions at RSM locations"
+    },
+    {
+      "id": "T031",
+      "category": "Session Search - Basic",
+      "name": "Standard soccer search with stored context",
+      "userMessage": "Show me what's available",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Emma",
+        "childAge": 5,
+        "preferredDays": [6],
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Emma, 5, soccer, Saturdays"},
+          {"role": "assistant", "content": "Let me search for Saturday soccer options for Emma!"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Use stored context to search Junior Soccer Saturday for age 5, present results with program name, day/time, location, coach rating, spots remaining, price",
+        "shouldNotDo": ["Re-ask for preferences", "Search without using stored context"]
+      },
+      "dbDependency": "Junior Soccer Saturday sessions for age 5 at various locations"
+    },
+    {
+      "id": "T032",
+      "category": "Session Search - Basic",
+      "name": "Basketball search with time filter",
+      "userMessage": "What basketball options do you have?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Jake",
+        "childAge": 7,
+        "preferredDays": [3],
+        "preferredTimeOfDay": "afternoon",
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Jake, 7, Wednesday afternoon"},
+          {"role": "assistant", "content": "What sport interests Jake?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {"preferredProgram": "basketball"},
+        "responseShould": "Search Youth Basketball [5,9) Wed afternoon for age 7, present matching sessions",
+        "shouldNotDo": ["Suggest Teen Basketball for age 7"]
+      },
+      "dbDependency": "Youth Basketball Wed afternoon sessions"
+    },
+    {
+      "id": "T033",
+      "category": "Session Search - Basic",
+      "name": "Swimming search returning multiple tiers",
+      "userMessage": "Find swimming classes for my daughter",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Lily",
+        "childAge": 8,
+        "preferredDays": [2, 4],
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Lily, 8, Tuesdays and Thursdays"},
+          {"role": "assistant", "content": "What sport?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {"preferredProgram": "swim"},
+        "responseShould": "Search swimming Tue/Thu for age 8. Age 8 matches Learn to Swim [4,9) AND Intermediate Swimming [8,13). Present both tiers",
+        "shouldNotDo": ["Only return one swimming tier"]
+      },
+      "dbDependency": "Learn to Swim and Intermediate Swimming Tue/Thu sessions"
+    },
+    {
+      "id": "T034",
+      "category": "Session Search - Basic",
+      "name": "Multiple results with urgency ordering",
+      "userMessage": "What Saturday morning soccer classes are available?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Noah",
+        "childAge": 3,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Noah, age 3"},
+          {"role": "assistant", "content": "What are you looking for?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {"preferredDays": [6], "preferredTimeOfDay": "morning", "preferredProgram": "soccer"},
+        "responseShould": "Search Mini Soccer [2,4) Sat morning for age 3, return multiple results ordered by urgency (filling_fast first) then rating",
+        "shouldNotDo": ["Return Junior Soccer (age 3 excluded from [4,7))"]
+      },
+      "dbDependency": "Mini Soccer Saturday morning sessions at various fill levels"
+    },
+    {
+      "id": "T035",
+      "category": "Session Search - Basic",
+      "name": "Search with no day preference",
+      "userMessage": "Any morning soccer class will do",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Ava",
+        "childAge": 6,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Ava, 6"},
+          {"role": "assistant", "content": "Preferences?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {"preferredTimeOfDay": "morning", "preferredProgram": "soccer"},
+        "responseShould": "Search all days, morning, soccer for age 6. Return Junior/Classic Soccer morning sessions across all weekdays/weekends",
+        "shouldNotDo": ["Restrict to a single day"]
+      },
+      "dbDependency": "Junior/Classic Soccer morning sessions across multiple days"
+    },
+    {
+      "id": "T036",
+      "category": "Session Search - Basic",
+      "name": "Filling fast urgency indicator",
+      "userMessage": "What's available on Saturdays?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Oliver",
+        "childAge": 5,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Oliver, 5, soccer"},
+          {"role": "assistant", "content": "What days?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {"preferredDays": [6]},
+        "responseShould": "Return Saturday Junior Soccer for age 5 with urgency indicators. Sessions with filling_fast urgency should be highlighted (e.g., 'Only X spots left!')",
+        "shouldNotDo": ["Hide urgency information from parent"]
+      },
+      "dbDependency": "Junior Soccer Sat sessions with varying fill rates"
+    },
+    {
+      "id": "T037",
+      "category": "Session Search - Basic",
+      "name": "Location-filtered search",
+      "userMessage": "What's in Orange for soccer?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Sophia",
+        "childAge": 5,
+        "preferredDays": [3],
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Sophia, 5, Wednesday"},
+          {"role": "assistant", "content": "What sport and location?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {"preferredProgram": "soccer"},
+        "responseShould": "Search Junior Soccer Wed in Orange for age 5. Return sessions at Main Sports Complex, East Park, or Westside Sports Complex",
+        "shouldNotDo": ["Return sessions at non-Orange locations"]
+      },
+      "dbDependency": "Junior Soccer Wed sessions in Orange"
+    },
+    {
+      "id": "T038",
+      "category": "Session Search - Basic",
+      "name": "Arts program search",
+      "userMessage": "Do you have any arts programs?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Mia",
+        "childAge": 10,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Mia, 10"},
+          {"role": "assistant", "content": "What sport?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {"preferredProgram": "arts"},
+        "responseShould": "Search Creative Arts Studio [6,15) for age 10, return available sessions with details",
+        "shouldNotDo": ["Say arts programs don't exist"]
+      },
+      "dbDependency": "Creative Arts Studio sessions (Tue 10AM, Wed 10AM, Thu 10:30, Fri 2PM, Sat 3PM)"
+    },
+    {
+      "id": "T039",
+      "category": "Session Search - Basic",
+      "name": "Single result returned",
+      "userMessage": "Looking for Sunday basketball",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Ethan",
+        "childAge": 12,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Ethan, 12"},
+          {"role": "assistant", "content": "What sport?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {"preferredDays": [0], "preferredProgram": "basketball"},
+        "responseShould": "Search Teen Basketball [9,14) Sunday for age 12. Likely returns single result. Present it clearly and ask if they want to check availability or register",
+        "shouldNotDo": ["Return Youth Basketball (age 12 excluded from [5,9))"]
+      },
+      "dbDependency": "Teen Basketball Sunday sessions"
+    },
+    {
+      "id": "T040",
+      "category": "Session Search - Basic",
+      "name": "Fully constrained search",
+      "userMessage": "Saturday morning soccer in Irvine please",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Liam",
+        "childAge": 5,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Liam, 5"},
+          {"role": "assistant", "content": "Preferences?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {"preferredDays": [6], "preferredTimeOfDay": "morning", "preferredProgram": "soccer"},
+        "responseShould": "Apply all filters: age 5, Saturday, morning, soccer, Irvine. NOTE: Irvine Sat morning Junior Soccer sessions are now FULL (T059 dependency). Should return empty or limited results, may need to suggest alternatives",
+        "shouldNotDo": ["Return sessions from non-Irvine locations"]
+      },
+      "dbDependency": "Irvine Sat morning Junior Soccer sessions (now marked full per migration)"
+    },
+    {
+      "id": "T041",
+      "category": "Session Search - Time Constraints",
+      "name": "After 4 PM filter",
+      "userMessage": "We need something after 4 PM",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Ryan",
+        "childAge": 6,
+        "preferredDays": [3],
+        "preferredTimeOfDay": null,
+        "minStartTime": null,
+        "maxStartTime": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Ryan, 6, soccer, Wednesday"},
+          {"role": "assistant", "content": "What time works?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {"preferredTimeOfDay": "afternoon"},
+        "responseShould": "Filter for sessions starting at 4PM or later. Junior Soccer Wed 5PM should match. Present results with times clearly shown",
+        "shouldNotDo": ["Return morning sessions", "Return sessions before 4 PM"]
+      },
+      "dbDependency": "Junior Soccer Wed 5PM (17:00) at Orange"
+    },
+    {
+      "id": "T042",
+      "category": "Session Search - Time Constraints",
+      "name": "Before 10 AM filter",
+      "userMessage": "We need early morning, before 10 AM",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Tommy",
+        "childAge": 3,
+        "preferredDays": [6],
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Tommy, 3, soccer, Saturday"},
+          {"role": "assistant", "content": "What time?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {"preferredTimeOfDay": "morning"},
+        "responseShould": "Return Mini Soccer Sat 9AM sessions. Sessions at 10:30AM should ideally be excluded or noted as outside requested window",
+        "shouldNotDo": ["Return afternoon/evening sessions"]
+      },
+      "dbDependency": "Mini Soccer Sat 9AM and 9:45AM sessions"
+    },
+    {
+      "id": "T043",
+      "category": "Session Search - Time Constraints",
+      "name": "Between 2 and 5 PM range",
+      "userMessage": "Anything between 2 PM and 5 PM on Friday?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Sophia",
+        "childAge": 10,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Sophia, 10"},
+          {"role": "assistant", "content": "Preferences?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {"preferredDays": [5], "preferredTimeOfDay": "afternoon"},
+        "responseShould": "Search Friday afternoon for age 10. Return Creative Arts Fri 2PM [6,15) and any other matching sessions in 2-5 PM window",
+        "shouldNotDo": ["Return morning sessions", "Return sessions after 5 PM"]
+      },
+      "dbDependency": "Creative Arts Fri 2PM, possible Teen Soccer Fri sessions"
+    },
+    {
+      "id": "T044",
+      "category": "Session Search - Time Constraints",
+      "name": "Morning only nothing after noon - no results",
+      "userMessage": "Only mornings work, nothing after noon",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Emma",
+        "childAge": 4,
+        "preferredDays": [2],
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Emma, 4, soccer, Tuesday"},
+          {"role": "assistant", "content": "What time?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)", "Get Alternatives (Dynamic)"],
+        "shouldExtract": {"preferredTimeOfDay": "morning"},
+        "responseShould": "Search Junior Soccer Tuesday morning for age 4. Junior Soccer Tue only has 3PM. Returns empty. Suggest alternatives: different day for morning, or Tuesday at different time",
+        "shouldNotDo": ["Return the 3PM session as a match"]
+      },
+      "dbDependency": "Junior Soccer Tue only has 3PM session, no morning Tue session"
+    },
+    {
+      "id": "T045",
+      "category": "Session Search - Time Constraints",
+      "name": "After school around 3:30-4",
+      "userMessage": "Something after school, around 3:30 or 4",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Jake",
+        "childAge": 8,
+        "preferredDays": [1, 3],
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Jake, 8, Monday and Wednesday"},
+          {"role": "assistant", "content": "What time and sport?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {"preferredTimeOfDay": "afternoon"},
+        "responseShould": "Search Mon/Wed afternoon for age 8. Return sessions around 3-5 PM: Youth Basketball Wed 4PM/4:30PM/5PM, Classic Soccer sessions, etc.",
+        "shouldNotDo": ["Return morning sessions"]
+      },
+      "dbDependency": "Youth Basketball and Classic Soccer Mon/Wed afternoon sessions for age 8"
+    },
+    {
+      "id": "T046",
+      "category": "Session Search - Time Constraints",
+      "name": "Exact 9 AM time request",
+      "userMessage": "Do you have anything at exactly 9 AM on Saturday?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Lily",
+        "childAge": 5,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Lily, 5"},
+          {"role": "assistant", "content": "Preferences?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {"preferredDays": [6], "preferredTimeOfDay": "morning"},
+        "responseShould": "Search Saturday morning for age 5. Return sessions at exactly 9AM: Junior Soccer Sat 9AM, Youth Basketball Sat 9AM. May also show nearby times",
+        "shouldNotDo": ["Miss the 9AM sessions"]
+      },
+      "dbDependency": "Junior Soccer and Youth Basketball Sat 9AM sessions"
+    },
+    {
+      "id": "T047",
+      "category": "Session Search - Time Constraints",
+      "name": "Late afternoon 4-5 PM",
+      "userMessage": "Late afternoon, like 4-5 PM area",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Noah",
+        "childAge": 12,
+        "preferredDays": [4],
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Noah, 12, Thursday"},
+          {"role": "assistant", "content": "What time?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {"preferredTimeOfDay": "afternoon"},
+        "responseShould": "Search Thursday afternoon for age 12. Return Teen Soccer Thu 4PM (newly added), and other matching sessions in the 4-5 PM range",
+        "shouldNotDo": ["Return morning sessions", "Return sessions well outside 4-5 PM"]
+      },
+      "dbDependency": "Teen Soccer Thu 4PM (added in migration), Creative Arts Thu 10:30AM"
+    },
+    {
+      "id": "T048",
+      "category": "Session Search - Time Constraints",
+      "name": "Evening after 6 PM only",
+      "userMessage": "We can only do after 6 PM",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Ava",
+        "childAge": 15,
+        "preferredDays": [1, 3],
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Ava, 15, soccer, Monday/Wednesday"},
+          {"role": "assistant", "content": "What time?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {"preferredTimeOfDay": "evening"},
+        "responseShould": "Search HS Soccer [15,19) Mon/Wed evening for age 15. Return sessions at 7PM or later",
+        "shouldNotDo": ["Return afternoon sessions", "Return Teen Soccer (age 15 excluded from [10,15))"]
+      },
+      "dbDependency": "High School Soccer Mon/Wed 7PM sessions"
+    },
+    {
+      "id": "T049",
+      "category": "Session Search - Time Constraints",
+      "name": "Naptime conflict split search",
+      "userMessage": "She naps from 1-3 so anything before 1 or after 3:30 works",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Mia",
+        "childAge": 3,
+        "preferredDays": [2, 4],
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Mia, 3, soccer, Tue/Thu"},
+          {"role": "assistant", "content": "What time?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Understand naptime constraint (avoid 1-3 PM). Search Mini Soccer [2,4) Tue/Thu for morning sessions (before 1 PM) and/or late afternoon (after 3:30). Present sessions that avoid the nap window",
+        "shouldNotDo": ["Return sessions starting during 1-3 PM window"]
+      },
+      "dbDependency": "Mini Soccer Tue/Thu sessions outside 1-3 PM window"
+    },
+    {
+      "id": "T050",
+      "category": "Session Search - Time Constraints",
+      "name": "Lunchtime around 11-12",
+      "userMessage": "Around lunchtime, like 11 or 12 would be great",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Oliver",
+        "childAge": 7,
+        "preferredDays": [6],
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Oliver, 7, soccer, Saturday"},
+          {"role": "assistant", "content": "What time?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Search Saturday around 11-12 for age 7 soccer. Classic Soccer Sat 11AM (added in migration) at Beacon Park should match. Premier Soccer Sat 11AM (full) excluded by search",
+        "shouldNotDo": ["Return only 9 AM sessions when user asked for 11-12"]
+      },
+      "dbDependency": "Classic Soccer Sat 11AM at Beacon Park (added in migration)"
+    },
+    {
+      "id": "T051",
+      "category": "Age Boundary Cases",
+      "name": "Age 4 excluded from Mini Soccer [2,4)",
+      "userMessage": "She just turned 4, we want soccer",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Ava",
+        "childAge": 4,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": []
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Search soccer for age 4. Return Junior Soccer [4,7) and Classic Soccer [4,8) sessions. NOT Mini Soccer [2,4) since age 4 is excluded by exclusive upper bound",
+        "shouldNotDo": ["Return Mini Soccer sessions", "Treat age 4 as eligible for Mini Soccer [2,4)"]
+      },
+      "dbDependency": "Junior Soccer and Classic Soccer sessions exist"
+    },
+    {
+      "id": "T052",
+      "category": "Age Boundary Cases",
+      "name": "Age 3 max for Mini Soccer [2,4)",
+      "userMessage": "He's 3, what soccer classes fit him?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_child_info",
+        "childName": "Ethan",
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Soccer for my son Ethan"},
+          {"role": "assistant", "content": "How old is Ethan?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": { "childAge": 3 },
+        "responseShould": "Extract age 3, search soccer. Return ONLY Mini Soccer [2,4) sessions since age 3 is below Junior [4,7) minimum",
+        "shouldNotDo": ["Return Junior Soccer sessions", "Return Classic Soccer sessions"]
+      },
+      "dbDependency": "Mini Soccer sessions exist"
+    },
+    {
+      "id": "T053",
+      "category": "Age Boundary Cases",
+      "name": "Age 7 multi-program overlap",
+      "userMessage": "What's available for a 7-year-old?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Noah",
+        "childAge": 7,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "My son Noah is 7"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {},
+        "responseShould": "List eligible programs for age 7: Classic Soccer [4,8), Premier Soccer [7,11), Youth Basketball [5,9), Creative Arts Studio [6,15). Ask about sport preference or day/time to narrow down",
+        "shouldNotDo": ["Include Mini Soccer [2,4)", "Include Junior Soccer [4,7) since 7 is excluded", "Include Learn to Swim [4,9) without mentioning it", "Immediately search without asking preferences"]
+      },
+      "dbDependency": "Multiple programs with overlapping age ranges covering age 7"
+    },
+    {
+      "id": "T054",
+      "category": "Age Boundary Cases",
+      "name": "Age 9 Youth to Teen basketball transition",
+      "userMessage": "Basketball for my 9-year-old please",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Mason",
+        "childAge": 9,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": "basketball",
+        "messages": []
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Search basketball for age 9. Return ONLY Teen Basketball [9,14) sessions. Youth Basketball [5,9) excludes age 9 due to exclusive upper bound",
+        "shouldNotDo": ["Return Youth Basketball sessions", "Suggest Youth Basketball as an option"]
+      },
+      "dbDependency": "Teen Basketball sessions exist"
+    },
+    {
+      "id": "T055",
+      "category": "Age Boundary Cases",
+      "name": "Age 14 teen/HS boundary",
+      "userMessage": "What can my 14-year-old do?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Isabella",
+        "childAge": 14,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": []
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {},
+        "responseShould": "List eligible programs for age 14: HS Basketball [14,19), Teen Soccer [10,15), Advanced Swimming [11,17), Creative Arts Studio [6,15). Ask about sport preference",
+        "shouldNotDo": ["Include Teen Basketball [9,14) since 14 is excluded", "Include Intermediate Swimming [8,13)"]
+      },
+      "dbDependency": "Programs with ranges covering age 14"
+    },
+    {
+      "id": "T056",
+      "category": "Age Boundary Cases",
+      "name": "Age 2 absolute minimum",
+      "userMessage": "He just turned 2, is there anything for him?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_child_info",
+        "childName": "Lucas",
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "My son Lucas"},
+          {"role": "assistant", "content": "How old is Lucas?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": { "childAge": 2 },
+        "responseShould": "Extract age 2. Only Mini Soccer [2,4) is available for age 2. Search and return Mini Soccer sessions",
+        "shouldNotDo": ["Say no programs available", "Suggest programs for older children"]
+      },
+      "dbDependency": "Mini Soccer sessions exist"
+    },
+    {
+      "id": "T057",
+      "category": "Age Boundary Cases",
+      "name": "Age 11 swimming tier transition",
+      "userMessage": "Swimming for my 11-year-old",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Mia",
+        "childAge": 11,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": "swim",
+        "messages": []
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Search swimming for age 11. Return BOTH Intermediate Swimming [8,13) AND Advanced Swimming [11,17) sessions since age 11 falls in both ranges",
+        "shouldNotDo": ["Return Learn to Swim [4,9) sessions", "Only show one swimming tier"]
+      },
+      "dbDependency": "Intermediate and Advanced Swimming sessions exist"
+    },
+    {
+      "id": "T058",
+      "category": "Age Boundary Cases",
+      "name": "Age 15 Teen to HS soccer transition",
+      "userMessage": "Soccer for my 15-year-old",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Charlotte",
+        "childAge": 15,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": []
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Search soccer for age 15. Return ONLY HS Soccer [15,19) sessions. Teen Soccer [10,15) excludes age 15 due to exclusive upper bound",
+        "shouldNotDo": ["Return Teen Soccer sessions", "Suggest Teen Soccer as an option"]
+      },
+      "dbDependency": "HS Soccer sessions exist"
+    },
+    {
+      "id": "T059",
+      "category": "Full Session & Waitlist",
+      "name": "All matching sessions full",
+      "userMessage": "Saturday morning soccer in Irvine please",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Lily",
+        "childAge": 5,
+        "preferredDays": [6],
+        "preferredTimeOfDay": "morning",
+        "preferredProgram": "soccer",
+        "messages": []
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)", "Get Alternatives (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Search returns empty (Irvine Sat AM Junior Soccer sessions are full). Call get_alternative_sessions to find nearby options. Offer alternatives and mention waitlist option for the full sessions",
+        "shouldNotDo": ["Show full sessions as available", "Give up without suggesting alternatives"]
+      },
+      "dbDependency": "Irvine Saturday AM Junior Soccer sessions set to full (enrolled=capacity) in migration"
+    },
+    {
+      "id": "T060",
+      "category": "Full Session & Waitlist",
+      "name": "Ask about specific full session",
+      "userMessage": "What about the Saturday 10:30 Premier Soccer at Oakwood?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "showing_recommendations",
+        "childName": "Lily",
+        "childAge": 10,
+        "preferredDays": [6],
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Saturday soccer for my 10-year-old Lily"},
+          {"role": "assistant", "content": "I found several Saturday soccer sessions. Here are the options..."},
+          {"role": "user", "content": "What about the Saturday 10:30 Premier Soccer at Oakwood?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Check Availability (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Check availability for that specific session. If full (enrolled >= capacity), inform parent and offer waitlist + alternatives",
+        "shouldNotDo": ["Assume session is available without checking", "Skip offering waitlist"]
+      },
+      "dbDependency": "Premier Soccer Sat 10:30 at Oakwood exists (may be full)"
+    },
+    {
+      "id": "T061",
+      "category": "Full Session & Waitlist",
+      "name": "Accept waitlist offer",
+      "userMessage": "Yes, add us to the waitlist",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "showing_recommendations",
+        "childName": "Lily",
+        "childAge": 5,
+        "preferredDays": [6],
+        "preferredTimeOfDay": "morning",
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Saturday morning soccer in Irvine"},
+          {"role": "assistant", "content": "The Saturday morning Junior Soccer sessions in Irvine are currently full. Would you like me to add you to the waitlist?"},
+          {"role": "user", "content": "Yes, add us to the waitlist"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Add to Waitlist (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Call add_to_waitlist with the full session ID and child info. Confirm waitlist position number and explain notification process when spot opens",
+        "shouldNotDo": ["Add to waitlist without confirming which session", "Skip confirming the waitlist position"]
+      },
+      "dbDependency": "Full Junior Soccer session in Irvine with existing waitlist entries"
+    },
+    {
+      "id": "T062",
+      "category": "Full Session & Waitlist",
+      "name": "Decline waitlist, want alternatives",
+      "userMessage": "No thanks, what else is available?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "showing_recommendations",
+        "childName": "Lily",
+        "childAge": 5,
+        "preferredDays": [6],
+        "preferredTimeOfDay": "morning",
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Saturday morning soccer in Irvine"},
+          {"role": "assistant", "content": "Those sessions are full. Want to join the waitlist?"},
+          {"role": "user", "content": "No thanks, what else is available?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Get Alternatives (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Call get_alternative_sessions excluding the full session. Suggest different days, times, or nearby locations with available spots",
+        "shouldNotDo": ["Re-show the full sessions", "Only suggest waitlist again"]
+      },
+      "dbDependency": "Alternative Junior Soccer sessions exist outside Irvine Sat AM"
+    },
+    {
+      "id": "T063",
+      "category": "Full Session & Waitlist",
+      "name": "Availability check on open session",
+      "userMessage": "Is there still space in the Sunday Junior Soccer at 9:45?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "showing_recommendations",
+        "childName": "Harper",
+        "childAge": 5,
+        "preferredDays": [0],
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Sunday soccer for age 5"},
+          {"role": "assistant", "content": "Here are the Sunday Junior Soccer options..."}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Check Availability (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Check session availability. If available, confirm spots remaining and ask if they want to proceed with registration",
+        "shouldNotDo": ["Skip the availability check", "Assume it's full without checking"]
+      },
+      "dbDependency": "Sunday Junior Soccer 9:45 session exists with available spots"
+    },
+    {
+      "id": "T064",
+      "category": "Full Session & Waitlist",
+      "name": "All sessions in specific day full",
+      "userMessage": "Monday High School Basketball?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Caleb",
+        "childAge": 16,
+        "preferredDays": [1],
+        "preferredTimeOfDay": null,
+        "preferredProgram": "basketball",
+        "messages": []
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)", "Get Alternatives (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Search HS Basketball Monday. If empty or all full, call get_alternative_sessions. Suggest other days (Tue, Thu, Sat) for HS Basketball",
+        "shouldNotDo": ["Give up without searching alternatives", "Suggest Teen Basketball (age 16 is excluded from [9,14))"]
+      },
+      "dbDependency": "HS Basketball sessions on multiple days"
+    },
+    {
+      "id": "T065",
+      "category": "Full Session & Waitlist",
+      "name": "Waitlist with existing entries",
+      "userMessage": "Add us to the Sunday Junior Soccer waitlist",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "showing_recommendations",
+        "childName": "Zoe",
+        "childAge": 5,
+        "preferredDays": [0],
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Sunday Junior Soccer"},
+          {"role": "assistant", "content": "That session is currently full. There are already 3 families on the waitlist. Would you like to join?"},
+          {"role": "user", "content": "Add us to the Sunday Junior Soccer waitlist"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Add to Waitlist (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Call add_to_waitlist. Return position 4+ (since 3 existing entries). Confirm position and explain how notifications work",
+        "shouldNotDo": ["Say they're position 1", "Skip confirming the waitlist position number"]
+      },
+      "dbDependency": "Sunday Junior Soccer session with 3 existing waitlist entries"
+    },
+    {
+      "id": "T066",
+      "category": "Full Session & Waitlist",
+      "name": "Full soccer, try basketball same day",
+      "userMessage": "Saturday soccer is full? What about basketball on Saturday?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "showing_recommendations",
+        "childName": "Lily",
+        "childAge": 7,
+        "preferredDays": [6],
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Saturday soccer for age 7"},
+          {"role": "assistant", "content": "The Saturday soccer sessions are currently full."}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": { "preferredProgram": "basketball" },
+        "responseShould": "Update program to basketball. Search Youth Basketball [5,9) for Saturday, age 7. Show available sessions",
+        "shouldNotDo": ["Keep showing soccer results", "Forget the Saturday preference"]
+      },
+      "dbDependency": "Youth Basketball Saturday sessions exist for age 7"
+    },
+    {
+      "id": "T067",
+      "category": "Full Session & Waitlist",
+      "name": "Waitlist confirmation details",
+      "userMessage": "Put us on the waitlist please",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "showing_recommendations",
+        "childName": "Emma",
+        "childAge": 8,
+        "preferredDays": [3],
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Wednesday Premier Soccer for Emma, age 8"},
+          {"role": "assistant", "content": "That session is full. Would you like to join the waitlist?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Add to Waitlist (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Call add_to_waitlist. Provide full confirmation: program name, day, time, waitlist position, and how they'll be notified when a spot opens",
+        "shouldNotDo": ["Add without confirming details", "Skip the notification process explanation"]
+      },
+      "dbDependency": "Full Premier Soccer Wednesday session"
+    },
+    {
+      "id": "T068",
+      "category": "Full Session & Waitlist",
+      "name": "Over-enrolled session check",
+      "userMessage": "Is there space in the Saturday 11AM Premier Soccer?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "showing_recommendations",
+        "childName": "Jack",
+        "childAge": 10,
+        "preferredDays": [6],
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Saturday soccer options for age 10"},
+          {"role": "assistant", "content": "Here are Saturday soccer sessions..."}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Check Availability (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Check availability. Session is over-enrolled (enrolled > capacity). Report as full and offer waitlist + alternatives",
+        "shouldNotDo": ["Show as available", "Ignore the over-enrollment"]
+      },
+      "dbDependency": "Premier Soccer Sat 11AM with enrolled_count > capacity"
+    },
+    {
+      "id": "T069",
+      "category": "Multi-Sport & Cross-Program",
+      "name": "Soccer AND basketball request",
+      "userMessage": "Can you show me both soccer and basketball options?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Daniel",
+        "childAge": 8,
+        "preferredDays": [6],
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Daniel is 8, Saturdays work best"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Multiple Programs"],
+        "shouldExtract": {},
+        "responseShould": "Search both soccer (Premier [8,13)) and basketball (Youth [5,9)) for age 8 on Saturday. Present results organized by sport",
+        "shouldNotDo": ["Only search one sport", "Make user pick one sport first"]
+      },
+      "dbDependency": "Premier Soccer and Youth Basketball Saturday sessions for age 8"
+    },
+    {
+      "id": "T070",
+      "category": "Multi-Sport & Cross-Program",
+      "name": "Any sport search for specific day",
+      "userMessage": "Everything available on Wednesdays for him",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Ryan",
+        "childAge": 6,
+        "preferredDays": [3],
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "My son Ryan is 6, what's on Wednesdays?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Multiple Programs"],
+        "shouldExtract": {},
+        "responseShould": "Search ALL programs for age 6 on Wednesday: Junior Soccer [4,7), Classic Soccer [4,8), Youth Basketball [5,9), Creative Arts [6,15). Present all matches grouped by sport",
+        "shouldNotDo": ["Only search one program", "Ask which sport before searching"]
+      },
+      "dbDependency": "Multiple program sessions on Wednesday for age 6"
+    },
+    {
+      "id": "T071",
+      "category": "Multi-Sport & Cross-Program",
+      "name": "Program comparison question",
+      "userMessage": "What's the difference between Junior and Classic soccer?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Sophia",
+        "childAge": 5,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Soccer for Sophia, she's 5"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {},
+        "responseShould": "Explain differences: Junior Soccer [4,7) vs Classic Soccer [4,8) - age ranges, pricing differences, skill level/approach. Both eligible for age 5",
+        "shouldNotDo": ["Search sessions before answering the question", "Ignore the question and jump to session search"]
+      },
+      "dbDependency": "Junior Soccer and Classic Soccer program details in database"
+    },
+    {
+      "id": "T072",
+      "category": "Multi-Sport & Cross-Program",
+      "name": "Switch sport mid-conversation",
+      "userMessage": "Actually forget soccer, what about swimming?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "showing_recommendations",
+        "childName": "Ella",
+        "childAge": 8,
+        "preferredDays": [6],
+        "preferredTimeOfDay": "morning",
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Saturday morning soccer for Ella, age 8"},
+          {"role": "assistant", "content": "Here are Saturday morning soccer options for Ella..."}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": { "preferredProgram": "swim" },
+        "responseShould": "Update program to swimming. Search Saturday morning swimming for age 8. Both Learn to Swim [4,9) and Intermediate Swimming [8,13) are eligible",
+        "shouldNotDo": ["Keep showing soccer results", "Forget the Saturday morning preference"]
+      },
+      "dbDependency": "Swimming sessions on Saturday morning for age 8"
+    },
+    {
+      "id": "T073",
+      "category": "Multi-Sport & Cross-Program",
+      "name": "Swimming plus Arts combo request",
+      "userMessage": "Can she do both swimming and arts classes?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Grace",
+        "childAge": 10,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Grace is 10, interested in swimming and arts"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Multiple Programs"],
+        "shouldExtract": {},
+        "responseShould": "Search both swimming (Intermediate [8,13) + Advanced [11,17) for age 10) and Creative Arts [6,15). Present options organized by program with non-conflicting schedules highlighted",
+        "shouldNotDo": ["Only search one program", "Force user to pick one"]
+      },
+      "dbDependency": "Intermediate Swimming and Creative Arts sessions for age 10"
+    },
+    {
+      "id": "T074",
+      "category": "Multi-Sport & Cross-Program",
+      "name": "Sport change after results shown",
+      "userMessage": "Let's switch to basketball instead",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "showing_recommendations",
+        "childName": "Owen",
+        "childAge": 12,
+        "preferredDays": [2, 4],
+        "preferredTimeOfDay": "afternoon",
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Tuesday or Thursday afternoon soccer for Owen, 12"},
+          {"role": "assistant", "content": "Here are the Tuesday/Thursday afternoon soccer options..."},
+          {"role": "user", "content": "Let's switch to basketball instead"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": { "preferredProgram": "basketball" },
+        "responseShould": "Update program to basketball. Search Teen Basketball [9,14) for Tue/Thu afternoon, age 12. Keep day and time preferences",
+        "shouldNotDo": ["Keep showing soccer", "Forget the day/time preferences", "Search HS Basketball (age 12 < 14)"]
+      },
+      "dbDependency": "Teen Basketball Tue/Thu afternoon sessions"
+    },
+    {
+      "id": "T075",
+      "category": "Multi-Sport & Cross-Program",
+      "name": "All programs for age 13",
+      "userMessage": "What programs exist for a 13-year-old?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_child_info",
+        "childName": "Aiden",
+        "childAge": 13,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": []
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {},
+        "responseShould": "List all eligible programs for age 13: Teen Basketball [9,14), Teen Soccer [10,15), Premier Soccer [8,13) EXCLUDED (13 is upper bound), Advanced Swimming [11,17), Creative Arts [6,15), Intermediate Swimming [8,13) EXCLUDED. Correct list: Teen Basketball, Teen Soccer, Advanced Swimming, Creative Arts",
+        "shouldNotDo": ["Include Premier Soccer [8,13) since 13 is excluded", "Include Intermediate Swimming [8,13) since 13 is excluded"]
+      },
+      "dbDependency": "Programs spanning age 13 in database"
+    },
+    {
+      "id": "T076",
+      "category": "Location-Based",
+      "name": "City name search (Tustin)",
+      "userMessage": "What's available in Tustin?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Henry",
+        "childAge": 5,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Soccer for Henry, age 5"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Filter search to Tustin locations (Cedar Grove Park, Piper Preschool). Return Junior Soccer [4,7) sessions at those venues",
+        "shouldNotDo": ["Return sessions from other cities", "Ignore the location filter"]
+      },
+      "dbDependency": "Junior Soccer Wed 10AM at Cedar Grove Park, Tustin (added in migration)"
+    },
+    {
+      "id": "T077",
+      "category": "Location-Based",
+      "name": "Venue name search (Beacon Park)",
+      "userMessage": "Do you have classes at Beacon Park?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Chloe",
+        "childAge": 6,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Chloe is 6"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Search sessions at Beacon Park, Irvine for age 6. Return all age-appropriate programs at that venue. Could include Junior Soccer, Classic Soccer, Youth Basketball, Creative Arts",
+        "shouldNotDo": ["Return sessions from other locations", "Confuse Beacon Park with other Irvine venues"]
+      },
+      "dbDependency": "Sessions at Beacon Park (Irvine) for age 6"
+    },
+    {
+      "id": "T078",
+      "category": "Location-Based",
+      "name": "Abbreviation RSM",
+      "userMessage": "Anything in RSM?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Luke",
+        "childAge": 7,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Soccer for Luke, 7"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Interpret RSM as Rancho Santa Margarita. Search soccer sessions at RSM Community Center. Return Classic Soccer [4,8) and Premier Soccer [7,11) for age 7",
+        "shouldNotDo": ["Fail to interpret RSM abbreviation", "Search all locations"]
+      },
+      "dbDependency": "Sessions at RSM Community Center, Rancho Santa Margarita"
+    },
+    {
+      "id": "T079",
+      "category": "Location-Based",
+      "name": "Multiple venues same city (Orange)",
+      "userMessage": "What's in Orange?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Nora",
+        "childAge": 6,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "My daughter Nora is 6"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Search all Orange locations (Main Sports Complex, Hart Park, Santiago Hills). Return all age-6 eligible sessions across those venues",
+        "shouldNotDo": ["Only search one Orange location", "Return sessions from non-Orange cities"]
+      },
+      "dbDependency": "Multiple locations in Orange with sessions for age 6"
+    },
+    {
+      "id": "T080",
+      "category": "Location-Based",
+      "name": "Preschool location search",
+      "userMessage": "Do you have soccer at Bella Montessori?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Mila",
+        "childAge": 3,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "My daughter Mila is 3, looking for soccer"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Search Mini Soccer [2,4) at Bella Montessori (Lake Forest). Return Mini Soccer Tue 9:30AM session added in migration",
+        "shouldNotDo": ["Say no sessions exist at that location", "Return sessions from other locations"]
+      },
+      "dbDependency": "Mini Soccer Tue 9:30AM at Bella Montessori (added in migration, city fixed to Lake Forest)"
+    },
+    {
+      "id": "T081",
+      "category": "Location-Based",
+      "name": "Non-existent location",
+      "userMessage": "Do you have anything in Newport Beach?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Aria",
+        "childAge": 6,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Soccer for Aria, 6"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Search returns empty (no Newport Beach locations). Suggest nearby cities where sessions exist: Irvine, Tustin, Orange. Offer to search those instead",
+        "shouldNotDo": ["Make up sessions in Newport Beach", "Give up without suggesting alternatives"]
+      },
+      "dbDependency": "No locations in Newport Beach in database"
+    },
+    {
+      "id": "T082",
+      "category": "Location-Based",
+      "name": "Proximity request",
+      "userMessage": "What's closest to Yorba Linda?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Leo",
+        "childAge": 5,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Soccer for Leo, age 5"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Search Yorba Linda locations (Messiah Lutheran). Return Junior Soccer Thu 4:30PM at Messiah Lutheran (added in migration). Also suggest nearby Fullerton/Orange options",
+        "shouldNotDo": ["Ignore the proximity request", "Only show distant locations"]
+      },
+      "dbDependency": "Junior Soccer Thu 4:30PM at Messiah Lutheran, Yorba Linda (added in migration)"
+    },
+    {
+      "id": "T083",
+      "category": "Conversation Memory & Follow-ups",
+      "name": "Not re-asking known info",
+      "userMessage": "What about Tuesdays?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "showing_recommendations",
+        "childName": "Emma",
+        "childAge": 5,
+        "preferredDays": [6],
+        "preferredTimeOfDay": "morning",
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Saturday morning soccer for Emma, age 5"},
+          {"role": "assistant", "content": "Here are Saturday morning Junior Soccer sessions..."},
+          {"role": "user", "content": "What about Tuesdays?"}
+        ]
+      },
+      "conversationId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa002",
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": { "preferredDays": [2] },
+        "responseShould": "Update days to Tuesday. Use stored name (Emma), age (5), sport (soccer), time (morning). Search Tuesday morning Junior Soccer without re-asking any info",
+        "shouldNotDo": ["Re-ask child name", "Re-ask age", "Re-ask sport preference", "Forget morning time preference"]
+      },
+      "dbDependency": "Test conversation aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa002 exists with prior context"
+    },
+    {
+      "id": "T084",
+      "category": "Conversation Memory & Follow-ups",
+      "name": "More details on a result",
+      "userMessage": "Tell me more about the first one",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "showing_recommendations",
+        "childName": "Emma",
+        "childAge": 5,
+        "preferredDays": [6],
+        "preferredTimeOfDay": "morning",
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Saturday morning soccer for Emma, age 5"},
+          {"role": "assistant", "content": "Here are Saturday morning Junior Soccer options:\n1. Junior Soccer - Oakwood Rec Center, 9:00 AM, Coach Sarah, $180/season\n2. Junior Soccer - Beacon Park, 9:30 AM, Coach Alex, $180/season"},
+          {"role": "user", "content": "Tell me more about the first one"}
+        ]
+      },
+      "conversationId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa002",
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {},
+        "responseShould": "Recall 'the first one' = Junior Soccer at Oakwood Rec Center 9:00 AM. Provide additional details: coach bio/rating, location address, session dates, availability, pricing breakdown",
+        "shouldNotDo": ["Ask which session they mean", "Re-search sessions", "Not remember the previous results"]
+      },
+      "dbDependency": "Junior Soccer at Oakwood Rec Center Sat 9AM exists"
+    },
+    {
+      "id": "T085",
+      "category": "Conversation Memory & Follow-ups",
+      "name": "Change day preference",
+      "userMessage": "Saturdays don't work actually, how about Sundays?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "showing_recommendations",
+        "childName": "Emma",
+        "childAge": 5,
+        "preferredDays": [6],
+        "preferredTimeOfDay": "morning",
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Saturday morning soccer for Emma, age 5"},
+          {"role": "assistant", "content": "Here are Saturday morning options..."},
+          {"role": "user", "content": "Saturdays don't work actually, how about Sundays?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": { "preferredDays": [0] },
+        "responseShould": "Update days from Saturday to Sunday. Keep all other preferences (Emma, age 5, soccer, morning). Search Sunday morning Junior Soccer",
+        "shouldNotDo": ["Keep showing Saturday results", "Re-ask name/age/sport"]
+      },
+      "dbDependency": "Sunday Junior Soccer morning sessions"
+    },
+    {
+      "id": "T086",
+      "category": "Conversation Memory & Follow-ups",
+      "name": "Second child registration",
+      "userMessage": "Now I want to register my other son Max, he's 3",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "confirmed",
+        "childName": "Emma",
+        "childAge": 5,
+        "preferredDays": [6],
+        "preferredTimeOfDay": "morning",
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Saturday morning soccer for Emma, age 5"},
+          {"role": "assistant", "content": "Emma is registered for Junior Soccer Saturday 9AM!"},
+          {"role": "user", "content": "Now I want to register my other son Max, he's 3"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)"],
+        "shouldExtract": { "childName": "Max", "childAge": 3 },
+        "responseShould": "Reset child context to Max, age 3. Search Mini Soccer [2,4) (only eligible program). Mention sibling discount (10% off second child). Keep Saturday preference as starting point but confirm",
+        "shouldNotDo": ["Keep Emma's info", "Search Junior Soccer (age 3 not eligible)", "Forget to mention sibling discount"]
+      },
+      "dbDependency": "Mini Soccer sessions exist, sibling discount configured at 10%"
+    },
+    {
+      "id": "T087",
+      "category": "Conversation Memory & Follow-ups",
+      "name": "Reference previous recommendation",
+      "userMessage": "Let's go with the Beacon Park one",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "showing_recommendations",
+        "childName": "Emma",
+        "childAge": 5,
+        "preferredDays": [6],
+        "preferredTimeOfDay": "morning",
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Saturday morning soccer for Emma, age 5"},
+          {"role": "assistant", "content": "Here are your options:\n1. Junior Soccer at Oakwood Rec Center, Sat 9:00 AM\n2. Junior Soccer at Beacon Park, Sat 9:30 AM"},
+          {"role": "user", "content": "Let's go with the Beacon Park one"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Check Availability (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Identify 'the Beacon Park one' = Junior Soccer at Beacon Park Sat 9:30 AM from conversation history. Check availability, then proceed toward registration confirmation",
+        "shouldNotDo": ["Ask which session they mean", "Re-search sessions", "Not understand the reference"]
+      },
+      "dbDependency": "Junior Soccer at Beacon Park Saturday session"
+    },
+    {
+      "id": "T088",
+      "category": "Conversation Memory & Follow-ups",
+      "name": "Recall previously mentioned price",
+      "userMessage": "How much was that Saturday class again?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "showing_recommendations",
+        "childName": "Emma",
+        "childAge": 5,
+        "preferredDays": [6],
+        "preferredTimeOfDay": "morning",
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Saturday morning soccer for Emma, age 5"},
+          {"role": "assistant", "content": "Junior Soccer at Beacon Park, Sat 9:30 AM, $180/season with Coach Alex (4.8 stars)"},
+          {"role": "user", "content": "How much was that Saturday class again?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {},
+        "responseShould": "Recall price from conversation history: $180/season for Junior Soccer at Beacon Park. Answer from memory without additional tool calls",
+        "shouldNotDo": ["Re-search sessions to find price", "Say they don't know the price"]
+      },
+      "dbDependency": "Price info was in conversation history"
+    },
+    {
+      "id": "T089",
+      "category": "Conversation Memory & Follow-ups",
+      "name": "Returning after long conversation",
+      "userMessage": "I've decided, let's do the soccer class we talked about",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "showing_recommendations",
+        "childName": "Emma",
+        "childAge": 5,
+        "preferredDays": [6],
+        "preferredTimeOfDay": "morning",
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Saturday morning soccer for Emma, age 5"},
+          {"role": "assistant", "content": "Here are options: 1) Oakwood 9AM 2) Beacon Park 9:30AM"},
+          {"role": "user", "content": "Tell me more about Beacon Park"},
+          {"role": "assistant", "content": "Beacon Park has Coach Alex, 4.8 stars, 3 spots left, $180/season"},
+          {"role": "user", "content": "Let me think about it"},
+          {"role": "assistant", "content": "Take your time! I'm here when you're ready."},
+          {"role": "user", "content": "I've decided, let's do the soccer class we talked about"}
+        ]
+      },
+      "conversationId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa002",
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Check Availability (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Load full conversation history. Identify that the last discussed session was Junior Soccer at Beacon Park Sat 9:30AM. Check current availability and proceed toward confirmation",
+        "shouldNotDo": ["Ask which class", "Re-search from scratch", "Not remember Beacon Park was the last discussed option"]
+      },
+      "dbDependency": "Test conversation aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa002 with full history"
+    },
+    {
+      "id": "T090",
+      "category": "Conversation Memory & Follow-ups",
+      "name": "Contradictory preferences",
+      "userMessage": "We want mornings, but actually after 5 PM could work too",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Liam",
+        "childAge": 6,
+        "preferredDays": [6],
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Saturday soccer for Liam, age 6"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {},
+        "responseShould": "Recognize contradictory time preferences (morning vs after 5 PM). Ask for clarification: do they prefer morning or evening, or should both be searched? Don't assume one over the other",
+        "shouldNotDo": ["Pick one time and ignore the other", "Search without clarifying"]
+      },
+      "dbDependency": "Saturday soccer sessions exist in both morning and evening"
+    },
+    {
+      "id": "T091",
+      "category": "No Results & Edge Cases",
+      "name": "Impossible filter combination",
+      "userMessage": "Friday morning basketball in San Juan Capistrano",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Jacob",
+        "childAge": 7,
+        "preferredDays": [5],
+        "preferredTimeOfDay": "morning",
+        "preferredProgram": "basketball",
+        "messages": []
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)", "Get Alternatives (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Search returns empty (no SJC locations, no Fri AM basketball). Suggest relaxing filters: try other days, other locations, or afternoon times. Offer alternatives",
+        "shouldNotDo": ["Give up without suggesting alternatives", "Make up sessions that don't exist"]
+      },
+      "dbDependency": "No locations in San Juan Capistrano"
+    },
+    {
+      "id": "T092",
+      "category": "No Results & Edge Cases",
+      "name": "Invalid age (negative)",
+      "userMessage": "He's -3 years old",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_child_info",
+        "childName": "Test",
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Soccer for my son Test"},
+          {"role": "assistant", "content": "How old is Test?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {},
+        "responseShould": "Recognize invalid negative age. Politely ask for the child's actual age. Explain programs are for ages 2-18",
+        "shouldNotDo": ["Accept -3 as a valid age", "Search sessions with age -3", "Crash or error out"]
+      },
+      "dbDependency": "None"
+    },
+    {
+      "id": "T093",
+      "category": "No Results & Edge Cases",
+      "name": "Invalid age too high (25)",
+      "userMessage": "She's 25",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_child_info",
+        "childName": "Test",
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": [
+          {"role": "user", "content": "Register Test"},
+          {"role": "assistant", "content": "How old is Test?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {},
+        "responseShould": "Explain that programs are for youth ages 2-18. No programs available for age 25. Suggest they may be looking for adult programs (which aren't offered)",
+        "shouldNotDo": ["Search sessions with age 25", "Accept 25 as valid", "Return empty results without explanation"]
+      },
+      "dbDependency": "None - max program age is 19 (exclusive)"
+    },
+    {
+      "id": "T094",
+      "category": "No Results & Edge Cases",
+      "name": "Empty minimal message",
+      "userMessage": "...",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "greeting",
+        "childName": null,
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": []
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {},
+        "responseShould": "Recognize non-meaningful input. Re-prompt warmly: ask what they need help with, mention can help with sports registration",
+        "shouldNotDo": ["Search sessions", "Extract data from ellipsis", "Ignore the message"]
+      },
+      "dbDependency": "None"
+    },
+    {
+      "id": "T095",
+      "category": "No Results & Edge Cases",
+      "name": "Gibberish input",
+      "userMessage": "asdfghjkl xyzzy",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "greeting",
+        "childName": null,
+        "childAge": null,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": null,
+        "messages": []
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {},
+        "responseShould": "Recognize uninterpretable input. Politely ask user to clarify what they're looking for. Offer guidance on what Kai can help with",
+        "shouldNotDo": ["Attempt to extract child info from gibberish", "Search sessions", "Treat as a valid name"]
+      },
+      "dbDependency": "None"
+    },
+    {
+      "id": "T096",
+      "category": "No Results & Edge Cases",
+      "name": "Hyper-specific impossible request",
+      "userMessage": "Advanced Swimming Monday morning at Beacon Park for my 16-year-old",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Alex",
+        "childAge": 16,
+        "preferredDays": [1],
+        "preferredTimeOfDay": "morning",
+        "preferredProgram": "swim",
+        "messages": []
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History", "Search Sessions (Dynamic)", "Get Alternatives (Dynamic)"],
+        "shouldExtract": {},
+        "responseShould": "Search Advanced Swimming [11,17) Mon AM at Beacon Park. No match exists. Suggest alternatives: different days, different locations, or different times for Advanced Swimming",
+        "shouldNotDo": ["Make up a session", "Give up without alternatives", "Suggest programs the 16-year-old isn't eligible for"]
+      },
+      "dbDependency": "No Advanced Swimming Monday AM at Beacon Park"
+    },
+    {
+      "id": "T097",
+      "category": "Information Queries",
+      "name": "Pricing question",
+      "userMessage": "How much does soccer cost?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Olivia",
+        "childAge": 6,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Soccer for Olivia, age 6"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {},
+        "responseShould": "List age-appropriate soccer program prices for age 6: Junior Soccer ($180/season), Classic Soccer ($200/season). Mention available discounts: 10% sibling, 5% early bird, 5% returning family",
+        "shouldNotDo": ["Give a single generic price", "Forget to mention discounts", "List prices for programs the child isn't eligible for"]
+      },
+      "dbDependency": "Program pricing in database"
+    },
+    {
+      "id": "T098",
+      "category": "Information Queries",
+      "name": "Coach quality question",
+      "userMessage": "Who are the coaches? Are they any good?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "William",
+        "childAge": 7,
+        "preferredDays": [6],
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Saturday soccer for William, 7"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {},
+        "responseShould": "List coaches who teach age-7 Saturday soccer sessions with their ratings and certifications. Highlight highly-rated coaches. Use data from reviews/ratings",
+        "shouldNotDo": ["Make up coach information", "Skip mentioning ratings", "List coaches from unrelated programs"]
+      },
+      "dbDependency": "Coaches with ratings and certifications in database"
+    },
+    {
+      "id": "T099",
+      "category": "Information Queries",
+      "name": "Season schedule question",
+      "userMessage": "When does the season start?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "James",
+        "childAge": 8,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "Soccer for James, 8"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {},
+        "responseShould": "Provide Winter 2025 season dates (start/end from seasons table). Mention registration deadline if applicable. Note Spring 2025 registration if upcoming",
+        "shouldNotDo": ["Make up dates", "Provide dates from wrong season"]
+      },
+      "dbDependency": "Winter 2025 season in seasons table (302f356f-32bd-4bac-a7dc-022b1661c1fe)"
+    },
+    {
+      "id": "T100",
+      "category": "Information Queries",
+      "name": "Discount question",
+      "userMessage": "Are there any discounts for registering both kids?",
+      "context": {
+        "organizationId": "00000000-0000-0000-0000-000000000001",
+        "currentState": "collecting_preferences",
+        "childName": "Emma",
+        "childAge": 5,
+        "preferredDays": null,
+        "preferredTimeOfDay": null,
+        "preferredProgram": "soccer",
+        "messages": [
+          {"role": "user", "content": "I have two kids, Emma (5) and Max (3), both want soccer"},
+          {"role": "assistant", "content": "Let's start with Emma! What day works best?"}
+        ]
+      },
+      "conversationId": null,
+      "expectedBehavior": {
+        "toolCalls": ["Get Conversation History"],
+        "shouldExtract": {},
+        "responseShould": "Explain available discounts: 10% sibling discount for second child, 5% early bird discount (30+ days before season), 5% returning family discount. Clarify which apply to their situation",
+        "shouldNotDo": ["Say no discounts available", "Make up discount amounts", "Only mention one discount type"]
+      },
+      "dbDependency": "Discount configuration in organizations table"
+    }
+  ]
+}

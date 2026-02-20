@@ -31,6 +31,9 @@ Deno.serve(async (req: Request) => {
     console.log('Received message:', message);
     console.log('Current context:', JSON.stringify(context, null, 2));
 
+    const availablePrograms = await fetchAvailablePrograms(supabaseClient, context.organizationId);
+    console.log(`Fetched ${availablePrograms.length} available programs`);
+
     const messageLower = message.toLowerCase().trim();
 
     if (messageLower === 'view alternatives' && context.storedAlternatives && context.storedAlternatives.length > 0) {
@@ -120,7 +123,7 @@ Deno.serve(async (req: Request) => {
 
     console.log('=== BUILDING SYSTEM PROMPT ===');
     console.log('Context being passed to buildSystemContext:', JSON.stringify(context, null, 2));
-    const systemContext = await buildSystemContext(context, conversationHistory);
+    const systemContext = await buildSystemContext(context, conversationHistory, availablePrograms);
     console.log('System prompt first 500 chars:', systemContext.substring(0, 500));
     console.log('==============================');
 
@@ -452,7 +455,7 @@ function fallbackExtractFromMessage(msg: string): Record<string, any> {
   return result;
 }
 
-async function buildSystemContext(context: any, conversationHistory: any[]): string {
+async function buildSystemContext(context: any, conversationHistory: any[], availablePrograms: any[] = []): string {
   const hasChildName = !!context.childName;
   const hasChildAge = !!context.childAge;
   const hasPreferences = !!(context.preferredDays && context.preferredDays.length > 0);
@@ -514,6 +517,15 @@ ${conversationSummary}
     systemPrompt += `\n- Optional: Location (CHECK PREVIOUS MESSAGES - parent may have already mentioned this!)`;
   } else {
     systemPrompt += `\n- Have: Location preference (${context.preferredCity})`;
+  }
+
+  if (availablePrograms && availablePrograms.length > 0) {
+    systemPrompt += `\n\n## Available Programs at This Organization`;
+    systemPrompt += `\nHere are ALL the programs we currently offer:`;
+    availablePrograms.forEach((p: any) => {
+      systemPrompt += `\n- ${p.name} (ages ${p.age_range_text}): ${p.description || 'No description'}`;
+    });
+    systemPrompt += `\n\nIMPORTANT: When asked what programs/sports/activities are available, list ALL programs shown above. Do NOT guess or make up programs.`;
   }
 
   systemPrompt += `
@@ -697,6 +709,20 @@ async function callGeminiWithPrompt(prompt: string, userMessage: string): Promis
       quickReplies: []
     };
   }
+}
+
+async function fetchAvailablePrograms(supabase: any, organizationId: string): Promise<any[]> {
+  const { data, error } = await supabase.rpc('get_program_age_ranges', {
+    p_organization_id: organizationId,
+    p_sport_type: null
+  });
+
+  if (error) {
+    console.error('Error fetching programs:', error);
+    return [];
+  }
+
+  return data || [];
 }
 
 function calculateProgress(context: any): number {
