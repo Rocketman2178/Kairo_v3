@@ -11,9 +11,43 @@ interface MessageBubbleProps {
   onSignUp?: (sessionId: string, programName: string) => void;
 }
 
+function stripSessionDetailsFromMessage(content: string): string {
+  let cleaned = content;
+  cleaned = cleaned.replace(/\n\s*\*\s*\*\*.*?\*\*[\s\S]*?(?=\n\s*\*\s*\*\*|\n\s*\n[A-Z]|\n\s*$)/g, '');
+  cleaned = cleaned.replace(/\n\s*\*\s+[^*\n].*$/gm, '');
+  cleaned = cleaned.replace(/\n\s*-\s+\*\*.*?\*\*.*$/gm, '');
+  cleaned = cleaned.replace(/\n\s*\d+\.\s+\*\*.*?\*\*[\s\S]*?(?=\n\s*\d+\.|\n\s*\n|\s*$)/g, '');
+  const lines = cleaned.split('\n');
+  const filteredLines = lines.filter(line => {
+    const trimmed = line.trim();
+    if (/^\*\s/.test(trimmed) && /(\$\d|spots?\s|rating|coach|enrolled|capacity|urgency|week)/i.test(trimmed)) {
+      return false;
+    }
+    return true;
+  });
+  cleaned = filteredLines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  return cleaned;
+}
+
 export function MessageBubble({ message, onQuickReply, onSelectSession, onJoinWaitlist, organizationId, onSignUp }: MessageBubbleProps) {
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
+
+  const hasRecommendations = !isUser && message.metadata?.recommendations && message.metadata.recommendations.length > 0;
+  const hasRequestedFullSession = !isUser && message.metadata?.requestedFullSession;
+
+  let displayContent = message.content;
+  if (hasRecommendations || hasRequestedFullSession) {
+    displayContent = stripSessionDetailsFromMessage(message.content);
+  }
+
+  const displayQuickReplies = (() => {
+    if (!message.metadata?.quickReplies) return undefined;
+    if (hasRecommendations) {
+      return ['Show alternatives', 'Change preferences'];
+    }
+    return message.metadata.quickReplies;
+  })();
 
   if (isSystem) {
     return (
@@ -43,11 +77,11 @@ export function MessageBubble({ message, onQuickReply, onSelectSession, onJoinWa
           `}
         >
           <p className="text-sm whitespace-pre-line">
-            {message.content}
+            {displayContent}
           </p>
-          {message.metadata?.quickReplies && (
+          {displayQuickReplies && (
             <div className="flex flex-wrap gap-2 mt-2">
-              {message.metadata.quickReplies.map((reply, index) => (
+              {displayQuickReplies.map((reply, index) => (
                 <button
                   key={index}
                   onClick={() => onQuickReply?.(reply)}
@@ -61,12 +95,12 @@ export function MessageBubble({ message, onQuickReply, onSelectSession, onJoinWa
         </div>
       </div>
 
-      {!isUser && message.metadata?.requestedFullSession && (
+      {hasRequestedFullSession && (
         <div className="ml-9 space-y-2">
           <SessionCard
-            key={message.metadata.requestedFullSession.sessionId}
-            session={message.metadata.requestedFullSession}
-            onSelect={(sessionId) => onSelectSession?.(sessionId, message.metadata.requestedFullSession.programName)}
+            key={message.metadata!.requestedFullSession!.sessionId}
+            session={message.metadata!.requestedFullSession!}
+            onSelect={(sessionId) => onSelectSession?.(sessionId, message.metadata!.requestedFullSession!.programName)}
             onJoinWaitlist={onJoinWaitlist}
             organizationId={organizationId}
             onSignUp={onSignUp}
@@ -75,9 +109,9 @@ export function MessageBubble({ message, onQuickReply, onSelectSession, onJoinWa
         </div>
       )}
 
-      {!isUser && message.metadata?.recommendations && message.metadata.recommendations.length > 0 && (
+      {hasRecommendations && (
         <div className="ml-9 space-y-2">
-          {message.metadata.recommendations.map((session) => (
+          {message.metadata!.recommendations!.map((session) => (
             <SessionCard
               key={session.sessionId}
               session={session}

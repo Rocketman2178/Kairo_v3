@@ -58,6 +58,9 @@ export function SessionCard({ session, onSelect, onJoinWaitlist, organizationId,
   };
 
   const formatTime = (time: string) => {
+    if (/[AP]M$/i.test(time.trim())) {
+      return time.trim();
+    }
     const [hours, minutes] = time.split(':');
     const hour = parseInt(hours);
     const ampm = hour >= 12 ? 'PM' : 'AM';
@@ -92,7 +95,7 @@ export function SessionCard({ session, onSelect, onJoinWaitlist, organizationId,
     if (urgency === 'filling_fast' && session.spotsRemaining > 0) {
       const isSaturday = session.dayOfWeek === 'Saturday';
       return (
-        <div className="absolute top-2 right-2 flex items-center gap-1 bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-semibold animate-pulse shadow-lg">
+        <div className="flex items-center gap-1 bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-semibold animate-pulse shadow-lg">
           <Zap className="w-3 h-3" />
           <span>{isSaturday ? 'Filling Fast!' : `Only ${session.spotsRemaining} left`}</span>
         </div>
@@ -125,9 +128,7 @@ export function SessionCard({ session, onSelect, onJoinWaitlist, organizationId,
 
   return (
     <>
-      <div className="bg-[#1a2332] border border-gray-800 rounded-lg p-4 hover:shadow-lg hover:shadow-blue-500/10 transition-all hover:border-[#6366f1]/50 relative">
-        {getUrgencyBadge()}
-
+      <div className="bg-[#1a2332] border border-gray-800 rounded-lg p-4 hover:shadow-lg hover:shadow-blue-500/10 transition-all hover:border-[#6366f1]/50">
         <div className="flex justify-between items-start mb-3">
           <div className="flex-1">
             <div className="flex items-center gap-2 flex-wrap">
@@ -137,6 +138,7 @@ export function SessionCard({ session, onSelect, onJoinWaitlist, organizationId,
                   {formatAgeRange(session.ageRange)}
                 </span>
               )}
+              {getUrgencyBadge()}
               {getWeekendBadge()}
               <button
                 onClick={() => setShowProgramModal(true)}
@@ -148,7 +150,7 @@ export function SessionCard({ session, onSelect, onJoinWaitlist, organizationId,
             </div>
             <p className="text-sm text-gray-400 mt-1">{session.programDescription}</p>
           </div>
-          <div className="text-right ml-4">
+          <div className="text-right ml-4 flex-shrink-0">
             <div className="text-xl font-bold bg-gradient-to-r from-[#6366f1] to-[#06b6d4] bg-clip-text text-transparent">
               {formatPrice(session.price)}
             </div>
@@ -198,7 +200,7 @@ export function SessionCard({ session, onSelect, onJoinWaitlist, organizationId,
                 className="hover:text-yellow-400 transition-colors underline decoration-dotted underline-offset-2 flex items-center gap-1"
                 title="View coach details"
               >
-                <span>Coach {session.coachName}</span>
+                <span>{session.coachName.toLowerCase().startsWith('coach') ? session.coachName : `Coach ${session.coachName}`}</span>
                 {session.coachRating && (
                   <span className="ml-1">({session.coachRating.toFixed(1)}★)</span>
                 )}

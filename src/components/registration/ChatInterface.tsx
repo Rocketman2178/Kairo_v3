@@ -193,8 +193,7 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
                     handleSendMessage(reply);
                   }}
                   onSelectSession={(sessionId, programName) => {
-                    const sessionMessage = `I'd like to register for ${programName}`;
-                    sendMessage(sessionMessage, { selectedSessionId: sessionId });
+                    addAssistantMessage(`You've selected ${programName}. In production, this would proceed to payment and finalize the registration. For now, this is a demo preview — no changes have been made to the database.`);
                   }}
                   onJoinWaitlist={(sessionId, programName) => {
                     const waitlistMessage = `Join waitlist for ${programName}`;
