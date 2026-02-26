@@ -141,15 +141,17 @@ export function SessionCard({ session, onSelect, onJoinWaitlist, organizationId,
               )}
               {getUrgencyBadge()}
               {getWeekendBadge()}
+            </div>
+            <p className="text-sm text-gray-400 mt-1">
+              {session.programDescription}
               <button
                 onClick={() => setShowProgramModal(true)}
-                className="p-1 hover:bg-[#0f1419] rounded-full transition-colors group"
-                title="View program details"
+                className="ml-1 hover:text-[#06b6d4] transition-colors inline-flex items-center align-middle"
+                title="View session details"
               >
-                <Info className="w-4 h-4 text-gray-500 group-hover:text-[#06b6d4]" />
+                <Info className="w-3.5 h-3.5 text-gray-500 hover:text-[#06b6d4]" />
               </button>
-            </div>
-            <p className="text-sm text-gray-400 mt-1">{session.programDescription}</p>
+            </p>
           </div>
           <div className="text-right ml-4 flex-shrink-0">
             <div className="text-xl font-bold bg-gradient-to-r from-[#6366f1] to-[#06b6d4] bg-clip-text text-transparent">
@@ -186,13 +188,6 @@ export function SessionCard({ session, onSelect, onJoinWaitlist, organizationId,
               {session.locationRating && (
                 <span className="ml-1 text-yellow-400">({session.locationRating.toFixed(1)}★)</span>
               )}
-              <button
-                onClick={() => setShowLocationModal(true)}
-                className="ml-1 hover:text-[#06b6d4] transition-colors inline-flex items-center align-middle"
-                title="View location details"
-              >
-                <Info className="w-3.5 h-3.5" />
-              </button>
             </span>
           </div>
 
@@ -215,13 +210,6 @@ export function SessionCard({ session, onSelect, onJoinWaitlist, organizationId,
                 {session.coachRating && (
                   <span className="ml-1 text-yellow-400">({session.coachRating.toFixed(1)}★)</span>
                 )}
-                <button
-                  onClick={() => setShowCoachModal(true)}
-                  className="ml-1 hover:text-yellow-400 transition-colors inline-flex items-center align-middle"
-                  title="View coach details"
-                >
-                  <Info className="w-3.5 h-3.5" />
-                </button>
               </span>
             </div>
           )}
