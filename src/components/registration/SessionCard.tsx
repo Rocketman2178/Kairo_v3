@@ -173,21 +173,27 @@ export function SessionCard({ session, onSelect, onJoinWaitlist, organizationId,
             <span>{session.dayOfWeek}s at {formatTime(session.startTime)}</span>
           </div>
 
-          <div className="flex items-center text-sm text-gray-300">
-            <MapPin className="w-4 h-4 mr-2 flex-shrink-0 text-[#06b6d4]" />
-            <span>{session.locationName}</span>
-            {session.locationRating && (
-              <span className="ml-1 text-yellow-400">({session.locationRating.toFixed(1)}★)</span>
-            )}
-            {session.locationId && (
+          <div className="flex text-sm text-gray-300">
+            <MapPin className="w-4 h-4 mr-2 flex-shrink-0 mt-0.5 text-[#06b6d4]" />
+            <span>
               <button
                 onClick={() => setShowLocationModal(true)}
-                className="ml-1.5 flex-shrink-0 hover:text-[#06b6d4] transition-colors"
+                className="hover:text-[#06b6d4] transition-colors underline decoration-dotted underline-offset-2"
+                title="View location details"
+              >
+                {session.locationName}
+              </button>
+              {session.locationRating && (
+                <span className="ml-1 text-yellow-400">({session.locationRating.toFixed(1)}★)</span>
+              )}
+              <button
+                onClick={() => setShowLocationModal(true)}
+                className="ml-1 hover:text-[#06b6d4] transition-colors inline-flex items-center align-middle"
                 title="View location details"
               >
                 <Info className="w-3.5 h-3.5" />
               </button>
-            )}
+            </span>
           </div>
 
           <div className="flex items-center text-sm text-gray-300">
@@ -196,21 +202,27 @@ export function SessionCard({ session, onSelect, onJoinWaitlist, organizationId,
           </div>
 
           {session.coachName && (
-            <div className="flex items-center text-sm text-gray-300">
-              <Star className="w-4 h-4 mr-2 flex-shrink-0 text-yellow-500" />
-              <span>{session.coachName.toLowerCase().startsWith('coach') ? session.coachName : `Coach ${session.coachName}`}</span>
-              {session.coachRating && (
-                <span className="ml-1 text-yellow-400">({session.coachRating.toFixed(1)}★)</span>
-              )}
-              {session.coachId && (
+            <div className="flex text-sm text-gray-300">
+              <Star className="w-4 h-4 mr-2 flex-shrink-0 mt-0.5 text-yellow-500" />
+              <span>
                 <button
                   onClick={() => setShowCoachModal(true)}
-                  className="ml-1.5 flex-shrink-0 hover:text-yellow-400 transition-colors"
+                  className="hover:text-yellow-400 transition-colors underline decoration-dotted underline-offset-2"
+                  title="View coach details"
+                >
+                  {session.coachName.toLowerCase().startsWith('coach') ? session.coachName : `Coach ${session.coachName}`}
+                </button>
+                {session.coachRating && (
+                  <span className="ml-1 text-yellow-400">({session.coachRating.toFixed(1)}★)</span>
+                )}
+                <button
+                  onClick={() => setShowCoachModal(true)}
+                  className="ml-1 hover:text-yellow-400 transition-colors inline-flex items-center align-middle"
                   title="View coach details"
                 >
                   <Info className="w-3.5 h-3.5" />
                 </button>
-              )}
+              </span>
             </div>
           )}
         </div>

@@ -21,6 +21,7 @@ function cleanMarkdownFormatting(content: string): string {
   cleaned = cleaned.replace(/^#{1,6}\s+/gm, '');
   cleaned = cleaned.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
   cleaned = cleaned.replace(/`([^`]+)`/g, '$1');
+  cleaned = cleaned.replace(/(?<!\n)\n((?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)(?:\s+\w+)?:)/g, '\n\n$1');
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
   return cleaned.trim();
 }

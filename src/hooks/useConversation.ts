@@ -460,6 +460,29 @@ export function useConversation(options: UseConversationOptions) {
     }
   }, [conversationId, organizationId, familyId, tempIds, state]);
 
+  const addUserMessage = useCallback((content: string) => {
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, userMsg]);
+
+    if (conversationId) {
+      saveToKairoChat({
+        conversation_id: conversationId,
+        organization_id: organizationId,
+        family_id: familyId || null,
+        temp_family_id: tempIds.tempFamilyId,
+        temp_child_id: tempIds.tempChildId,
+        role: 'user',
+        content,
+        conversation_state: state,
+      });
+    }
+  }, [conversationId, organizationId, familyId, tempIds, state]);
+
   const resetConversation = useCallback(async () => {
     setMessages([]);
     setState('greeting');
@@ -516,6 +539,7 @@ export function useConversation(options: UseConversationOptions) {
     tempIds,
     registrationRedirect,
     sendMessage,
+    addUserMessage,
     addSystemMessage,
     addAssistantMessage,
     resetConversation,

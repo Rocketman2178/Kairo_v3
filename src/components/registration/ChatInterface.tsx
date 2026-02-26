@@ -34,6 +34,7 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
     isLoading,
     context,
     sendMessage,
+    addUserMessage,
     addAssistantMessage,
   } = useConversation({
     organizationId,
@@ -106,12 +107,26 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
 
   const isReady = Boolean(conversationId);
 
+  const [sessionEnded, setSessionEnded] = useState(false);
+
   const handleSendMessage = async (messageOverride?: string) => {
     const messageContent = messageOverride || inputValue;
     if (!messageContent.trim() || isLoading || !isReady) return;
 
     setInputValue('');
     setError(null);
+
+    if (messageContent.toLowerCase() === "no, that's all") {
+      addUserMessage(messageContent);
+      const childName = context.childName || 'your child';
+      setTimeout(() => {
+        addAssistantMessage(
+          `Thanks for registering ${childName}! If you need anything else in the future, I'm always here to help. Have a great day!`
+        );
+      }, 500);
+      setSessionEnded(true);
+      return;
+    }
 
     await sendMessage(messageContent);
   };
@@ -235,12 +250,12 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Type your message..."
-                disabled={isLoading || !isReady}
+                disabled={isLoading || !isReady || sessionEnded}
                 className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               />
               <button
                 onClick={() => handleSendMessage()}
-                disabled={!inputValue.trim() || isLoading || !isReady}
+                disabled={!inputValue.trim() || isLoading || !isReady || sessionEnded}
                 className="px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
               >
                 <Send className="w-4 h-4" />
