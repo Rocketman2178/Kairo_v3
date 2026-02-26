@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MapPin, Calendar, Clock, Users, Star, Info, TrendingUp, Zap } from 'lucide-react';
+import { MapPin, Calendar, Clock, Users, Star, Info, TrendingUp, Zap, UserRound } from 'lucide-react';
 import { Button } from '../common/Button';
 import { LocationDetailModal } from './LocationDetailModal';
 import { CoachDetailModal } from './CoachDetailModal';
@@ -44,14 +44,6 @@ export function SessionCard({ session, onSelect, onJoinWaitlist, organizationId,
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showCoachModal, setShowCoachModal] = useState(false);
   const [showProgramModal, setShowProgramModal] = useState(false);
-
-  // Debug logging for session rating
-  console.log('SessionCard received:', {
-    programName: session.programName,
-    sessionRating: session.sessionRating,
-    hasSessionRating: !!session.sessionRating,
-    sessionRatingType: typeof session.sessionRating,
-  });
 
   const formatPrice = (cents: number) => {
     return `$${(cents / 100).toFixed(0)}`;
@@ -143,14 +135,14 @@ export function SessionCard({ session, onSelect, onJoinWaitlist, organizationId,
               {getWeekendBadge()}
             </div>
             <p className="text-sm text-gray-400 mt-1">
-              {session.programDescription}
               <button
                 onClick={() => setShowProgramModal(true)}
-                className="ml-1 hover:text-[#06b6d4] transition-colors inline-flex items-center align-middle"
+                className="mr-1 hover:text-[#06b6d4] transition-colors inline-flex items-center align-middle"
                 title="View session details"
               >
                 <Info className="w-3.5 h-3.5 text-gray-500 hover:text-[#06b6d4]" />
               </button>
+              {session.programDescription}
             </p>
           </div>
           <div className="text-right ml-4 flex-shrink-0">
@@ -162,14 +154,6 @@ export function SessionCard({ session, onSelect, onJoinWaitlist, organizationId,
         </div>
 
         <div className="space-y-2 mb-4">
-          {session.sessionRating && (
-            <div className="flex items-center text-sm text-gray-300 bg-gray-800/50 rounded px-2 py-1">
-              <Star className="w-4 h-4 mr-2 text-yellow-400 fill-yellow-400" />
-              <span className="font-medium text-yellow-400">{session.sessionRating.toFixed(1)}</span>
-              <span className="ml-1 text-xs text-gray-400">Session Rating</span>
-            </div>
-          )}
-
           <div className="flex items-center text-sm text-gray-300">
             <Calendar className="w-4 h-4 mr-2 flex-shrink-0 text-[#6366f1]" />
             <span>{session.dayOfWeek}s at {formatTime(session.startTime)}</span>
@@ -198,7 +182,7 @@ export function SessionCard({ session, onSelect, onJoinWaitlist, organizationId,
 
           {session.coachName && (
             <div className="flex text-sm text-gray-300">
-              <Star className="w-4 h-4 mr-2 flex-shrink-0 mt-0.5 text-yellow-500" />
+              <UserRound className="w-4 h-4 mr-2 flex-shrink-0 mt-0.5 text-emerald-400" />
               <span>
                 <button
                   onClick={() => setShowCoachModal(true)}
