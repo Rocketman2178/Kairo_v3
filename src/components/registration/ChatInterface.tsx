@@ -32,6 +32,7 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
     conversationId,
     messages,
     isLoading,
+    context,
     sendMessage,
     addAssistantMessage,
   } = useConversation({
@@ -193,7 +194,11 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
                     handleSendMessage(reply);
                   }}
                   onSelectSession={(sessionId, programName) => {
-                    addAssistantMessage(`You've selected ${programName}. In production, this would proceed to payment and finalize the registration. For now, this is a demo preview — no changes have been made to the database.`);
+                    const childName = context.childName || 'your child';
+                    addAssistantMessage(
+                      `I've signed up ${childName} for ${programName}! Would you like to sign up another child?`,
+                      ['Sign up another child', 'No, that\'s all']
+                    );
                   }}
                   onJoinWaitlist={(sessionId, programName) => {
                     const waitlistMessage = `Join waitlist for ${programName}`;

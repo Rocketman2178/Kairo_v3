@@ -436,12 +436,13 @@ export function useConversation(options: UseConversationOptions) {
     }
   }, [conversationId, organizationId, familyId, tempIds, state]);
 
-  const addAssistantMessage = useCallback((content: string) => {
+  const addAssistantMessage = useCallback((content: string, quickReplies?: string[]) => {
     const assistantMsg: Message = {
       id: Date.now().toString(),
       role: 'assistant',
       content,
       timestamp: new Date(),
+      metadata: quickReplies ? { quickReplies } : undefined,
     };
     setMessages((prev) => [...prev, assistantMsg]);
 

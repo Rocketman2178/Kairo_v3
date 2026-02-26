@@ -11,22 +11,18 @@ interface MessageBubbleProps {
   onSignUp?: (sessionId: string, programName: string) => void;
 }
 
-function stripSessionDetailsFromMessage(content: string): string {
+function cleanMarkdownFormatting(content: string): string {
   let cleaned = content;
-  cleaned = cleaned.replace(/\n\s*\*\s*\*\*.*?\*\*[\s\S]*?(?=\n\s*\*\s*\*\*|\n\s*\n[A-Z]|\n\s*$)/g, '');
-  cleaned = cleaned.replace(/\n\s*\*\s+[^*\n].*$/gm, '');
-  cleaned = cleaned.replace(/\n\s*-\s+\*\*.*?\*\*.*$/gm, '');
-  cleaned = cleaned.replace(/\n\s*\d+\.\s+\*\*.*?\*\*[\s\S]*?(?=\n\s*\d+\.|\n\s*\n|\s*$)/g, '');
-  const lines = cleaned.split('\n');
-  const filteredLines = lines.filter(line => {
-    const trimmed = line.trim();
-    if (/^\*\s/.test(trimmed) && /(\$\d|spots?\s|rating|coach|enrolled|capacity|urgency|week)/i.test(trimmed)) {
-      return false;
-    }
-    return true;
-  });
-  cleaned = filteredLines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
-  return cleaned;
+  cleaned = cleaned.replace(/\*\*([^*]+)\*\*/g, '$1');
+  cleaned = cleaned.replace(/\*([^*]+)\*/g, '$1');
+  cleaned = cleaned.replace(/__([^_]+)__/g, '$1');
+  cleaned = cleaned.replace(/_([^_]+)_/g, '$1');
+  cleaned = cleaned.replace(/~~([^~]+)~~/g, '$1');
+  cleaned = cleaned.replace(/^#{1,6}\s+/gm, '');
+  cleaned = cleaned.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+  cleaned = cleaned.replace(/`([^`]+)`/g, '$1');
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+  return cleaned.trim();
 }
 
 export function MessageBubble({ message, onQuickReply, onSelectSession, onJoinWaitlist, organizationId, onSignUp }: MessageBubbleProps) {
@@ -36,10 +32,7 @@ export function MessageBubble({ message, onQuickReply, onSelectSession, onJoinWa
   const hasRecommendations = !isUser && message.metadata?.recommendations && message.metadata.recommendations.length > 0;
   const hasRequestedFullSession = !isUser && message.metadata?.requestedFullSession;
 
-  let displayContent = message.content;
-  if (hasRecommendations || hasRequestedFullSession) {
-    displayContent = stripSessionDetailsFromMessage(message.content);
-  }
+  let displayContent = cleanMarkdownFormatting(message.content);
 
   const displayQuickReplies = (() => {
     if (!message.metadata?.quickReplies) return undefined;

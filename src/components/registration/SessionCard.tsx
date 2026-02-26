@@ -58,10 +58,11 @@ export function SessionCard({ session, onSelect, onJoinWaitlist, organizationId,
   };
 
   const formatTime = (time: string) => {
-    if (/[AP]M$/i.test(time.trim())) {
-      return time.trim();
+    const trimmed = time.trim();
+    if (/[AP]M$/i.test(trimmed)) {
+      return trimmed.replace(/^0+(\d)/, '$1');
     }
-    const [hours, minutes] = time.split(':');
+    const [hours, minutes] = trimmed.split(':');
     const hour = parseInt(hours);
     const ampm = hour >= 12 ? 'PM' : 'AM';
     const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
@@ -168,44 +169,48 @@ export function SessionCard({ session, onSelect, onJoinWaitlist, organizationId,
           )}
 
           <div className="flex items-center text-sm text-gray-300">
-            <Calendar className="w-4 h-4 mr-2 text-[#6366f1]" />
+            <Calendar className="w-4 h-4 mr-2 flex-shrink-0 text-[#6366f1]" />
             <span>{session.dayOfWeek}s at {formatTime(session.startTime)}</span>
           </div>
 
           <div className="flex items-center text-sm text-gray-300">
-            <MapPin className="w-4 h-4 mr-2 text-[#06b6d4]" />
-            <button
-              onClick={() => setShowLocationModal(true)}
-              className="hover:text-[#06b6d4] transition-colors underline decoration-dotted underline-offset-2 flex items-center gap-1"
-              title="View location details"
-            >
-              <span>{session.locationName}</span>
-              {session.locationRating && (
-                <span className="ml-1 text-yellow-400">({session.locationRating.toFixed(1)}★)</span>
-              )}
-              <Info className="w-3 h-3" />
-            </button>
+            <MapPin className="w-4 h-4 mr-2 flex-shrink-0 text-[#06b6d4]" />
+            <span>{session.locationName}</span>
+            {session.locationRating && (
+              <span className="ml-1 text-yellow-400">({session.locationRating.toFixed(1)}★)</span>
+            )}
+            {session.locationId && (
+              <button
+                onClick={() => setShowLocationModal(true)}
+                className="ml-1.5 flex-shrink-0 hover:text-[#06b6d4] transition-colors"
+                title="View location details"
+              >
+                <Info className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           <div className="flex items-center text-sm text-gray-300">
-            <Clock className="w-4 h-4 mr-2 text-[#8b5cf6]" />
+            <Clock className="w-4 h-4 mr-2 flex-shrink-0 text-[#8b5cf6]" />
             <span>Starts {new Date(session.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
           </div>
 
           {session.coachName && (
             <div className="flex items-center text-sm text-gray-300">
-              <Star className="w-4 h-4 mr-2 text-yellow-500" />
-              <button
-                onClick={() => setShowCoachModal(true)}
-                className="hover:text-yellow-400 transition-colors underline decoration-dotted underline-offset-2 flex items-center gap-1"
-                title="View coach details"
-              >
-                <span>{session.coachName.toLowerCase().startsWith('coach') ? session.coachName : `Coach ${session.coachName}`}</span>
-                {session.coachRating && (
-                  <span className="ml-1">({session.coachRating.toFixed(1)}★)</span>
-                )}
-                <Info className="w-3 h-3" />
-              </button>
+              <Star className="w-4 h-4 mr-2 flex-shrink-0 text-yellow-500" />
+              <span>{session.coachName.toLowerCase().startsWith('coach') ? session.coachName : `Coach ${session.coachName}`}</span>
+              {session.coachRating && (
+                <span className="ml-1 text-yellow-400">({session.coachRating.toFixed(1)}★)</span>
+              )}
+              {session.coachId && (
+                <button
+                  onClick={() => setShowCoachModal(true)}
+                  className="ml-1.5 flex-shrink-0 hover:text-yellow-400 transition-colors"
+                  title="View coach details"
+                >
+                  <Info className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           )}
         </div>
