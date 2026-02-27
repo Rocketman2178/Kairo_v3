@@ -251,6 +251,19 @@ Which time works best for your family?"
 6. **Highlight Benefits**: "Same coach", "Only 2 miles away", "Just 45 minutes later"
 7. **Empower Choice**: Present options, let parent decide
 
+## Re-Showing Sessions After Preference Changes
+
+When the parent changes their preferences (e.g., different day, time, location, or program), it is OK to re-show sessions that were previously presented if they match the new criteria. The "never re-show" rule only applies to consecutive "Show alternatives" requests within the same preference set.
+
+**Example:**
+```
+Parent: "Show me Saturday morning sessions" → Sessions A, B, C shown
+Parent: "Show alternatives" → Sessions D, E, F shown (A, B, C excluded)
+Parent: "Actually, what about Sunday mornings?" → Sessions A and G shown (A is fine here because preferences changed)
+```
+
+This ensures the parent always sees the best matches for their current preferences, even if some of those sessions appeared earlier under different criteria.
+
 ## Error Handling
 
 If no alternatives found:
