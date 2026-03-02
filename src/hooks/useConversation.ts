@@ -525,6 +525,29 @@ export function useConversation(options: UseConversationOptions) {
     }
   }, [organizationId, familyId, tempIds, isAuthenticated]);
 
+  const resetChildContext = useCallback(() => {
+    setContext((prev) => {
+      const cleaned = { ...prev };
+      delete cleaned.childName;
+      delete cleaned.childAge;
+      delete cleaned.preferredDays;
+      delete cleaned.preferredTime;
+      delete cleaned.preferredTimeOfDay;
+      delete cleaned.preferredProgram;
+      delete cleaned.preferredCity;
+      delete cleaned.preferredLocation;
+      delete cleaned.selectedSessionId;
+      delete cleaned.storedAlternatives;
+      delete cleaned.storedRequestedSession;
+      delete cleaned.selectedSession;
+      delete cleaned.children;
+      delete cleaned.preferences;
+      cleaned.currentState = 'collecting_child_info';
+      return cleaned;
+    });
+    setState('collecting_child_info');
+  }, []);
+
   const clearRegistrationState = useCallback(() => {
     clearTempIds();
     setRegistrationRedirect(null);
@@ -543,6 +566,7 @@ export function useConversation(options: UseConversationOptions) {
     addSystemMessage,
     addAssistantMessage,
     resetConversation,
+    resetChildContext,
     clearRegistrationState,
   };
 }

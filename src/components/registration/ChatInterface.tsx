@@ -36,6 +36,7 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
     sendMessage,
     addUserMessage,
     addAssistantMessage,
+    resetChildContext,
   } = useConversation({
     organizationId,
     familyId,
@@ -125,6 +126,29 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
         );
       }, 500);
       setSessionEnded(true);
+      return;
+    }
+
+    if (messageContent.toLowerCase() === 'sign up another child') {
+      const cleanOverride: Partial<typeof context> = {
+        childName: undefined,
+        childAge: undefined,
+        preferredDays: undefined,
+        preferredTime: undefined,
+        preferredTimeOfDay: undefined,
+        preferredProgram: undefined,
+        preferredCity: undefined,
+        preferredLocation: undefined,
+        selectedSessionId: undefined,
+        storedAlternatives: undefined,
+        storedRequestedSession: undefined,
+        selectedSession: undefined,
+        children: undefined,
+        preferences: undefined,
+        currentState: 'collecting_child_info' as const,
+      };
+      resetChildContext();
+      await sendMessage(messageContent, cleanOverride);
       return;
     }
 
