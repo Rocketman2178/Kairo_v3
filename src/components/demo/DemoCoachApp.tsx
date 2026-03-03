@@ -287,9 +287,9 @@ export function DemoCoachApp() {
     const currentTime = sectionTimers[sectionKey] ?? allocated * 60;
     const percentRemaining = (currentTime / (allocated * 60)) * 100;
     if (currentTime <= 0) return 'bg-red-500 text-white border-red-500';
-    if (percentRemaining <= 20) return 'bg-red-100 text-red-700 border-red-300';
-    if (percentRemaining <= 40) return 'bg-amber-100 text-amber-700 border-amber-300';
-    return 'bg-teal-100 text-teal-700 border-teal-300';
+    if (percentRemaining <= 25) return 'bg-red-100 text-red-700 border-red-300';
+    if (percentRemaining <= 50) return 'bg-amber-100 text-amber-700 border-amber-300';
+    return 'bg-emerald-100 text-emerald-700 border-emerald-300';
   };
 
   const startSectionTimer = (weekIndex: number, sectionIndex: number) => {
@@ -498,10 +498,14 @@ export function DemoCoachApp() {
                       </div>
                       <p className="text-sm text-slate-600">{student.parentName}</p>
                       {student.notes && (
-                        <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3" />
+                        <div className={`flex items-center gap-1 mt-1 text-xs ${
+                          student.notes.includes('First day')
+                            ? 'bg-amber-100 text-amber-700 border border-amber-300 px-2 py-0.5 rounded-full font-semibold'
+                            : 'text-slate-500'
+                        }`}>
+                          {student.notes.includes('First day') ? <span>⭐</span> : <AlertCircle className="w-3 h-3" />}
                           {student.notes}
-                        </p>
+                        </div>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
@@ -631,7 +635,7 @@ export function DemoCoachApp() {
             </div>
 
             <div className="mt-6">
-              <h3 className="font-semibold text-slate-900 mb-3">Recent Messages</h3>
+              <h3 className="font-semibold text-slate-900 mb-3">Message History</h3>
               <div className="space-y-2">
                 {[
                   { to: 'Mini Soccer Parents', msg: 'Great class today! See you next week.', time: '2 hours ago', type: 'text' },

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Palette, Type, Image, Globe, MessageCircle, Sparkles, Eye,
-  Check, ChevronRight, Settings, Code, Webhook, Mic, Volume2, Languages
+  Check, ChevronRight, Settings, Code, Webhook, Mic, Volume2, Languages, Lock
 } from 'lucide-react';
 
 interface BrandSettings {
@@ -72,7 +72,7 @@ export function DemoWhiteLabel() {
           { id: 'brand', label: 'Brand & Colors', icon: <Palette className="w-4 h-4" /> },
           { id: 'agent', label: 'AI Agent', icon: <MessageCircle className="w-4 h-4" /> },
           { id: 'voice', label: 'Voice & Language', icon: <Mic className="w-4 h-4" /> },
-          { id: 'api', label: 'API & Webhooks', icon: <Code className="w-4 h-4" /> },
+          { id: 'api', label: 'API & Webhooks 🔒', icon: <Code className="w-4 h-4" /> },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -379,80 +379,94 @@ export function DemoWhiteLabel() {
           )}
 
           {activeTab === 'api' && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
-                <h3 className="font-semibold text-slate-900 mb-4">API Credentials</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">API Key</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="password"
-                        value="sk_live_xxxxxxxxxxxxxxxxxxxxxxxx"
-                        readOnly
-                        className="flex-1 px-4 py-2 border border-slate-200 rounded-lg bg-slate-50 font-mono text-sm"
-                      />
-                      <button className="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50">
-                        Copy
+            <div className="relative">
+              <div className="filter blur-sm pointer-events-none opacity-60">
+                <div className="space-y-6">
+                  <div className="bg-white rounded-xl border border-slate-200 p-6">
+                    <h3 className="font-semibold text-slate-900 mb-4">API Credentials</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">API Key</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="password"
+                            value="sk_live_xx•••••xxx"
+                            readOnly
+                            className="flex-1 px-4 py-2 border border-slate-200 rounded-lg bg-slate-50 font-mono text-sm"
+                          />
+                          <button className="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50">
+                            Copy
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Organization ID</label>
+                        <input
+                          type="text"
+                          value="org_soccer_shots_demo"
+                          readOnly
+                          className="w-full px-4 py-2 border border-slate-200 rounded-lg bg-slate-50 font-mono text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl border border-slate-200 p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-slate-900">Webhooks</h3>
+                      <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                        + Add Webhook
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      {[
+                        { event: 'registration.completed', url: 'https://api.example.com/hooks/registration', status: 'active' },
+                        { event: 'payment.successful', url: 'https://api.example.com/hooks/payment', status: 'active' },
+                        { event: 'enrollment.cancelled', url: 'https://api.example.com/hooks/cancel', status: 'inactive' }
+                      ].map((webhook, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <Webhook className="w-4 h-4 text-slate-400" />
+                            <div>
+                              <p className="text-sm font-medium text-slate-900">{webhook.event}</p>
+                              <p className="text-xs text-slate-500 font-mono">{webhook.url}</p>
+                            </div>
+                          </div>
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            webhook.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'
+                          }`}>
+                            {webhook.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl border border-slate-200 p-6">
+                    <h3 className="font-semibold text-slate-900 mb-4">Custom Domain</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                        <Check className="w-5 h-5 text-emerald-600" />
+                        <div>
+                          <p className="font-medium text-emerald-900">register.soccershots.com</p>
+                          <p className="text-sm text-emerald-700">SSL active, DNS verified</p>
+                        </div>
+                      </div>
+                      <button className="w-full py-2 border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors">
+                        Add Another Domain
                       </button>
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Organization ID</label>
-                    <input
-                      type="text"
-                      value="org_soccer_shots_demo"
-                      readOnly
-                      className="w-full px-4 py-2 border border-slate-200 rounded-lg bg-slate-50 font-mono text-sm"
-                    />
-                  </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-slate-900">Webhooks</h3>
-                  <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                    + Add Webhook
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  {[
-                    { event: 'registration.completed', url: 'https://api.example.com/hooks/registration', status: 'active' },
-                    { event: 'payment.successful', url: 'https://api.example.com/hooks/payment', status: 'active' },
-                    { event: 'enrollment.cancelled', url: 'https://api.example.com/hooks/cancel', status: 'inactive' }
-                  ].map((webhook, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Webhook className="w-4 h-4 text-slate-400" />
-                        <div>
-                          <p className="text-sm font-medium text-slate-900">{webhook.event}</p>
-                          <p className="text-xs text-slate-500 font-mono">{webhook.url}</p>
-                        </div>
-                      </div>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        webhook.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'
-                      }`}>
-                        {webhook.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
-                <h3 className="font-semibold text-slate-900 mb-4">Custom Domain</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-                    <Check className="w-5 h-5 text-emerald-600" />
-                    <div>
-                      <p className="font-medium text-emerald-900">register.soccershots.com</p>
-                      <p className="text-sm text-emerald-700">SSL active, DNS verified</p>
-                    </div>
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] rounded-xl">
+                <div className="text-center p-6">
+                  <div className="w-12 h-12 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Lock className="w-6 h-6 text-slate-400" />
                   </div>
-                  <button className="w-full py-2 border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors">
-                    Add Another Domain
-                  </button>
+                  <p className="text-slate-300 font-semibold mb-1">Super Admin Only</p>
+                  <p className="text-slate-500 text-sm">API credentials and webhooks are managed by the Kairo team.</p>
                 </div>
               </div>
             </div>
