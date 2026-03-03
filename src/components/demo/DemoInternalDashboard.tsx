@@ -13,7 +13,7 @@ type DashboardView = 'ceo' | 'ea';
 interface Customer {
   id: string;
   name: string;
-  tier: 'Essentials' | 'Most Popular' | 'Pro+' | 'Custom';
+  tier: 'Starter' | 'Growth' | 'Pro';
   mrr: number;
   registrationsThisWeek: number;
   avgRegistrations: number;
@@ -25,14 +25,14 @@ interface Customer {
 }
 
 const mockCustomers: Customer[] = [
-  { id: '1', name: 'Smith Academy', tier: 'Pro+', mrr: 500, registrationsThisWeek: 12, avgRegistrations: 24, successRate: 94, healthScore: 45, risk: 'high', action: 'URGENT CALL' },
-  { id: '2', name: 'Johnson FC', tier: 'Most Popular', mrr: 400, registrationsThisWeek: 85, avgRegistrations: 81, successRate: 97, healthScore: 95, risk: 'healthy' },
-  { id: '3', name: 'Williams League', tier: 'Pro+', mrr: 800, registrationsThisWeek: 134, avgRegistrations: 149, successRate: 91, healthScore: 75, risk: 'medium', action: 'Monitor' },
-  { id: '4', name: 'Davis Club', tier: 'Most Popular', mrr: 350, registrationsThisWeek: 45, avgRegistrations: 48, successRate: 96, healthScore: 88, risk: 'healthy' },
-  { id: '5', name: 'Martinez Sports', tier: 'Essentials', mrr: 199, registrationsThisWeek: 0, avgRegistrations: 15, successRate: 95, healthScore: 35, risk: 'high', action: 'Check-in' },
-  { id: '6', name: 'Thompson Academy', tier: 'Pro+', mrr: 650, registrationsThisWeek: 92, avgRegistrations: 95, successRate: 98, healthScore: 92, risk: 'healthy', paymentExpires: '14 days' },
-  { id: '7', name: 'Garcia United', tier: 'Most Popular', mrr: 400, registrationsThisWeek: 58, avgRegistrations: 72, successRate: 93, healthScore: 68, risk: 'medium', action: 'Review' },
-  { id: '8', name: 'Anderson Youth', tier: 'Essentials', mrr: 199, registrationsThisWeek: 22, avgRegistrations: 20, successRate: 96, healthScore: 90, risk: 'healthy' },
+  { id: '1', name: 'Smith Academy', tier: 'Pro', mrr: 499, registrationsThisWeek: 12, avgRegistrations: 24, successRate: 94, healthScore: 45, risk: 'high', action: 'URGENT CALL' },
+  { id: '2', name: 'Johnson FC', tier: 'Growth', mrr: 299, registrationsThisWeek: 85, avgRegistrations: 81, successRate: 97, healthScore: 95, risk: 'healthy' },
+  { id: '3', name: 'Williams League', tier: 'Pro', mrr: 499, registrationsThisWeek: 134, avgRegistrations: 149, successRate: 91, healthScore: 75, risk: 'medium', action: 'Monitor' },
+  { id: '4', name: 'Davis Club', tier: 'Growth', mrr: 299, registrationsThisWeek: 45, avgRegistrations: 48, successRate: 96, healthScore: 88, risk: 'healthy' },
+  { id: '5', name: 'Martinez Sports', tier: 'Starter', mrr: 149, registrationsThisWeek: 0, avgRegistrations: 15, successRate: 95, healthScore: 35, risk: 'high', action: 'Check-in' },
+  { id: '6', name: 'Thompson Academy', tier: 'Pro', mrr: 499, registrationsThisWeek: 92, avgRegistrations: 95, successRate: 98, healthScore: 92, risk: 'healthy', paymentExpires: '14 days' },
+  { id: '7', name: 'Garcia United', tier: 'Growth', mrr: 299, registrationsThisWeek: 58, avgRegistrations: 72, successRate: 93, healthScore: 68, risk: 'medium', action: 'Review' },
+  { id: '8', name: 'Anderson Youth', tier: 'Starter', mrr: 149, registrationsThisWeek: 22, avgRegistrations: 20, successRate: 96, healthScore: 90, risk: 'healthy' },
 ];
 
 function MetricCard({ label, value, change, changeType, sublabel, icon: Icon }: {
@@ -84,10 +84,9 @@ function HealthBadge({ risk }: { risk: 'high' | 'medium' | 'healthy' }) {
 
 function TierBadge({ tier }: { tier: string }) {
   const styles: Record<string, string> = {
-    'Essentials': 'bg-slate-600 text-slate-200',
-    'Most Popular': 'bg-blue-600 text-blue-100',
-    'Pro+': 'bg-cyan-600 text-cyan-100',
-    'Custom': 'bg-amber-600 text-amber-100',
+    'Starter': 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
+    'Growth': 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+    'Pro': 'bg-purple-500/20 text-purple-400 border border-purple-500/30',
   };
 
   return (
@@ -471,10 +470,10 @@ function PrioritiesTab() {
           URGENT - Do Now
         </h3>
         <div className="space-y-3">
-          <PriorityItem priority="urgent" customer="Smith Academy" issue="Registration volume down 50% vs last month" mrr={500} action="URGENT CALL" />
-          <PriorityItem priority="urgent" customer="Johnson FC" issue="Payment expires in 3 days" mrr={400} action="Update Payment" />
-          <PriorityItem priority="urgent" customer="Williams League" issue="3 failed parent transactions today" mrr={800} action="Check Integration" />
-          <PriorityItem priority="urgent" customer="Davis Club" issue="Requested data export yesterday" mrr={350} action="Retention Call" />
+          <PriorityItem priority="urgent" customer="Smith Academy" issue="Registration volume down 50% vs last month" mrr={499} action="URGENT CALL" />
+          <PriorityItem priority="urgent" customer="Johnson FC" issue="Payment expires in 3 days" mrr={299} action="Update Payment" />
+          <PriorityItem priority="urgent" customer="Williams League" issue="3 failed parent transactions today" mrr={499} action="Check Integration" />
+          <PriorityItem priority="urgent" customer="Davis Club" issue="Requested data export yesterday" mrr={299} action="Retention Call" />
         </div>
       </div>
 
@@ -484,8 +483,8 @@ function PrioritiesTab() {
           IMPORTANT - Do Today
         </h3>
         <div className="space-y-3">
-          <PriorityItem priority="important" customer="Martinez Sports" issue="No registrations this week (season starts in 2 weeks?)" mrr={199} action="Check-in" />
-          <PriorityItem priority="important" customer="Thompson Academy" issue="Credit card expires in 14 days" mrr={650} action="Update Payment" />
+          <PriorityItem priority="important" customer="Martinez Sports" issue="No registrations this week (season starts in 2 weeks?)" mrr={149} action="Check-in" />
+          <PriorityItem priority="important" customer="Thompson Academy" issue="Credit card expires in 14 days" mrr={499} action="Update Payment" />
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 rounded-full bg-amber-500" />
@@ -507,7 +506,7 @@ function PrioritiesTab() {
           MONITOR - As Time Allows
         </h3>
         <div className="space-y-3">
-          <PriorityItem priority="monitor" customer="New Feature Release" issue="Send adoption tips to Pro+ customers (12 recipients)" mrr={0} action="Send Campaign" />
+          <PriorityItem priority="monitor" customer="New Feature Release" issue="Send adoption tips to Pro customers (12 recipients)" mrr={0} action="Send Campaign" />
           <PriorityItem priority="monitor" customer="3 customers" issue="Slightly elevated cart abandonment (8-12%)" mrr={0} action="Review UX" />
           <PriorityItem priority="monitor" customer="Seasonal Reminder" issue="Baseball registration season starting - prep customers" mrr={0} action="Send Tips" />
         </div>
@@ -710,10 +709,10 @@ function RevenueProtectionTab() {
         <h3 className="text-white font-semibold mb-4">Payment Method Expiration Calendar</h3>
         <div className="space-y-2">
           {[
-            { customer: 'Johnson FC', expires: 'Jan 8, 2026', mrr: 400, days: 3 },
-            { customer: 'Anderson Youth', expires: 'Jan 10, 2026', mrr: 199, days: 5 },
-            { customer: 'Thompson Academy', expires: 'Jan 19, 2026', mrr: 650, days: 14 },
-            { customer: 'Garcia United', expires: 'Jan 25, 2026', mrr: 400, days: 20 },
+            { customer: 'Johnson FC', expires: 'Jan 8, 2026', mrr: 299, days: 3 },
+            { customer: 'Anderson Youth', expires: 'Jan 10, 2026', mrr: 149, days: 5 },
+            { customer: 'Thompson Academy', expires: 'Jan 19, 2026', mrr: 499, days: 14 },
+            { customer: 'Garcia United', expires: 'Jan 25, 2026', mrr: 299, days: 20 },
           ].map((item, idx) => (
             <div key={idx} className={`flex items-center justify-between p-3 rounded-lg ${
               item.days <= 7 ? 'bg-red-500/10 border border-red-500/30' : 'bg-slate-900/50'
@@ -778,8 +777,8 @@ function ExpansionTab() {
           </h4>
           <div className="space-y-3">
             {[
-              { customer: 'Johnson FC', usage: 95, limit: 100, tier: 'Most Popular', upgrade: 'Pro+' },
-              { customer: 'Davis Club', usage: 88, limit: 100, tier: 'Most Popular', upgrade: 'Pro+' },
+              { customer: 'Johnson FC', usage: 95, limit: 100, tier: 'Growth', upgrade: 'Pro' },
+              { customer: 'Davis Club', usage: 88, limit: 100, tier: 'Growth', upgrade: 'Pro' },
             ].map((item, idx) => (
               <div key={idx} className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3">
                 <div className="flex items-center justify-between mb-2">
@@ -804,8 +803,8 @@ function ExpansionTab() {
           </h4>
           <div className="space-y-3">
             {[
-              { customer: 'Smith Academy', locations: 3, current: 'Pro+', need: 'Manual workarounds detected' },
-              { customer: 'Williams League', locations: 2, current: 'Most Popular', need: 'Requested location support' },
+              { customer: 'Smith Academy', locations: 3, current: 'Pro', need: 'Manual workarounds detected' },
+              { customer: 'Williams League', locations: 2, current: 'Growth', need: 'Requested location support' },
             ].map((item, idx) => (
               <div key={idx} className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
                 <div className="flex items-center justify-between mb-1">
@@ -827,7 +826,7 @@ function ExpansionTab() {
         <div className="space-y-3">
           {[
             { customer: 'Thompson Academy', nps: 9.5, completionRate: 98.2, suggestion: 'Add Premium AI features' },
-            { customer: 'Anderson Youth', nps: 9.2, completionRate: 97.8, suggestion: 'Upgrade to Pro+ tier' },
+            { customer: 'Anderson Youth', nps: 9.2, completionRate: 97.8, suggestion: 'Upgrade to Pro tier' },
             { customer: 'Garcia United', nps: 8.8, completionRate: 96.5, suggestion: 'Add Marketing module' },
           ].map((item, idx) => (
             <div key={idx} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">

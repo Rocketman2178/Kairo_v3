@@ -22,7 +22,7 @@ const tabs: TabConfig[] = [
   { id: 'recommendations', label: 'AI Insights', icon: <Sparkles className="w-4 h-4" /> },
 ];
 
-type SubscriptionTier = 'base' | 'benchmarking' | 'intelligence';
+type SubscriptionTier = 'Starter' | 'Growth' | 'Pro';
 
 function BenchmarkCard({
   label,
@@ -78,10 +78,10 @@ function BenchmarkCard({
   );
 }
 
-function LockedFeature({ tier, children }: { tier: 'benchmarking' | 'intelligence'; children: React.ReactNode }) {
-  const tierLabels = {
-    benchmarking: 'Benchmarking (+$99/mo)',
-    intelligence: 'Intelligence (+$199/mo)'
+function LockedFeature({ tier, children }: { tier: 'Growth' | 'Pro'; children: React.ReactNode }) {
+  const tierLabels: Record<string, string> = {
+    'Growth': 'Growth ($299/mo)',
+    'Pro': 'Pro ($499/mo)'
   };
 
   return (
@@ -94,8 +94,10 @@ function LockedFeature({ tier, children }: { tier: 'benchmarking' | 'intelligenc
           <Lock className="w-8 h-8 text-slate-400 mx-auto mb-3" />
           <p className="text-white font-semibold mb-1">Upgrade to Unlock</p>
           <p className="text-slate-400 text-sm mb-3">This feature requires {tierLabels[tier]}</p>
-          <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
-            Upgrade Now
+          <button className={`px-4 py-2 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity ${
+  tier === 'Growth' ? 'bg-gradient-to-r from-blue-600 to-blue-400' : 'bg-gradient-to-r from-purple-600 to-purple-400'
+}`}>
+            Upgrade to {tier}
           </button>
         </div>
       </div>
@@ -265,7 +267,7 @@ function FilterBar() {
 
 export function DemoBenchmarking() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
-  const [currentTier] = useState<SubscriptionTier>('intelligence');
+  const [currentTier] = useState<SubscriptionTier>('Starter');
 
   return (
     <div className="min-h-screen bg-slate-900">
@@ -459,12 +461,12 @@ function DashboardTab({ tier }: { tier: SubscriptionTier }) {
         </div>
       </div>
 
-      {tier === 'intelligence' ? (
+      {tier === 'Pro' ? (
         <AlertCard type="success" title="AI Insight">
           <p>Your re-enrollment rate of 62.3% is 6.2% below peer average. Based on similar businesses, implementing automated re-enrollment reminders 3 weeks before season end could increase this by 8-12%. Estimated annual revenue opportunity: <strong>$14,200</strong>.</p>
         </AlertCard>
       ) : (
-        <LockedFeature tier="intelligence">
+        <LockedFeature tier="Pro">
           <AlertCard type="success" title="AI Insight">
             <p>Upgrade to Intelligence tier to see AI-powered recommendations based on your benchmarking data.</p>
           </AlertCard>
@@ -717,9 +719,9 @@ function OperationsTab({ tier }: { tier: SubscriptionTier }) {
 }
 
 function RecommendationsTab({ tier }: { tier: SubscriptionTier }) {
-  if (tier !== 'intelligence') {
+  if (tier !== 'Pro') {
     return (
-      <LockedFeature tier="intelligence">
+      <LockedFeature tier="Pro">
         <div className="space-y-6">
           <div className="bg-gradient-to-r from-amber-600 to-orange-500 rounded-2xl p-6 text-white">
             <h3 className="text-xl font-bold mb-2">AI-Powered Recommendations</h3>
