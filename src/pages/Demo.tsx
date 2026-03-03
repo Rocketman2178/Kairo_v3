@@ -20,6 +20,8 @@ import { DemoInternalDashboard } from '../components/demo/DemoInternalDashboard'
 import { DemoKaiAgent } from '../components/demo/DemoKaiAgent';
 import { FeedbackAdminDashboard } from '../components/feedback/FeedbackAdminDashboard';
 
+type PricingTier = 'Starter' | 'Growth' | 'Pro' | 'Internal';
+
 interface Stage {
   id: number;
   name: string;
@@ -29,12 +31,33 @@ interface Stage {
   features: string[];
   tigerTank: string[];
   badge?: 'new' | 'improved';
+  tier: PricingTier;
+}
+
+function PricingTierBadge({ tier, size = 'sm' }: { tier: PricingTier; size?: 'sm' | 'xs' }) {
+  const styles: Record<PricingTier, string> = {
+    'Starter': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+    'Growth': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    'Pro': 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+    'Internal': 'bg-slate-500/20 text-slate-400 border-slate-500/30',
+  };
+
+  const sizeStyles = size === 'xs'
+    ? 'px-1.5 py-0.5 text-[10px]'
+    : 'px-2 py-0.5 text-xs';
+
+  return (
+    <span className={`${sizeStyles} font-medium rounded border ${styles[tier]}`}>
+      {tier}
+    </span>
+  );
 }
 
 const stages: Stage[] = [
   {
     id: 1,
     name: 'Foundation',
+    tier: 'Starter',
     status: 'completed',
     icon: <Zap className="w-5 h-5" />,
     description: 'Database schema, authentication, and core UI components',
@@ -49,6 +72,7 @@ const stages: Stage[] = [
   {
     id: 2,
     name: 'Kai Intelligence',
+    tier: 'Starter',
     status: 'completed',
     icon: <MessageCircle className="w-5 h-5" />,
     description: 'Conversational AI registration with 99% accuracy (14/14 tests passed)',
@@ -63,6 +87,7 @@ const stages: Stage[] = [
   {
     id: 2.5,
     name: 'Voice & Languages',
+    tier: 'Pro',
     status: 'planned',
     icon: <Mic className="w-5 h-5" />,
     description: 'Multi-language support with accent variations',
@@ -78,6 +103,7 @@ const stages: Stage[] = [
   {
     id: 3,
     name: 'Payments & Retention',
+    tier: 'Starter',
     status: 'in_progress',
     icon: <CreditCard className="w-5 h-5" />,
     description: 'Complete payment processing with custom payment plans',
@@ -93,10 +119,11 @@ const stages: Stage[] = [
   {
     id: 4,
     name: 'Business Intelligence',
+    tier: 'Starter',
     status: 'planned',
     icon: <BarChart3 className="w-5 h-5" />,
     description: 'Analytics, reporting, and printable schedules',
-    features: ['Custom reports', 'Printable schedules', 'Excel export', 'Churn prediction'],
+    features: ['Custom reports', 'Printable schedules', 'Excel export', 'Churn prediction', 'Skeletal Starter dashboard with upgrade prompts for deeper insights', 'Tier-gated analytics: basic metrics (Starter) → trends (Growth) → AI predictions (Pro)'],
     tigerTank: [
       'Build custom reports with drag-and-drop',
       'Print poolside/fieldside schedules',
@@ -108,6 +135,7 @@ const stages: Stage[] = [
   {
     id: 5,
     name: 'Staff & Coach Tools',
+    tier: 'Starter',
     status: 'planned',
     icon: <Users className="w-5 h-5" />,
     description: 'Coach mobile app, staff scheduling, and internal messaging',
@@ -123,6 +151,7 @@ const stages: Stage[] = [
   {
     id: 6,
     name: 'Advanced Scheduling',
+    tier: 'Growth',
     status: 'planned',
     icon: <Calendar className="w-5 h-5" />,
     description: 'AI-powered schedule optimization',
@@ -137,10 +166,11 @@ const stages: Stage[] = [
   {
     id: 7,
     name: 'Upselling & Engagement',
+    tier: 'Growth',
     status: 'planned',
     icon: <TrendingUp className="w-5 h-5" />,
     description: 'Revenue maximization and lifecycle communications',
-    features: ['Smart upsells', 'Re-enrollment', 'Sibling discounts', 'Loyalty programs'],
+    features: ['Smart upsells', 'Re-enrollment', 'Sibling discounts', 'Loyalty programs', 'Automated birthday party outreach with opt-in email toggle', 'Family referral program ($20/referral, free season at 5th)'],
     tigerTank: [
       'Automatically prompt re-enrollment before session ends',
       'Offer sibling discounts during registration',
@@ -151,6 +181,7 @@ const stages: Stage[] = [
   {
     id: 8,
     name: 'Multi-Location',
+    tier: 'Pro',
     status: 'planned',
     icon: <Building2 className="w-5 h-5" />,
     description: 'Multi-location operators and franchise support (120+ locations)',
@@ -165,6 +196,7 @@ const stages: Stage[] = [
   {
     id: 8.5,
     name: 'Benchmarking Intelligence',
+    tier: 'Pro',
     status: 'planned',
     icon: <TrendingUp className="w-5 h-5" />,
     description: 'Anonymous peer comparison with AI-powered recommendations',
@@ -179,6 +211,7 @@ const stages: Stage[] = [
   {
     id: 8.6,
     name: 'Migration Toolkit',
+    tier: 'Pro',
     status: 'planned',
     icon: <RefreshCw className="w-5 h-5" />,
     description: 'Complete data migration with training materials and parallel running',
@@ -194,6 +227,7 @@ const stages: Stage[] = [
   {
     id: 9,
     name: 'Marketing Automation',
+    tier: 'Pro',
     status: 'planned',
     icon: <Megaphone className="w-5 h-5" />,
     description: 'Ad ROI tracking and automated budget optimization',
@@ -208,6 +242,7 @@ const stages: Stage[] = [
   {
     id: 10,
     name: 'White-Label & API',
+    tier: 'Pro',
     status: 'planned',
     icon: <Palette className="w-5 h-5" />,
     description: 'Deep customization including voice accents',
@@ -222,6 +257,7 @@ const stages: Stage[] = [
   {
     id: 11,
     name: 'Data & Compliance',
+    tier: 'Pro',
     status: 'planned',
     icon: <Shield className="w-5 h-5" />,
     description: 'CAN-SPAM, TCPA, COPPA/GDPR compliance and data portability',
@@ -237,6 +273,7 @@ const stages: Stage[] = [
   {
     id: 12,
     name: 'Advanced AI',
+    tier: 'Pro',
     status: 'planned',
     icon: <Brain className="w-5 h-5" />,
     description: 'Predictive models and optimization algorithms',
@@ -251,6 +288,7 @@ const stages: Stage[] = [
   {
     id: 13,
     name: 'Internal Operations',
+    tier: 'Internal',
     status: 'planned',
     icon: <LayoutDashboard className="w-5 h-5" />,
     description: 'B2B SaaS operations dashboard with transaction-based health metrics',
@@ -288,17 +326,17 @@ export function Demo() {
   };
 
   const demoButtons = [
-    { view: 'chat' as DemoView, label: 'Try Kai Chat', icon: <MessageCircle className="w-4 h-4" />, stage: 2 },
-    { view: 'payments' as DemoView, label: 'Payments Demo', icon: <CreditCard className="w-4 h-4" />, stage: 3 },
-    { view: 'analytics' as DemoView, label: 'Analytics Demo', icon: <BarChart3 className="w-4 h-4" />, stage: 4 },
-    { view: 'coach' as DemoView, label: 'Coach App Demo', icon: <Users className="w-4 h-4" />, stage: 5 },
-    { view: 'scheduling' as DemoView, label: 'Scheduling Demo', icon: <Calendar className="w-4 h-4" />, stage: 6 },
-    { view: 'marketing' as DemoView, label: 'Marketing Demo', icon: <Megaphone className="w-4 h-4" />, stage: 9 },
-    { view: 'whitelabel' as DemoView, label: 'White-Label Demo', icon: <Palette className="w-4 h-4" />, stage: 10 },
-    { view: 'datainsights' as DemoView, label: 'Data Insights', icon: <TrendingUp className="w-4 h-4" />, stage: 4 },
-    { view: 'benchmarking' as DemoView, label: 'Benchmarking', icon: <BarChart3 className="w-4 h-4" />, stage: 8.5 },
-    { view: 'internal' as DemoView, label: 'Internal Ops', icon: <LayoutDashboard className="w-4 h-4" />, stage: 13 },
-    { view: 'kaiagent' as DemoView, label: 'Kai Agent', icon: <Bot className="w-4 h-4" />, stage: 2 },
+    { view: 'chat' as DemoView, label: 'Try Kai Chat', icon: <MessageCircle className="w-4 h-4" />, stage: 2, tier: 'Starter' as PricingTier },
+    { view: 'payments' as DemoView, label: 'Payments Demo', icon: <CreditCard className="w-4 h-4" />, stage: 3, tier: 'Starter' as PricingTier },
+    { view: 'analytics' as DemoView, label: 'Analytics Demo', icon: <BarChart3 className="w-4 h-4" />, stage: 4, tier: 'Starter' as PricingTier },
+    { view: 'coach' as DemoView, label: 'Coach App Demo', icon: <Users className="w-4 h-4" />, stage: 5, tier: 'Starter' as PricingTier },
+    { view: 'scheduling' as DemoView, label: 'Scheduling Demo', icon: <Calendar className="w-4 h-4" />, stage: 6, tier: 'Growth' as PricingTier },
+    { view: 'marketing' as DemoView, label: 'Marketing Demo', icon: <Megaphone className="w-4 h-4" />, stage: 9, tier: 'Pro' as PricingTier },
+    { view: 'whitelabel' as DemoView, label: 'White-Label Demo', icon: <Palette className="w-4 h-4" />, stage: 10, tier: 'Pro' as PricingTier },
+    { view: 'datainsights' as DemoView, label: 'Data Insights', icon: <TrendingUp className="w-4 h-4" />, stage: 4, tier: 'Growth' as PricingTier },
+    { view: 'benchmarking' as DemoView, label: 'Benchmarking', icon: <BarChart3 className="w-4 h-4" />, stage: 8.5, tier: 'Pro' as PricingTier },
+    { view: 'internal' as DemoView, label: 'Internal Ops', icon: <LayoutDashboard className="w-4 h-4" />, stage: 13, tier: 'Internal' as PricingTier },
+    { view: 'kaiagent' as DemoView, label: 'Kai Agent', icon: <Bot className="w-4 h-4" />, stage: 2, tier: 'Starter' as PricingTier },
   ];
 
   if (activeView !== 'overview') {
@@ -465,80 +503,40 @@ export function Demo() {
               </div>
             </div>
 
-            <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700 overflow-hidden">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                  <DollarSign className="w-6 h-6 text-blue-400" />
+            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
+              <h4 className="text-slate-300 text-sm font-semibold mb-3 text-center">What You're Replacing</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <PricingTierBadge tier="Starter" size="xs" />
+                    <span className="text-slate-400 text-xs">$149/mo replaces:</span>
+                  </div>
+                  <div className="text-xs text-slate-500"><span className="line-through">TeamSnap ($15/mo)</span> — Scheduling</div>
+                  <div className="text-xs text-slate-500"><span className="line-through">Slack ($7.25/user/mo)</span> — Staff Chat</div>
+                  <div className="text-xs text-slate-500"><span className="line-through">Square ($60/mo)</span> — Payments</div>
+                  <div className="text-xs text-slate-500"><span className="line-through">Intercom ($89/mo)</span> — Chat Support</div>
+                  <div className="text-xs text-emerald-400 font-medium mt-2">~$170+/mo in savings</div>
                 </div>
-                <div>
-                  <h3 className="text-xl font-bold text-white">Eliminate Software Expenses</h3>
-                  <p className="text-slate-400 text-sm">One platform replaces many tools</p>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <PricingTierBadge tier="Growth" size="xs" />
+                    <span className="text-slate-400 text-xs">adds replacements for:</span>
+                  </div>
+                  <div className="text-xs text-slate-500"><span className="line-through">Calendly ($16/mo)</span> — Adv. Scheduling</div>
+                  <div className="text-xs text-slate-500"><span className="line-through">Klaviyo ($45/mo)</span> — Re-engagement</div>
+                  <div className="text-xs text-slate-500"><span className="line-through">LoyaltyLion ($199/mo)</span> — Loyalty</div>
+                  <div className="text-xs text-blue-400 font-medium mt-2">~$260+/mo in additional savings</div>
                 </div>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-slate-700">
-                  <div className="flex items-center gap-3">
-                    <XCircle className="w-5 h-5 text-red-400" />
-                    <span className="text-slate-300">Email Marketing Tools</span>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <PricingTierBadge tier="Pro" size="xs" />
+                    <span className="text-slate-400 text-xs">adds replacements for:</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-500 line-through text-sm">$200-500/mo</span>
-                    <ArrowRight className="w-4 h-4 text-emerald-400" />
-                    <span className="text-emerald-400 font-medium">Included</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-slate-700">
-                  <div className="flex items-center gap-3">
-                    <XCircle className="w-5 h-5 text-red-400" />
-                    <span className="text-slate-300">Team Communication</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-500 line-through text-sm">$100-300/mo</span>
-                    <ArrowRight className="w-4 h-4 text-emerald-400" />
-                    <span className="text-emerald-400 font-medium">Included</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-slate-700">
-                  <div className="flex items-center gap-3">
-                    <XCircle className="w-5 h-5 text-red-400" />
-                    <span className="text-slate-300">Scheduling Software</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-500 line-through text-sm">$50-150/mo</span>
-                    <ArrowRight className="w-4 h-4 text-emerald-400" />
-                    <span className="text-emerald-400 font-medium">Included</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-slate-700">
-                  <div className="flex items-center gap-3">
-                    <XCircle className="w-5 h-5 text-red-400" />
-                    <span className="text-slate-300">Re-enrollment Campaigns</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-500 line-through text-sm">$500+/season</span>
-                    <ArrowRight className="w-4 h-4 text-emerald-400" />
-                    <span className="text-emerald-400 font-medium">Automated</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-slate-700">
-                  <div className="flex items-center gap-3">
-                    <XCircle className="w-5 h-5 text-red-400" />
-                    <span className="text-slate-300">Marketing Agency Fees</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-500 line-through text-sm">$1,000+/mo</span>
-                    <ArrowRight className="w-4 h-4 text-emerald-400" />
-                    <span className="text-emerald-400 font-medium">Trackable ROI</span>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                <div className="flex items-start gap-2">
-                  <RefreshCw className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-blue-300 text-sm font-medium">True Marketing ROI Visibility</p>
-                    <p className="text-blue-200/70 text-xs">No more vague agency reports. See exactly which campaigns drive registrations.</p>
-                  </div>
+                  <div className="text-xs text-slate-500"><span className="line-through">Tableau ($75/user/mo)</span> — Analytics</div>
+                  <div className="text-xs text-slate-500"><span className="line-through">HubSpot ($800/mo)</span> — Marketing</div>
+                  <div className="text-xs text-slate-500"><span className="line-through">Mailchimp ($45/mo)</span> — Email</div>
+                  <div className="text-xs text-slate-500"><span className="line-through">Agency fees ($2K+/mo)</span> — Ad Mgmt</div>
+                  <div className="text-xs text-purple-400 font-medium mt-2">~$2,900+/mo in additional savings</div>
                 </div>
               </div>
             </div>
@@ -554,11 +552,9 @@ export function Demo() {
                 onClick={() => setActiveView(btn.view)}
                 className="relative flex flex-col items-center gap-2 p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-all hover:scale-105 border border-slate-700"
               >
-                {'badge' in btn && btn.badge && (
-                  <span className="absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px] font-bold uppercase rounded shadow-lg bg-emerald-400 text-emerald-900">
-                    New
-                  </span>
-                )}
+                <div className="absolute top-2 right-2">
+                  <PricingTierBadge tier={btn.tier} size="xs" />
+                </div>
                 <div className="w-10 h-10 bg-blue-600/20 rounded-lg flex items-center justify-center text-blue-400">
                   {btn.icon}
                 </div>
@@ -566,6 +562,24 @@ export function Demo() {
                 <span className="text-slate-500 text-xs">Stage {btn.stage}</span>
               </button>
             ))}
+          </div>
+          <div className="flex items-center justify-center gap-6 mt-4">
+            <div className="flex items-center gap-2">
+              <PricingTierBadge tier="Starter" size="xs" />
+              <span className="text-slate-500 text-xs">$149/mo</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <PricingTierBadge tier="Growth" size="xs" />
+              <span className="text-slate-500 text-xs">$299/mo</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <PricingTierBadge tier="Pro" size="xs" />
+              <span className="text-slate-500 text-xs">$499/mo</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <PricingTierBadge tier="Internal" size="xs" />
+              <span className="text-slate-500 text-xs">Admin Only</span>
+            </div>
           </div>
         </section>
 
@@ -620,7 +634,10 @@ export function Demo() {
                         <span className="text-slate-500 text-sm font-medium">Stage {stage.id}</span>
                         <div className={`w-2 h-2 rounded-full ${getStatusColor(stage.status)}`}></div>
                       </div>
-                      <h3 className="text-white font-semibold">{stage.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-white font-semibold">{stage.name}</h3>
+                        <PricingTierBadge tier={stage.tier} size="xs" />
+                      </div>
                     </div>
                   </div>
                 </div>

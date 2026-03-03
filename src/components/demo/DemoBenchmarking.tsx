@@ -292,7 +292,7 @@ export function DemoBenchmarking() {
             </div>
             <div className="flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-full">
               <Crown className="w-4 h-4 text-amber-400" />
-              <span className="text-amber-400 text-xs font-medium">Intelligence Tier</span>
+              <span className="text-amber-400 text-xs font-medium">Pro Tier</span>
             </div>
           </div>
         </div>
