@@ -7,6 +7,7 @@ import { TestDataDashboard } from './pages/TestDataDashboard';
 import { Demo } from './pages/Demo';
 import Register from './pages/Register';
 import { TestScenarios } from './pages/TestScenarios';
+import { SplashPage } from './pages/SplashPage';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
           <Route path="/terms" element={<TermsConditions />} />
           <Route path="/test-data" element={<TestDataDashboard />} />
           <Route path="/test-scenarios" element={<TestScenarios />} />
+          <Route path="/splash" element={<SplashPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
