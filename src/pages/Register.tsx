@@ -1,7 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Elements } from '@stripe/react-stripe-js';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, Calendar, MapPin, Clock, User, CreditCard, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { getStripe, isStripeConfigured } from '../lib/stripe';
+import { useCartAbandonment } from '../hooks/useCartAbandonment';
+import PaymentForm from '../components/registration/PaymentForm';
+import RegistrationSteps from '../components/registration/RegistrationSteps';
+import RegistrationConfirmation from '../components/registration/RegistrationConfirmation';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Calendar,
+  MapPin,
+  Clock,
+  User,
+  Loader2,
+  AlertCircle,
+  Timer,
+  Shield,
+} from 'lucide-react';
 
 interface PendingRegistration {
   registrationId: string;
@@ -51,16 +68,30 @@ function formatPrice(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+const STEPS = [
+  { label: 'Session', shortLabel: 'Session' },
+  { label: 'Your Info', shortLabel: 'Info' },
+  { label: 'Payment', shortLabel: 'Pay' },
+  { label: 'Done', shortLabel: 'Done' },
+];
+
 export default function Register() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get('token');
+  const paymentStatus = searchParams.get('payment_status');
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [registration, setRegistration] = useState<PendingRegistration | null>(null);
+  const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [familyId, setFamilyId] = useState<string | null>(null);
+  const [childId, setChildId] = useState<string | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [isDemo, setIsDemo] = useState(!isStripeConfigured());
+  const [, setPaymentPlan] = useState<'full' | 'monthly' | 'biweekly'>('full');
+  const [timeRemaining, setTimeRemaining] = useState(0);
   const [formData, setFormData] = useState<FormData>({
     parentFirstName: '',
     parentLastName: '',
@@ -73,6 +104,19 @@ export default function Register() {
     agreedToTerms: false,
   });
 
+  const { markRecovered } = useCartAbandonment(
+    {
+      registrationToken: token,
+      sessionId: registration?.session.id,
+      childName: registration?.childName,
+      programName: registration?.session.programName,
+      amountCents: registration?.amountCents,
+      currentStep: step,
+      email: formData.email,
+    },
+    step === 3
+  );
+
   useEffect(() => {
     if (!token) {
       setError('No registration token provided. Please start a new chat to register.');
@@ -80,8 +124,28 @@ export default function Register() {
       return;
     }
 
+    if (paymentStatus === 'success') {
+      setStep(3);
+    }
+
     loadPendingRegistration();
   }, [token]);
+
+  useEffect(() => {
+    if (!registration?.expiresAt) return;
+
+    function updateTime() {
+      const remaining = Math.max(
+        0,
+        Math.floor((new Date(registration!.expiresAt).getTime() - Date.now()) / 1000)
+      );
+      setTimeRemaining(remaining);
+    }
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, [registration?.expiresAt]);
 
   async function loadPendingRegistration() {
     try {
@@ -125,17 +189,84 @@ export default function Register() {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  const createPaymentIntent = useCallback(async () => {
+    if (isDemo || !token) return;
 
-    if (!formData.agreedToTerms) {
-      setError('Please agree to the terms and conditions');
-      return;
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/create-payment-intent`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${anonKey}`,
+          'Apikey': anonKey,
+        },
+        body: JSON.stringify({
+          registrationToken: token,
+          paymentPlanType: 'full',
+          email: formData.email,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.demo) {
+        setIsDemo(true);
+        return;
+      }
+
+      if (data.error) {
+        setError(data.message || 'Failed to initialize payment');
+        return;
+      }
+
+      setClientSecret(data.clientSecret);
+    } catch (err) {
+      console.error('Payment intent creation failed:', err);
+      setIsDemo(true);
     }
+  }, [token, formData.email, isDemo]);
 
-    setSubmitting(true);
+  function validateStep2(): boolean {
+    if (!formData.parentFirstName.trim() || !formData.parentLastName.trim()) {
+      setError('Please enter your first and last name.');
+      return false;
+    }
+    if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      setError('Please enter a valid email address.');
+      return false;
+    }
+    if (!formData.phone.trim()) {
+      setError('Please enter your phone number.');
+      return false;
+    }
+    if (!formData.emergencyContactName.trim() || !formData.emergencyContactPhone.trim()) {
+      setError('Please provide emergency contact information.');
+      return false;
+    }
+    if (!formData.agreedToTerms) {
+      setError('Please agree to the terms and conditions.');
+      return false;
+    }
     setError(null);
+    return true;
+  }
 
+  async function handleNextStep() {
+    if (step === 0) {
+      setStep(1);
+    } else if (step === 1 && validateStep2()) {
+      setSubmitting(true);
+      await createFamilyAndChild();
+      await createPaymentIntent();
+      setSubmitting(false);
+      setStep(2);
+    }
+  }
+
+  async function createFamilyAndChild() {
     try {
       const { data: family, error: familyError } = await supabase
         .from('families')
@@ -148,6 +279,7 @@ export default function Register() {
         .single();
 
       if (familyError) throw familyError;
+      setFamilyId(family.id);
 
       const { data: child, error: childError } = await supabase
         .from('children')
@@ -161,13 +293,61 @@ export default function Register() {
         .single();
 
       if (childError) throw childError;
+      setChildId(child.id);
+    } catch (err) {
+      console.error('Failed to create family/child:', err);
+      setError('Failed to save your information. Please try again.');
+    }
+  }
 
-      const { data: confirmData, error: confirmError } = await supabase.rpc('confirm_registration', {
-        p_registration_token: token,
-        p_family_id: family.id,
-        p_child_id: child.id,
-        p_payment_intent_id: `demo_payment_${Date.now()}`,
-      });
+  async function handleDemoPayment() {
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      let currentFamilyId = familyId;
+      let currentChildId = childId;
+
+      if (!currentFamilyId || !currentChildId) {
+        const { data: family, error: familyError } = await supabase
+          .from('families')
+          .insert({
+            name: `${formData.parentFirstName} ${formData.parentLastName}`,
+            email: formData.email,
+            phone: formData.phone,
+          })
+          .select()
+          .single();
+
+        if (familyError) throw familyError;
+        currentFamilyId = family.id;
+        setFamilyId(family.id);
+
+        const { data: child, error: childError } = await supabase
+          .from('children')
+          .insert({
+            family_id: family.id,
+            first_name: registration?.childName || '',
+            date_of_birth: formData.childDateOfBirth || null,
+            medical_notes: formData.medicalNotes || null,
+          })
+          .select()
+          .single();
+
+        if (childError) throw childError;
+        currentChildId = child.id;
+        setChildId(child.id);
+      }
+
+      const { data: confirmData, error: confirmError } = await supabase.rpc(
+        'confirm_registration',
+        {
+          p_registration_token: token,
+          p_family_id: currentFamilyId,
+          p_child_id: currentChildId,
+          p_payment_intent_id: `demo_payment_${Date.now()}`,
+        }
+      );
 
       if (confirmError) throw confirmError;
 
@@ -177,10 +357,11 @@ export default function Register() {
         return;
       }
 
-      setSuccess(true);
+      markRecovered();
+      setStep(3);
       setSubmitting(false);
     } catch (err) {
-      console.error('Registration failed:', err);
+      console.error('Demo registration failed:', err);
       setError('Failed to complete registration. Please try again.');
       setSubmitting(false);
     }
@@ -192,6 +373,7 @@ export default function Register() {
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
     }));
+    if (error) setError(null);
   }
 
   if (loading) {
@@ -199,7 +381,7 @@ export default function Register() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto" />
-          <p className="mt-2 text-gray-600">Loading registration details...</p>
+          <p className="mt-3 text-gray-600">Loading registration details...</p>
         </div>
       </div>
     );
@@ -208,13 +390,13 @@ export default function Register() {
   if (error && !registration) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h1 className="text-xl font-semibold text-gray-900 mb-2">Registration Error</h1>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => navigate('/')}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Start New Registration
@@ -224,280 +406,367 @@ export default function Register() {
     );
   }
 
-  if (success) {
+  if (step === 3) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
-          <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Registration Complete!</h1>
-          <p className="text-gray-600 mb-6">
-            {registration?.childName} has been successfully registered for {registration?.session.programName}.
-            You will receive a confirmation email shortly.
-          </p>
-          <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
-            <h3 className="font-medium text-gray-900 mb-2">Next Steps:</h3>
-            <ul className="text-sm text-gray-600 space-y-1">
-              <li>Check your email for confirmation details</li>
-              <li>Mark your calendar for {DAY_NAMES[registration?.session.dayOfWeek || 0]}s at {formatTime(registration?.session.startTime || '')}</li>
-              <li>Arrive 10 minutes early for the first session</li>
-            </ul>
-          </div>
-          <button
-            onClick={() => navigate('/')}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Back to Home
-          </button>
-        </div>
-      </div>
+      <RegistrationConfirmation
+        childName={registration?.childName || ''}
+        programName={registration?.session.programName || ''}
+        dayOfWeek={registration?.session.dayOfWeek || 0}
+        startTime={registration?.session.startTime || ''}
+        endTime={registration?.session.endTime || ''}
+        startDate={registration?.session.startDate || ''}
+        locationName={registration?.session.locationName || ''}
+        locationAddress={registration?.session.locationAddress || ''}
+        amountCents={registration?.amountCents || 0}
+        isDemo={isDemo}
+        onGoHome={() => navigate('/')}
+      />
     );
   }
 
-  const timeRemaining = registration?.expiresAt
-    ? Math.max(0, Math.floor((new Date(registration.expiresAt).getTime() - Date.now()) / 1000 / 60))
-    : 0;
+  const minutesLeft = Math.floor(timeRemaining / 60);
+  const secondsLeft = timeRemaining % 60;
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-2xl mx-auto">
-        <button
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </button>
+  const mainContent = (
+    <>
+      <button
+        onClick={() => (step > 0 ? setStep(step - 1) : navigate(-1))}
+        className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 mb-5 transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        {step > 0 ? 'Back' : 'Cancel'}
+      </button>
 
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-8 text-white">
-            <h1 className="text-2xl font-bold">Complete Registration</h1>
-            <p className="text-blue-100 mt-1">
-              Finish signing up {registration?.childName} for {registration?.session.programName}
-            </p>
-            {timeRemaining > 0 && (
-              <p className="text-sm text-blue-200 mt-2">
-                This reservation expires in {timeRemaining} minutes
-              </p>
-            )}
-          </div>
+      <RegistrationSteps currentStep={step} steps={STEPS} />
 
-          <div className="p-6 border-b border-gray-200 bg-gray-50">
-            <h2 className="font-semibold text-gray-900 mb-4">Session Details</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-start gap-3">
-                <User className="h-5 w-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500">Child</p>
-                  <p className="font-medium text-gray-900">
-                    {registration?.childName} ({registration?.childAge} years old)
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Calendar className="h-5 w-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500">Schedule</p>
-                  <p className="font-medium text-gray-900">
-                    {DAY_NAMES[registration?.session.dayOfWeek || 0]}s at {formatTime(registration?.session.startTime || '')}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500">Location</p>
-                  <p className="font-medium text-gray-900">{registration?.session.locationName}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <CreditCard className="h-5 w-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500">Total</p>
-                  <p className="font-medium text-gray-900">{formatPrice(registration?.amountCents || 0)}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+      {timeRemaining > 0 && timeRemaining < 600 && (
+        <div className="mt-4 flex items-center gap-2 bg-amber-50 text-amber-800 px-4 py-2.5 rounded-xl text-sm border border-amber-200">
+          <Timer className="h-4 w-4 flex-shrink-0" />
+          <span>
+            Spot reserved for {minutesLeft}:{secondsLeft.toString().padStart(2, '0')}
+          </span>
+        </div>
+      )}
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <p className="text-red-700 text-sm">{error}</p>
-              </div>
-            )}
-
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Parent/Guardian Information</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                  <input
-                    type="text"
-                    name="parentFirstName"
-                    value={formData.parentFirstName}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                  <input
-                    type="text"
-                    name="parentLastName"
-                    value={formData.parentLastName}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Child Information</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Child's Name</label>
-                  <input
-                    type="text"
-                    value={registration?.childName || ''}
-                    disabled
-                    className="w-full px-3 py-2 border border-gray-200 bg-gray-50 rounded-lg text-gray-700"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-                  <input
-                    type="date"
-                    name="childDateOfBirth"
-                    value={formData.childDateOfBirth}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Medical Notes / Allergies (Optional)
-                </label>
-                <textarea
-                  name="medicalNotes"
-                  value={formData.medicalNotes}
-                  onChange={handleInputChange}
-                  rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Any medical conditions or allergies we should know about"
-                />
-              </div>
-            </div>
-
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Emergency Contact</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
-                  <input
-                    type="text"
-                    name="emergencyContactName"
-                    value={formData.emergencyContactName}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Contact Phone</label>
-                  <input
-                    type="tel"
-                    name="emergencyContactPhone"
-                    value={formData.emergencyContactPhone}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-blue-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-2">Payment Summary</h3>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-700">{registration?.session.programName}</span>
-                <span className="font-semibold text-gray-900">{formatPrice(registration?.amountCents || 0)}</span>
-              </div>
-              <p className="text-sm text-gray-500 mt-2">
-                Payment processing will be available soon. For now, this is a demo registration.
+      <div className="mt-6 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        {step === 0 && (
+          <>
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-6 text-white">
+              <h1 className="text-xl font-bold">Confirm Session</h1>
+              <p className="text-blue-100 text-sm mt-1">
+                Review the details for {registration?.childName}
               </p>
             </div>
 
-            <div>
-              <label className="flex items-start gap-3">
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                  <User className="h-5 w-5 text-blue-500 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Child</p>
+                    <p className="font-medium text-gray-900">
+                      {registration?.childName}, {registration?.childAge} yrs
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                  <Calendar className="h-5 w-5 text-blue-500 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Schedule</p>
+                    <p className="font-medium text-gray-900">
+                      {DAY_NAMES[registration?.session.dayOfWeek || 0]}s at{' '}
+                      {formatTime(registration?.session.startTime || '')}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                  <MapPin className="h-5 w-5 text-blue-500 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Location</p>
+                    <p className="font-medium text-gray-900">
+                      {registration?.session.locationName}
+                    </p>
+                    {registration?.session.locationAddress && (
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {registration.session.locationAddress}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                  <Clock className="h-5 w-5 text-blue-500 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Program</p>
+                    <p className="font-medium text-gray-900">
+                      {registration?.session.programName}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {formatPrice(registration?.amountCents || 0)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-4 py-2.5 rounded-xl">
+                <Shield className="h-4 w-4" />
+                <span>
+                  {(registration?.session.capacity || 0) -
+                    (registration?.session.enrolledCount || 0)}{' '}
+                  spots remaining
+                </span>
+              </div>
+
+              <button
+                onClick={handleNextStep}
+                className="w-full py-3.5 px-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
+              >
+                Continue
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          </>
+        )}
+
+        {step === 1 && (
+          <>
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-6 text-white">
+              <h1 className="text-xl font-bold">Your Information</h1>
+              <p className="text-blue-100 text-sm mt-1">
+                We need a few details to complete the registration
+              </p>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-red-700 text-sm">{error}</p>
+                </div>
+              )}
+
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3">Parent / Guardian</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      First Name
+                    </label>
+                    <input
+                      type="text"
+                      name="parentFirstName"
+                      value={formData.parentFirstName}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      name="parentLastName"
+                      value={formData.parentLastName}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3">Child Details</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Child's Name
+                    </label>
+                    <input
+                      type="text"
+                      value={registration?.childName || ''}
+                      disabled
+                      className="w-full px-3.5 py-2.5 border border-gray-200 bg-gray-50 rounded-xl text-gray-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Date of Birth
+                    </label>
+                    <input
+                      type="date"
+                      name="childDateOfBirth"
+                      value={formData.childDateOfBirth}
+                      onChange={handleInputChange}
+                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    />
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Medical Notes / Allergies (Optional)
+                  </label>
+                  <textarea
+                    name="medicalNotes"
+                    value={formData.medicalNotes}
+                    onChange={handleInputChange}
+                    rows={2}
+                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder="Any medical conditions or allergies we should know about"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3">Emergency Contact</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Contact Name
+                    </label>
+                    <input
+                      type="text"
+                      name="emergencyContactName"
+                      value={formData.emergencyContactName}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Contact Phone
+                    </label>
+                    <input
+                      type="tel"
+                      name="emergencyContactPhone"
+                      value={formData.emergencyContactPhone}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <label className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer">
                 <input
                   type="checkbox"
                   name="agreedToTerms"
                   checked={formData.agreedToTerms}
                   onChange={handleInputChange}
-                  className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  className="mt-0.5 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-600">
                   I agree to the{' '}
-                  <a href="/terms" className="text-blue-600 hover:underline">
+                  <a href="/terms" target="_blank" className="text-blue-600 hover:underline">
                     Terms & Conditions
                   </a>{' '}
                   and{' '}
-                  <a href="/privacy" className="text-blue-600 hover:underline">
+                  <a href="/privacy" target="_blank" className="text-blue-600 hover:underline">
                     Privacy Policy
                   </a>
                 </span>
               </label>
+
+              <button
+                onClick={handleNextStep}
+                disabled={submitting}
+                className="w-full py-3.5 px-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    Continue to Payment
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            </div>
+          </>
+        )}
+
+        {step === 2 && (
+          <>
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-6 text-white">
+              <h1 className="text-xl font-bold">Payment</h1>
+              <p className="text-blue-100 text-sm mt-1">
+                Choose a plan and complete your payment
+              </p>
             </div>
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full py-3 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="h-5 w-5" />
-                  Complete Registration
-                </>
-              )}
-            </button>
-          </form>
-        </div>
+            <div className="p-6">
+              <PaymentForm
+                amountCents={registration?.amountCents || 0}
+                programName={registration?.session.programName || ''}
+                sessionStartDate={registration?.session.startDate}
+                sessionWeeks={9}
+                hasOtherRegistrations={false}
+                isReturningFamily={false}
+                clientSecret={clientSecret}
+                isDemo={isDemo}
+                onPaymentPlanChange={setPaymentPlan}
+                onDemoSubmit={handleDemoPayment}
+                registrationToken={token || ''}
+              />
+            </div>
+          </>
+        )}
       </div>
+    </>
+  );
+
+  if (!isDemo && clientSecret) {
+    return (
+      <Elements
+        stripe={getStripe()}
+        options={{
+          clientSecret,
+          appearance: {
+            theme: 'stripe',
+            variables: { colorPrimary: '#2563eb', borderRadius: '12px' },
+          },
+        }}
+      >
+        <div className="min-h-screen bg-gray-50 py-6 px-4 pb-24 sm:pb-6">
+          <div className="max-w-2xl mx-auto">{mainContent}</div>
+        </div>
+      </Elements>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-6 px-4 pb-24 sm:pb-6">
+      <div className="max-w-2xl mx-auto">{mainContent}</div>
     </div>
   );
 }
