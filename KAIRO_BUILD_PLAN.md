@@ -1,7 +1,7 @@
 # Kairo Platform - Strategic Build Plan
 
-**Version:** 2.11
-**Last Updated:** January 22, 2026
+**Version:** 2.12
+**Last Updated:** March 11, 2026
 **Current Stage:** Stage 2 COMPLETE | Stage 3 Starting (Payments & Registration Flow)
 
 ---
@@ -33,6 +33,127 @@ This version incorporates comprehensive feedback from the Tiger Tank session inc
 3. **Complex Payment Workflows** - Custom plans during registration, financial aid integration
 4. **Migration Safety Net** - Credit card preservation, make-up credits, rollback capability
 5. **Private Lesson Complexity** - Filter-first approach for 10+ slot presentations
+
+---
+
+## Product Feedback Integration (March 2026)
+
+**Source:** Stakeholder product review and Q&A session
+
+### Feedback Items Integrated
+
+1. **Incident Report Custom Templates** — Companies upload lawyer-approved templates; coaches fill simplified mobile form; answers auto-populate official document for sending to schools. Applies to ALL legal documents, not just incidents. (Updated in Stage 5.4)
+
+2. **Season Copy/Repeat** — Copy entire season schedule (e.g., Fall → Winter) with bulk or individual publish options. Critical time-saver for season-based programs. (Added to Stage 6.1)
+
+3. **Coach App Smart Notifications** — Class reminders, SMS notifications, important alerts for coaches. (Added to Stage 5.5)
+
+4. **Skill Tracking Module** — Track total classes attended, skill levels achieved, student progression. Particularly valuable for swim schools (level certifications). (Added to Stage 12 as feature)
+
+5. **Per-Location Pricing Flexibility** — Per-location pricing breaks for high-location/low-density businesses (e.g., Soccer Shots: 200+ preschool locations, 1-2 classes each). Need hybrid pricing option (per-class-volume or per-enrollment for distributed models). (OPEN ITEM — needs resolution before launch)
+
+6. **Language Upsell Model** — Concept: Starter/Growth users select 1-2 included languages. If they use an additional language, system auto-notifies them of revenue generated through that language and prompts upgrade. Turns language into natural upsell trigger. Pro = unlimited. (CONCEPT TO EXPLORE)
+
+7. **Voice AI in Starter** — Consider offering basic inbound voice registration in Starter (e.g., 50 min/mo) as product hook for solopreneurs. Marginal cost ~$1.10/mo. Currently voice is Pro-only. (DECISION NEEDED — tradeoff: reduces Pro differentiation vs. drives trial conversion)
+
+### Questions Answered
+
+| Question | Answer |
+|----------|--------|
+| No CC required — will we chase cards? | No, if conversion flow is designed right. Show usage value summary at day 25-27, pre-select tier based on features used, one-click checkout. Product stickiness is the leverage — leaving means migrating away. |
+| Email+SMS Campaign Builder (Pro) vs Retention & Engagement (Growth)? | Growth = automated rules-based sequences (churn scoring, re-enrollment, welcome series, loyalty). Pro = full marketing engine (custom campaigns, scheduling, segmentation, A/B testing, birthday campaigns, predictive churn, campaign coordination with frequency caps). |
+| Does Kairo replace Calendly? | NO — Kairo's scheduling is class/session scheduling, not personal calendar booking. Remove Calendly from "What Kairo Replaces" list unless meeting booking feature is added. |
+| Is 3-minute registration realistic? | Reasonable target for AI chat flow but needs real-user validation. Factors that push past 3 min: looking up medical info, multi-child registrations, unfamiliar users. Recommend marketing as "under 5 minutes" if 3 proves optimistic — still massive improvement over 18-23 min. |
+| What's the actual onboarding timeline? | Single-location with clean data: 1-2 weeks. 100-owner franchise: 4-8 weeks phased (10 locations/week). Website's 6-12 month timelines based on traditional systems — our system is significantly faster. Update website to reflect realistic timelines. |
+| Annual discount — 10% or 15%? | Recommend 10%. $600 saved on Pro is marketable as "2 months free." Recovers ~$300/yr more per Pro client. Leaves room for promotional offers. SaaS standard is 10-20%. |
+
+### True Operating Cost Per Customer
+
+**What it costs Kairo to serve one customer, based on subscription revenue.**
+
+Stripe fees passed through to end customers (industry standard). Not a Kairo cost.
+
+**Fixed Platform Infrastructure (shared across ALL customers):**
+
+| Service | Monthly Cost | Notes |
+|---------|-------------|-------|
+| Supabase Pro + Compute (2-core) | $140.00 | Database, auth, storage — shared across all orgs |
+| n8n Cloud Pro (10K exec included) | $65.00 | Workflow engine — shared pool |
+| SendGrid Pro (base) | $20.00 | Transactional + marketing email |
+| Domain / DNS / SSL / Monitoring | $10.00 | Platform infrastructure |
+| **Total Fixed Platform** | **$235/mo** | |
+
+**Fixed cost per customer at scale:**
+
+| Total Customers | Fixed Cost Share / Customer |
+|-----------------|---------------------------|
+| 5 (early beta) | $47.00 |
+| 10 | $23.50 |
+| 25 | $9.40 |
+| 50 | $4.70 |
+| 100 | $2.35 |
+| 260 (Year 1 target) | $0.90 |
+
+**Variable Usage Costs Per Customer (monthly):**
+
+Typical Starter Customer (2 locations, **$298/mo subscription**):
+
+| Service | Calculation | Cost |
+|---------|------------|------|
+| Gemini Flash AI | 300 convos × ~$0.0015/convo | $0.46 |
+| Twilio SMS | 100 msgs × $0.011/msg | $1.10 |
+| Twilio Voice | None at Starter | $0.00 |
+| Email (SendGrid) | 300 emails × $0.001 | $0.30 |
+| n8n Executions | 700 exec × $0.0066/exec | $4.62 |
+| **Total Variable** | | **$6.48/mo** |
+
+Typical Growth Customer (7 locations, **$2,093/mo subscription**):
+
+| Service | Calculation | Cost |
+|---------|------------|------|
+| Gemini Flash AI | 1,400 convos × ~$0.0019/convo | $2.66 |
+| Twilio SMS | 700 msgs × $0.011/msg | $7.70 |
+| Twilio Voice | None at Growth | $0.00 |
+| Email (SendGrid) | 2,100 emails × $0.001 | $2.10 |
+| n8n Executions | 3,500 exec × $0.0066/exec | $23.10 |
+| **Total Variable** | | **$35.56/mo** |
+
+Typical Pro Customer (25 locations, **$12,475/mo subscription**):
+
+| Service | Calculation | Cost |
+|---------|------------|------|
+| Gemini Flash AI | 7,500 convos × ~$0.0023/convo | $17.25 |
+| Twilio SMS | 12,500 msgs × $0.011/msg | $137.50 |
+| Twilio Voice | 5,000 min × $0.022/min | $110.00 |
+| Twilio Phone Number | 1 dedicated number | $1.15 |
+| Email (SendGrid) | 50,000 emails × $0.001 | $50.00 |
+| n8n Executions | 37,500 exec × $0.0066/exec | $247.50 |
+| **Total Variable** | | **$563.40/mo** |
+
+**Total Cost Per Customer (All-In) at 50 customers:**
+
+| Tier | Subscription Revenue | Fixed Share | Variable | **Total Cost** | **Margin** |
+|------|---------------------|------------|----------|---------------|-----------|
+| Starter (2 locs) | $298/mo | $4.70 | $6.48 | **$11.18** | **96%** |
+| Growth (7 locs) | $2,093/mo | $4.70 | $35.56 | **$40.26** | **98%** |
+| Pro (25 locs) | $12,475/mo | $4.70 | $563.40 | **$568.10** | **95%** |
+
+**"At Cost" Floor Pricing (for strategic partner deals):**
+
+| Tier | Variable Cost (floor) | + 25% Buffer | vs Retail |
+|------|-----------------------|-------------|-----------|
+| Starter (2 locs) | $6.48/mo | ~$8/mo | $298/mo |
+| Growth (7 locs) | $35.56/mo | ~$45/mo | $2,093/mo |
+| Pro (25 locs) | $563.40/mo | ~$705/mo | $12,475/mo |
+
+**Infrastructure Scaling Thresholds:**
+
+| Threshold | Trigger | Action | New Fixed Cost |
+|-----------|---------|--------|---------------|
+| 7+ customers | n8n exceeds 10K exec/mo | Upgrade n8n Starter ($150/mo) | ~$320/mo |
+| 15+ customers | n8n exceeds 50K exec/mo | Upgrade n8n Pro ($350/mo) | ~$520/mo |
+| 50+ customers | Compute pressure | Supabase 4-core ($220) + n8n Business ($800/mo) | ~$1,050/mo |
+| 260 customers (Y1) | Full Year 1 load | Optimized infrastructure | ~$2,000/mo |
 
 ---
 
@@ -834,7 +955,8 @@ Registration Form → Payment → Confirmed Registration → Return User
 
 **Template & Fields:**
 - [ ] Standard incident report template
-- [ ] Custom template upload capability for business owners
+- [ ] **Custom template upload** — companies upload their lawyer-approved incident report templates; coaches fill out a simplified mobile form and answers auto-populate the official document for sending to schools
+- [ ] This approach applies to **all uploaded legal documents** (not just incident reports)
 - [ ] Primarily toggle (yes/no) and dropdown-based fields
 - [ ] Comments section titled "What I observed" (specific wording required)
 - [ ] Minimal free-text fields for consistency
@@ -859,6 +981,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Lesson plan library access
 - [ ] Substitute instructor support
 - [ ] Background check status tracking
+- [ ] **Smart notification system** — class reminders, SMS notifications, important alerts for coaches
 
 #### 5.6 Curriculum Timer System (Priority: MEDIUM-HIGH) - NEW Jan 2026
 **Customer Context:** One of the hardest things for new coaches is managing class timing. They often spend too much time on early sections and miss the scrimmage at the end.
@@ -965,6 +1088,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Bulk session creation
 - [ ] Recurring schedule templates
 - [ ] Coach availability integration
+- [ ] **Season Copy / Repeat** — copy an entire season's schedule (e.g., Fall → Winter) with options to publish all classes at once or confirm/publish individually. Critical time-saver for season-based programs.
 
 #### 6.2 AI Schedule Optimizer
 **Uses data to maximize enrollment and revenue**
@@ -1800,7 +1924,7 @@ Based on competitive analysis of iClassPro platform, the following features shou
 
 | Feature | Priority | Notes |
 |---------|----------|-------|
-| Skill Progression Module | MEDIUM | Critical for swim/martial arts markets |
+| Skill Progression Module | **HIGH** | Critical for swim/martial arts markets. Stakeholder feedback confirms high value — track total classes attended, skill levels achieved, visual progression timeline for parents. Swim school level certifications. |
 | Private Lesson Booking | MEDIUM | Phase 2 if swim school demand validates |
 | Waitlist Priority Groups | LOW | Start FIFO; add if fairness concerns |
 | Camp-Specific Features | MEDIUM-HIGH | Extended day, daily schedules |
@@ -2801,4 +2925,4 @@ export interface HelpFAQItem {
 
 **Document Owner:** Development Team
 **Review Frequency:** After each stage completion
-**Last Reviewed:** January 9, 2026
+**Last Reviewed:** March 11, 2026
