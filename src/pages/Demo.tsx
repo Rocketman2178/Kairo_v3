@@ -5,7 +5,7 @@ import {
   Mic, Globe, Zap, Clock, MapPin, Star, Phone, Mail,
   DollarSign, UserCheck, Bell, Target, Sparkles, Play, LayoutDashboard,
   ArrowRight, Rocket, XCircle, CheckCircle2, RefreshCw, Bot, Database,
-  MessageSquare, Smartphone, Monitor, PhoneCall, Infinity, HeartHandshake, Network
+  MessageSquare, Smartphone, Monitor, PhoneCall, Infinity, HeartHandshake, Network, Compass
 } from 'lucide-react';
 import { DemoChat } from '../components/demo/DemoChat';
 import { DemoPayments } from '../components/demo/DemoPayments';
@@ -18,6 +18,8 @@ import { DemoDataInsights } from '../components/demo/DemoDataInsights';
 import { DemoBenchmarking } from '../components/demo/DemoBenchmarking';
 import { DemoInternalDashboard } from '../components/demo/DemoInternalDashboard';
 import { DemoKaiAgent } from '../components/demo/DemoKaiAgent';
+import { DemoVTO } from '../components/demo/DemoVTO';
+import { DemoPricing } from '../components/demo/DemoPricing';
 import { FeedbackAdminDashboard } from '../components/feedback/FeedbackAdminDashboard';
 
 type PricingTier = 'Starter' | 'Growth' | 'Pro' | 'Internal';
@@ -308,6 +310,7 @@ export function Demo() {
   const [activeView, setActiveView] = useState<DemoView>('overview');
   const [selectedStage, setSelectedStage] = useState<number | null>(null);
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
+  const [whySwitchTab, setWhySwitchTab] = useState<'why' | 'pricing' | 'vto'>('why');
 
   const getStatusColor = (status: Stage['status']) => {
     switch (status) {
@@ -440,107 +443,155 @@ export function Demo() {
         </section>
 
         <section className="mb-12">
-          <div className="flex items-center gap-3 mb-6">
-            <h2 className="text-xl font-bold text-white">Why Switch to Kairo?</h2>
-            <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-blue-400 text-blue-900">
-              Tiger Tank Validated
-            </span>
+          {/* Tab header */}
+          <div className="flex bg-slate-800 rounded-lg p-1 border border-slate-700 mb-6">
+            <button
+              onClick={() => setWhySwitchTab('why')}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                whySwitchTab === 'why'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Rocket className="w-4 h-4" />
+              Why Switch?
+            </button>
+            <button
+              onClick={() => setWhySwitchTab('pricing')}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                whySwitchTab === 'pricing'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <DollarSign className="w-4 h-4" />
+              Pricing
+            </button>
+            <button
+              onClick={() => setWhySwitchTab('vto')}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                whySwitchTab === 'vto'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Compass className="w-4 h-4" />
+              About Us
+            </button>
           </div>
-          <div className="grid lg:grid-cols-2 gap-6">
-            <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700 overflow-hidden">
-              <span className="absolute top-3 right-3 px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-amber-400 text-amber-900">
-                Updated
-              </span>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center">
-                  <Rocket className="w-6 h-6 text-emerald-400" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-white">Realistic Migration Timeline</h3>
-                  <p className="text-slate-400 text-sm">Honest timelines based on industry feedback</p>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-slate-300 font-medium">Single Location Business</span>
-                    <span className="text-emerald-400 font-bold">1-2 months</span>
-                  </div>
-                  <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                    <div className="h-full w-1/4 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" />
-                  </div>
-                  <p className="text-slate-500 text-xs mt-2">Full data migration, staff training, parallel testing, and go-live</p>
-                </div>
-                <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-slate-300 font-medium">Multi-Location (3-10)</span>
-                    <span className="text-emerald-400 font-bold">3-6 months</span>
-                  </div>
-                  <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                    <div className="h-full w-1/2 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" />
-                  </div>
-                  <p className="text-slate-500 text-xs mt-2">Phased rollout with dedicated support and parallel running</p>
-                </div>
-                <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-slate-300 font-medium">Franchise System (100+)</span>
-                    <span className="text-emerald-400 font-bold">6-12 months</span>
-                  </div>
-                  <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                    <div className="h-full w-3/4 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" />
-                  </div>
-                  <p className="text-slate-500 text-xs mt-2">White-glove onboarding, train-the-trainer, enterprise approval cycles</p>
-                </div>
-              </div>
-              <div className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-emerald-300 text-sm font-medium">White-Glove Migration Included</p>
-                    <p className="text-emerald-200/70 text-xs">We handle everything: data import, configuration, staff training, and parallel testing</p>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
-              <h4 className="text-slate-300 text-sm font-semibold mb-3 text-center">What You're Replacing</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <PricingTierBadge tier="Starter" size="xs" />
-                    <span className="text-slate-400 text-xs">$149/mo replaces:</span>
+          {/* Why Switch tab */}
+          {whySwitchTab === 'why' && (
+            <div className="grid lg:grid-cols-2 gap-6">
+              <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700 overflow-hidden">
+                <span className="absolute top-3 right-3 px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-amber-400 text-amber-900">
+                  Updated
+                </span>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+                    <Rocket className="w-6 h-6 text-emerald-400" />
                   </div>
-                  <div className="text-xs text-slate-500"><span className="line-through">TeamSnap ($15/mo)</span> — Scheduling</div>
-                  <div className="text-xs text-slate-500"><span className="line-through">Slack ($7.25/user/mo)</span> — Staff Chat</div>
-                  <div className="text-xs text-slate-500"><span className="line-through">Square ($60/mo)</span> — Payments</div>
-                  <div className="text-xs text-slate-500"><span className="line-through">Intercom ($89/mo)</span> — Chat Support</div>
-                  <div className="text-xs text-emerald-400 font-medium mt-2">~$170+/mo in savings</div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">Realistic Migration Timeline</h3>
+                    <p className="text-slate-400 text-sm">Honest timelines based on industry feedback</p>
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <PricingTierBadge tier="Growth" size="xs" />
-                    <span className="text-slate-400 text-xs">adds replacements for:</span>
+                <div className="space-y-4">
+                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-slate-300 font-medium">Single Location Business</span>
+                      <span className="text-emerald-400 font-bold">1-2 months</span>
+                    </div>
+                    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                      <div className="h-full w-1/4 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" />
+                    </div>
+                    <p className="text-slate-500 text-xs mt-2">Full data migration, staff training, parallel testing, and go-live</p>
                   </div>
-                  <div className="text-xs text-slate-500"><span className="line-through">Calendly ($16/mo)</span> — Adv. Scheduling</div>
-                  <div className="text-xs text-slate-500"><span className="line-through">Klaviyo ($45/mo)</span> — Re-engagement</div>
-                  <div className="text-xs text-slate-500"><span className="line-through">LoyaltyLion ($199/mo)</span> — Loyalty</div>
-                  <div className="text-xs text-blue-400 font-medium mt-2">~$260+/mo in additional savings</div>
+                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-slate-300 font-medium">Multi-Location (3-10)</span>
+                      <span className="text-emerald-400 font-bold">3-6 months</span>
+                    </div>
+                    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                      <div className="h-full w-1/2 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" />
+                    </div>
+                    <p className="text-slate-500 text-xs mt-2">Phased rollout with dedicated support and parallel running</p>
+                  </div>
+                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-slate-300 font-medium">Franchise System (100+)</span>
+                      <span className="text-emerald-400 font-bold">6-12 months</span>
+                    </div>
+                    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                      <div className="h-full w-3/4 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" />
+                    </div>
+                    <p className="text-slate-500 text-xs mt-2">White-glove onboarding, train-the-trainer, enterprise approval cycles</p>
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <PricingTierBadge tier="Pro" size="xs" />
-                    <span className="text-slate-400 text-xs">adds replacements for:</span>
+                <div className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-emerald-300 text-sm font-medium">White-Glove Migration Included</p>
+                      <p className="text-emerald-200/70 text-xs">We handle everything: data import, configuration, staff training, and parallel testing</p>
+                    </div>
                   </div>
-                  <div className="text-xs text-slate-500"><span className="line-through">Tableau ($75/user/mo)</span> — Analytics</div>
-                  <div className="text-xs text-slate-500"><span className="line-through">HubSpot ($800/mo)</span> — Marketing</div>
-                  <div className="text-xs text-slate-500"><span className="line-through">Mailchimp ($45/mo)</span> — Email</div>
-                  <div className="text-xs text-slate-500"><span className="line-through">Agency fees ($2K+/mo)</span> — Ad Mgmt</div>
-                  <div className="text-xs text-purple-400 font-medium mt-2">~$2,900+/mo in additional savings</div>
+                </div>
+              </div>
+
+              <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
+                <h4 className="text-slate-300 text-sm font-semibold mb-3 text-center">What You're Replacing</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <PricingTierBadge tier="Starter" size="xs" />
+                      <span className="text-slate-400 text-xs">$149/mo replaces:</span>
+                    </div>
+                    <div className="text-xs text-slate-500"><span className="line-through">TeamSnap ($15/mo)</span> — Scheduling</div>
+                    <div className="text-xs text-slate-500"><span className="line-through">Slack ($7.25/user/mo)</span> — Staff Chat</div>
+                    <div className="text-xs text-slate-500"><span className="line-through">Square ($60/mo)</span> — Payments</div>
+                    <div className="text-xs text-slate-500"><span className="line-through">Intercom ($89/mo)</span> — Chat Support</div>
+                    <div className="text-xs text-emerald-400 font-medium mt-2">~$170+/mo in savings</div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <PricingTierBadge tier="Growth" size="xs" />
+                      <span className="text-slate-400 text-xs">adds replacements for:</span>
+                    </div>
+                    <div className="text-xs text-slate-500"><span className="line-through">Calendly ($16/mo)</span> — Adv. Scheduling</div>
+                    <div className="text-xs text-slate-500"><span className="line-through">Klaviyo ($45/mo)</span> — Re-engagement</div>
+                    <div className="text-xs text-slate-500"><span className="line-through">LoyaltyLion ($199/mo)</span> — Loyalty</div>
+                    <div className="text-xs text-blue-400 font-medium mt-2">~$260+/mo in additional savings</div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <PricingTierBadge tier="Pro" size="xs" />
+                      <span className="text-slate-400 text-xs">adds replacements for:</span>
+                    </div>
+                    <div className="text-xs text-slate-500"><span className="line-through">Tableau ($75/user/mo)</span> — Analytics</div>
+                    <div className="text-xs text-slate-500"><span className="line-through">HubSpot ($800/mo)</span> — Marketing</div>
+                    <div className="text-xs text-slate-500"><span className="line-through">Mailchimp ($45/mo)</span> — Email</div>
+                    <div className="text-xs text-slate-500"><span className="line-through">Agency fees ($2K+/mo)</span> — Ad Mgmt</div>
+                    <div className="text-xs text-purple-400 font-medium mt-2">~$2,900+/mo in additional savings</div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* Pricing tab */}
+          {whySwitchTab === 'pricing' && (
+            <div className="rounded-2xl overflow-hidden border border-slate-700">
+              <DemoPricing />
+            </div>
+          )}
+
+          {/* VTO tab */}
+          {whySwitchTab === 'vto' && (
+            <div className="rounded-2xl overflow-hidden border border-slate-700">
+              <DemoVTO />
+            </div>
+          )}
         </section>
 
         <section className="mb-12">
