@@ -2550,6 +2550,255 @@ import { supabase } from './lib/supabase'
 
 ---
 
+### Stage 3.7: In-App Help Center (PLANNED)
+**Status:** PLANNED
+**Priority:** HIGH — Required before V1 Beta (business owners need guided onboarding)
+**Target:** March 2026 (alongside V1 Beta)
+
+**Context:**
+Kairo serves three distinct user types with very different mental models: business owners/admins configuring their organization, coaches/staff using the mobile app in the field, and parents registering their children. Each audience needs role-specific guidance. The help center must be embedded in the app itself — not a separate support site — and should leverage Kai's existing AI capabilities for interactive help.
+
+---
+
+#### 3.7.1 Help Center Architecture
+
+**Three-audience model with role-based routing:**
+```
+Help Center
+├── For Business Owners  (admin portal users)
+├── For Coaches & Staff  (coach app users)
+└── For Families        (parent registration users)
+```
+
+**Entry Points:**
+- [ ] "?" icon in nav bar (persistent, all views)
+- [ ] Contextual help tooltips on complex settings pages
+- [ ] Onboarding overlay on first login for each user type
+- [ ] "Ask Kai" floating button for AI-powered help
+
+---
+
+#### 3.7.2 Help Center Data File
+
+**File to create:** `src/data/helpFAQ.ts`
+
+```typescript
+export type HelpAudience = 'admin' | 'coach' | 'parent';
+
+export type HelpCategory =
+  // Admin categories
+  | 'getting-started'
+  | 'programs-sessions'
+  | 'payments-billing'
+  | 'staff-management'
+  | 'analytics-reports'
+  | 'migration-setup'
+  | 'settings-configuration'
+  // Coach categories
+  | 'coach-app'
+  | 'attendance'
+  | 'curriculum-timer'
+  | 'incident-reports'
+  | 'team-messaging'
+  // Parent categories
+  | 'registration'
+  | 'account-management'
+  | 'payments-parent'
+  | 'schedule-changes'
+  | 'kai-assistant';
+
+export interface HelpFAQItem {
+  id: string;
+  audience: HelpAudience[];  // FAQ can appear for multiple audiences
+  category: HelpCategory;
+  question: string;
+  answer: string;
+  relatedFeature?: string;   // links to feature in app
+  videoUrl?: string;         // future: video walkthroughs
+}
+```
+
+---
+
+#### 3.7.3 FAQ Content — Business Owner / Admin
+
+**Category: Getting Started**
+- [ ] How do I set up my organization for the first time?
+- [ ] How do I add my first program and session?
+- [ ] How do I invite staff members?
+- [ ] What's the difference between a Program and a Session?
+- [ ] How long does it take to migrate from iClass Pro / NBC Sports Engine?
+
+**Category: Programs & Sessions**
+- [ ] How do I create a new session with multiple days?
+- [ ] How do I set capacity limits and waitlist settings?
+- [ ] How do I copy sessions from a previous season?
+- [ ] How do I handle make-up classes?
+- [ ] How do I set age restrictions for a program?
+- [ ] How do I configure preschool partnership sessions?
+- [ ] How do I mark a session as full and redirect families to alternatives?
+
+**Category: Payments & Billing**
+- [ ] How do I set up payment plans for a program?
+- [ ] How do I configure registration fees and processing fees?
+- [ ] How do I apply a sibling discount automatically?
+- [ ] How do I issue a refund or credit?
+- [ ] How do I view outstanding balances?
+- [ ] How do I export payment data for QuickBooks?
+- [ ] How do financial aid integrations work?
+
+**Category: Staff Management**
+- [ ] How do I add a new coach?
+- [ ] How do I assign a coach to a session?
+- [ ] How do I manage coach availability?
+- [ ] How do I run background check status tracking?
+- [ ] How do I set up the incident report delay time?
+- [ ] How do I review and approve a coach's incident report?
+
+**Category: Analytics & Reports**
+- [ ] How do I see enrollment by program?
+- [ ] How do I print a poolside / fieldside schedule?
+- [ ] How do I export enrollment data to Excel?
+- [ ] How do I see which families are at risk of churning?
+- [ ] How do I track cart abandonment and recovery?
+- [ ] How do I see Kai's registration conversion rate?
+
+**Category: Migration & Setup**
+- [ ] How do I import families from iClass Pro?
+- [ ] How do I import from NBC Sports Engine?
+- [ ] How do I preserve credit card data when migrating?
+- [ ] Can I run both systems in parallel during migration?
+- [ ] What is the realistic migration timeline for my size organization?
+
+**Category: Settings & Configuration**
+- [ ] How do I enable/disable Kai chat for my organization?
+- [ ] How do I configure which features coaches can access?
+- [ ] How do I toggle coach-to-parent messaging on/off?
+- [ ] How do I set Kai's language or voice preference?
+- [ ] How do I white-label the platform with my branding?
+
+---
+
+#### 3.7.4 FAQ Content — Coaches & Staff
+
+**Category: Coach App**
+- [ ] How do I view my schedule for today?
+- [ ] How do I see parent contact info for a student?
+- [ ] How do I request time off?
+- [ ] How do I find the training materials library?
+
+**Category: Attendance**
+- [ ] How do I take attendance for my class?
+- [ ] What do I do if a student shows up who isn't on my roster?
+- [ ] How do I mark a student as a make-up from another class?
+- [ ] How do I view past attendance history?
+
+**Category: Curriculum Timer**
+- [ ] How do I start the curriculum timer for a class?
+- [ ] How do I move to the next section early?
+- [ ] How do I pause the timer?
+- [ ] Can I change the time allocated per section?
+- [ ] How do I disable the timer if I don't need it?
+
+**Category: Incident Reports**
+- [ ] How do I file an incident report?
+- [ ] Who receives the incident report I submit?
+- [ ] How long do I have to edit a report before it's sent?
+- [ ] Can I add photos to an incident report?
+
+**Category: Team Messaging**
+- [ ] How do I message my team?
+- [ ] Can parents see my messages?
+- [ ] How do I send a photo or video update to a parent?
+- [ ] How do I find a direct message thread?
+
+---
+
+#### 3.7.5 FAQ Content — Parents / Families
+
+**Category: Registration**
+- [ ] How does registration with Kai work?
+- [ ] How long does registration take?
+- [ ] Can I register multiple children at once?
+- [ ] What happens if my preferred session is full?
+- [ ] How do I get off the waitlist?
+- [ ] What age ranges are available?
+
+**Category: Account Management**
+- [ ] How do I update my contact information?
+- [ ] How do I add another child to my account?
+- [ ] How do I view my registration history?
+- [ ] How do I set up biometric login?
+
+**Category: Payments (Parent)**
+- [ ] What payment methods are accepted?
+- [ ] How do payment plans work?
+- [ ] When will my payment plan charge me?
+- [ ] How do I update my credit card?
+- [ ] How do I get a refund?
+- [ ] Is my payment information secure?
+
+**Category: Schedule Changes**
+- [ ] How do I switch my child to a different session?
+- [ ] How do I cancel a registration?
+- [ ] How do I schedule a make-up class?
+- [ ] What is the withdrawal/cancellation policy?
+
+**Category: Kai Assistant**
+- [ ] What is Kai?
+- [ ] What languages does Kai speak?
+- [ ] Can I use voice to register?
+- [ ] Kai gave me wrong information — what do I do?
+
+---
+
+#### 3.7.6 "Ask Kai" In-App AI Help
+
+**Leverage existing Kai AI for help queries:**
+- [ ] Floating "Ask Kai" button in help center
+- [ ] Separate help-mode conversation context (doesn't mix with registration)
+- [ ] Kai has access to org-specific configuration (e.g., "Your registration deadline is March 1st")
+- [ ] Escalation path: "This seems like something our team should answer — here's how to contact support"
+- [ ] Admin view: see what questions users are asking Kai for help (gap detection)
+
+---
+
+#### 3.7.7 Onboarding Tour
+
+**Role-based first-login experience:**
+- [ ] Admin first login → 5-step guided tour of: Programs, Sessions, Staff, Payments, Analytics
+- [ ] Coach first login → 3-step tour of: Schedule view, Attendance, Messaging
+- [ ] Parent first login → brief Kai introduction ("Just chat naturally — Kai will guide you")
+
+**Tour technical approach:**
+- [ ] Create `src/data/tourSteps.ts` with steps per role
+- [ ] Overlay component with highlight + tooltip
+- [ ] Skip option always visible
+- [ ] "Take the tour again" accessible from help center
+
+---
+
+#### 3.7.8 Help Center Context File
+
+**File to create:** `src/lib/help-context.ts`
+- Powers Kai's help-mode responses
+- Contains structured knowledge about all features by audience
+- Updated whenever features are added or behavior changes
+- Sections: registration flow, payment options, coach app, admin settings, Kai capabilities
+
+---
+
+**Files to Create:**
+- `src/data/helpFAQ.ts` — FAQ content, all categories and audiences
+- `src/data/tourSteps.ts` — Onboarding tour steps per role
+- `src/lib/help-context.ts` — Kai help-mode knowledge base
+- `src/components/help/HelpCenter.tsx` — Main help center modal/drawer
+- `src/components/help/FAQList.tsx` — Filterable FAQ list
+- `src/components/help/AskKaiHelp.tsx` — Help-mode Kai chat component
+- `src/components/help/OnboardingTour.tsx` — First-login guided overlay
+
+---
+
 **Document Owner:** Development Team
 **Review Frequency:** After each stage completion
 **Last Reviewed:** January 9, 2026

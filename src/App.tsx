@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { Home } from './pages/Home';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
@@ -22,6 +22,7 @@ function App() {
           <Route path="/test-data" element={<TestDataDashboard />} />
           <Route path="/test-scenarios" element={<TestScenarios />} />
           <Route path="/splash" element={<SplashPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

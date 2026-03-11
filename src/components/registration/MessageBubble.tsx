@@ -98,7 +98,7 @@ export function MessageBubble({ message, onQuickReply, onSelectSession, onJoinWa
             onJoinWaitlist={onJoinWaitlist}
             organizationId={organizationId}
             onSignUp={onSignUp}
-            isFull={true}
+            isFull={message.metadata!.requestedFullSession!.isFull ?? message.metadata!.requestedFullSession!.spotsRemaining === 0}
           />
         </div>
       )}

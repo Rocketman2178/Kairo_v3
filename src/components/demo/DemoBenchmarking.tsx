@@ -468,7 +468,7 @@ function DashboardTab({ tier }: { tier: SubscriptionTier }) {
       ) : (
         <LockedFeature tier="Pro">
           <AlertCard type="success" title="AI Insight">
-            <p>Upgrade to Intelligence tier to see AI-powered recommendations based on your benchmarking data.</p>
+            <p>Upgrade to Pro to see AI-powered recommendations based on your benchmarking data.</p>
           </AlertCard>
         </LockedFeature>
       )}

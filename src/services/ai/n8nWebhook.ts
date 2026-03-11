@@ -1,5 +1,8 @@
 import type { ConversationContext, ConversationState, SessionRecommendation, RegistrationRedirect } from '../../types/conversation';
 
+const isDev = import.meta.env.DEV;
+const devLog = (...args: unknown[]) => { if (isDev) devLog(...args); };
+
 export interface N8NMessageRequest {
   message: string;
   conversationId: string;
@@ -85,18 +88,18 @@ export async function sendMessageToN8N(
       },
     };
 
-    console.log('=== SENDING TO N8N WEBHOOK ===');
-    console.log('URL:', N8N_WEBHOOK_URL);
-    console.log('Message:', request.message);
-    console.log('Context:', JSON.stringify(payload.context, null, 2));
-    console.log('CRITICAL - Extracted fields being sent:');
-    console.log('  childName:', payload.context.childName);
-    console.log('  childAge:', payload.context.childAge);
-    console.log('  preferredDays:', payload.context.preferredDays);
-    console.log('  preferredProgram:', payload.context.preferredProgram);
-    console.log('  preferredTime:', payload.context.preferredTime);
-    console.log('  preferredTimeOfDay:', payload.context.preferredTimeOfDay);
-    console.log('==============================');
+    devLog('=== SENDING TO N8N WEBHOOK ===');
+    devLog('URL:', N8N_WEBHOOK_URL);
+    devLog('Message:', request.message);
+    devLog('Context:', JSON.stringify(payload.context, null, 2));
+    devLog('CRITICAL - Extracted fields being sent:');
+    devLog('  childName:', payload.context.childName);
+    devLog('  childAge:', payload.context.childAge);
+    devLog('  preferredDays:', payload.context.preferredDays);
+    devLog('  preferredProgram:', payload.context.preferredProgram);
+    devLog('  preferredTime:', payload.context.preferredTime);
+    devLog('  preferredTimeOfDay:', payload.context.preferredTimeOfDay);
+    devLog('==============================');
 
     const response = await fetch(N8N_WEBHOOK_URL, {
       method: 'POST',
@@ -112,9 +115,9 @@ export async function sendMessageToN8N(
     }
 
     const responseText = await response.text();
-    console.log('=== N8N RAW RESPONSE TEXT ===');
-    console.log(responseText);
-    console.log('============================');
+    devLog('=== N8N RAW RESPONSE TEXT ===');
+    devLog(responseText);
+    devLog('============================');
 
     let data: unknown;
     try {
@@ -190,12 +193,12 @@ function extractMessage(data: Record<string, unknown>): string {
 }
 
 function normalizeN8NResponse(data: unknown): N8NMessageResponse {
-  console.log('=== NORMALIZING N8N RESPONSE ===');
-  console.log('Raw data type:', typeof data);
-  console.log('Raw data:', JSON.stringify(data, null, 2));
+  devLog('=== NORMALIZING N8N RESPONSE ===');
+  devLog('Raw data type:', typeof data);
+  devLog('Raw data:', JSON.stringify(data, null, 2));
 
   if (typeof data === 'string' && data.trim()) {
-    console.log('Response is plain string');
+    devLog('Response is plain string');
     return {
       success: true,
       response: {
@@ -209,7 +212,7 @@ function normalizeN8NResponse(data: unknown): N8NMessageResponse {
   }
 
   if (!data || typeof data !== 'object') {
-    console.log('Invalid data - not an object');
+    devLog('Invalid data - not an object');
     return {
       success: false,
       error: {
@@ -222,7 +225,7 @@ function normalizeN8NResponse(data: unknown): N8NMessageResponse {
 
   let unwrapped = data;
   if (Array.isArray(unwrapped)) {
-    console.log('Response is array, unwrapping first element');
+    devLog('Response is array, unwrapping first element');
     unwrapped = unwrapped[0] || {};
   }
 
@@ -242,7 +245,7 @@ function normalizeN8NResponse(data: unknown): N8NMessageResponse {
   const response = unwrapped as Record<string, unknown>;
 
   if (response.success === false) {
-    console.log('Response indicates failure');
+    devLog('Response indicates failure');
     return {
       success: false,
       error: {
@@ -254,10 +257,10 @@ function normalizeN8NResponse(data: unknown): N8NMessageResponse {
   }
 
   const responseData = response.response as Record<string, unknown> || response;
-  console.log('Response data to parse:', JSON.stringify(responseData, null, 2));
+  devLog('Response data to parse:', JSON.stringify(responseData, null, 2));
 
   const extractedMessage = extractMessage(response);
-  console.log('Extracted message:', extractedMessage);
+  devLog('Extracted message:', extractedMessage);
 
   const registrationRedirect = responseData.registrationRedirect || responseData.registration_redirect;
 
@@ -290,8 +293,8 @@ function normalizeN8NResponse(data: unknown): N8NMessageResponse {
     },
   };
 
-  console.log('Final normalized result:', JSON.stringify(result, null, 2));
-  console.log('================================');
+  devLog('Final normalized result:', JSON.stringify(result, null, 2));
+  devLog('================================');
 
   return result;
 }

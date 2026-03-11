@@ -9,28 +9,31 @@ export function Home() {
       <header className="sticky top-0 z-50 bg-gradient-to-r from-[#0f1419] via-[#1a2332] to-[#0f1419] border-b border-gray-800 backdrop-blur-sm bg-opacity-95">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">
+            <h1 className="text-2xl font-bold flex-shrink-0">
               <span className="bg-gradient-to-r from-[#6366f1] via-[#8b5cf6] to-[#06b6d4] bg-clip-text text-transparent">
                 Kairo Pro
               </span>
             </h1>
-            <div className="flex items-center gap-4">
-              <Link
-                to="/test-scenarios"
-                className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white text-sm font-medium rounded-lg hover:bg-slate-600 transition-colors"
-              >
-                <span>Test Scenarios</span>
-              </Link>
+            <div className="flex items-center gap-2 sm:gap-4">
+              {import.meta.env.DEV && (
+                <Link
+                  to="/test-scenarios"
+                  className="hidden sm:flex items-center gap-2 px-4 py-2 bg-slate-700 text-white text-sm font-medium rounded-lg hover:bg-slate-600 transition-colors"
+                >
+                  <span>Test Scenarios</span>
+                </Link>
+              )}
               <a
                 href="/demo"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#6366f1] to-[#06b6d4] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
+                className="flex items-center gap-2 px-3 py-2 sm:px-4 bg-gradient-to-r from-[#6366f1] to-[#06b6d4] text-white text-xs sm:text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
               >
-                <span>Platform Demo</span>
+                <span className="hidden sm:inline">Platform Demo</span>
+                <span className="sm:hidden">Demo</span>
                 <ExternalLink className="w-4 h-4" />
               </a>
-              <div className="text-right">
+              <div className="text-right hidden sm:block">
                 <p className="text-sm text-white">Registration Reimagined</p>
                 <p className="text-xs text-gray-400">Built for Busy Parents</p>
               </div>

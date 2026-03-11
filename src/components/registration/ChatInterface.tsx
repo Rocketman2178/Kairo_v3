@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { Send, AlertCircle, Star, Phone, Sparkles } from 'lucide-react';
+import { Send, AlertCircle, Star, Sparkles } from 'lucide-react';
 import { MessageBubble } from './MessageBubble';
 import { useConversation } from '../../hooks/useConversation';
 
@@ -109,53 +109,59 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
   const isReady = Boolean(conversationId);
 
   const [sessionEnded, setSessionEnded] = useState(false);
+  const isSendingRef = useRef(false);
 
   const handleSendMessage = async (messageOverride?: string) => {
     const messageContent = messageOverride || inputValue;
-    if (!messageContent.trim() || isLoading || !isReady) return;
+    if (!messageContent.trim() || isLoading || !isReady || isSendingRef.current) return;
 
+    isSendingRef.current = true;
     setInputValue('');
     setError(null);
 
-    if (messageContent.toLowerCase() === "no, that's all") {
-      addUserMessage(messageContent);
-      const childName = context.childName || 'your child';
-      setTimeout(() => {
-        addAssistantMessage(
-          `Thanks for registering ${childName}! If you need anything else in the future, I'm always here to help. Have a great day!`
-        );
-      }, 500);
-      setSessionEnded(true);
-      return;
-    }
+    try {
+      if (messageContent.toLowerCase() === "no, that's all") {
+        addUserMessage(messageContent);
+        const childName = context.childName || 'your child';
+        setTimeout(() => {
+          addAssistantMessage(
+            `Thanks for registering ${childName}! If you need anything else in the future, I'm always here to help. Have a great day!`
+          );
+        }, 500);
+        setSessionEnded(true);
+        return;
+      }
 
-    if (messageContent.toLowerCase() === 'sign up another child') {
-      const cleanOverride: Partial<typeof context> = {
-        childName: undefined,
-        childAge: undefined,
-        preferredDays: undefined,
-        preferredTime: undefined,
-        preferredTimeOfDay: undefined,
-        preferredProgram: undefined,
-        preferredCity: undefined,
-        preferredLocation: undefined,
-        selectedSessionId: undefined,
-        storedAlternatives: undefined,
-        storedRequestedSession: undefined,
-        selectedSession: undefined,
-        children: undefined,
-        preferences: undefined,
-        currentState: 'collecting_child_info' as const,
-      };
-      resetChildContext();
-      await sendMessage(messageContent, cleanOverride);
-      return;
-    }
+      if (messageContent.toLowerCase() === 'sign up another child') {
+        const cleanOverride: Partial<typeof context> = {
+          childName: undefined,
+          childAge: undefined,
+          preferredDays: undefined,
+          preferredTime: undefined,
+          preferredTimeOfDay: undefined,
+          preferredProgram: undefined,
+          preferredCity: undefined,
+          preferredLocation: undefined,
+          selectedSessionId: undefined,
+          storedAlternatives: undefined,
+          storedRequestedSession: undefined,
+          selectedSession: undefined,
+          children: undefined,
+          preferences: undefined,
+          currentState: 'collecting_child_info' as const,
+        };
+        resetChildContext();
+        await sendMessage(messageContent, cleanOverride);
+        return;
+      }
 
-    await sendMessage(messageContent);
+      await sendMessage(messageContent);
+    } finally {
+      isSendingRef.current = false;
+    }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -198,20 +204,14 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
 
         <div ref={messagesContainerRef} className="relative h-full flex flex-col bg-slate-900 overflow-hidden">
           <div className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 px-3 py-2 text-white pt-8 flex-shrink-0">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-emerald-600">
-                  <Star className="w-5 h-5 fill-emerald-600" />
-                </div>
-                <div>
-                  <h1 className="font-semibold text-sm">Soccer Stars</h1>
-                  <p className="text-emerald-100 text-xs">Youth Soccer Programs</p>
-                </div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-emerald-600">
+                <Star className="w-5 h-5 fill-emerald-600" />
               </div>
-              <button className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-medium transition-colors">
-                <Phone className="w-3 h-3" />
-                <span>Talk with Kai</span>
-              </button>
+              <div>
+                <h1 className="font-semibold text-sm">Soccer Stars</h1>
+                <p className="text-emerald-100 text-xs">Youth Soccer Programs</p>
+              </div>
             </div>
           </div>
 
@@ -272,8 +272,9 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
               <input
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyDown}
                 placeholder="Type your message..."
+                maxLength={500}
                 disabled={isLoading || !isReady || sessionEnded}
                 className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               />
