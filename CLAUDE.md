@@ -87,11 +87,154 @@ Always design and develop with mobile devices as the primary target:
 - Add proper SEO metadata and social sharing tags
 - Ensure responsive design works across all device sizes
 
-### Security Best Practices
-- Sanitize user inputs and prevent XSS attacks
-- Use secure authentication patterns
-- Implement proper API error handling
-- Follow OWASP security guidelines for web applications
+### Security & Secure Coding Standards
+
+Kairo handles children's personal data, medical info, and payment details for youth sports organizations. Every code change MUST follow these rules.
+
+#### Data Sensitivity Levels
+
+Before writing any code that reads, writes, or displays data, identify the sensitivity:
+
+| Level | Kairo Examples | Rule |
+|-------|---------------|------|
+| **Critical** | Stripe keys, Supabase service role key, N8N API key, Gemini API key | Server-side ONLY (Edge Functions / Deno env). Never in client code, never in `VITE_` vars, never logged. |
+| **Sensitive** | Child medical info (`children.medical_info`), payment records, family contact details | Must be scoped to `auth.uid() = user_id` (family) or organization-scoped (staff). Never exposed in URLs or logs. |
+| **Organization-Private** | Staff records, session capacity, registrations, waitlists, abandoned carts | Must be scoped to organization membership via staff or family relationship. |
+| **Public** | Programs, locations, session schedules, organization profiles | Read-only for anonymous users. Filtered by `is_active` or similar status flags. |
+
+#### Database & RLS Rules
+
+- DO: Enable RLS on every new table (`ALTER TABLE ... ENABLE ROW LEVEL SECURITY`) — zero exceptions
+- DO: Use `auth.uid() = user_id` for family-scoped data (families, children, registrations, payments)
+- DO: Use organization-scoped policies for staff data (`organization_id IN (SELECT organization_id FROM public.staff WHERE user_id = auth.uid())`)
+- DO: Use `TO service_role` (not `TO public`) for backend-only policies
+- DO: Allow `TO public` INSERT only when anonymous registration requires it (e.g., `conversations`) — and restrict SELECT/UPDATE to the owning family
+- DON'T: Use `USING (true)` on any table containing user data, child info, or credentials
+- DON'T: Grant `{public}` role SELECT on sensitive tables — use `{authenticated}` or `{service_role}`
+- DON'T: Create tables without RLS
+
+#### Functions & Migrations
+
+- DO: Include `SET search_path = ''` in every new `CREATE OR REPLACE FUNCTION`
+- DO: Use fully qualified table names in functions (e.g., `public.families`, not just `families`)
+- DO: Write rollback SQL as a comment block at the top of every migration
+- DO: Name migrations descriptively in snake_case (e.g., `add_waitlist_position_tracking`)
+- DON'T: Hardcode generated IDs in data migrations
+
+#### Secrets & Environment Variables
+
+- DO: Keep API keys and service role keys in Edge Function environment (Deno.env) only
+- DO: Use `VITE_` prefix ONLY for non-sensitive identifiers (`VITE_SUPABASE_URL`, `VITE_N8N_WEBHOOK_URL`)
+- DON'T: Put `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `N8N_API_KEY`, or Stripe secret keys in `VITE_` vars
+- DON'T: Log tokens or keys to console, even in development
+- DON'T: Commit `.env` files containing real keys
+
+#### Edge Functions
+
+- DO: Enable JWT verification unless the function handles webhooks or anonymous registration flows (document why if disabled)
+- DO: Use `createClient` with the service role key only inside Edge Functions, never client-side
+- DO: Restrict CORS origins to known domains instead of `"*"` in production
+- DON'T: Return raw error details or stack traces to the client
+- DON'T: Trust `organizationId` from the client without verifying the caller has access to that org
+
+#### N8N Webhook Security
+
+- DO: Use the `N8N_WEBHOOK_KEY` header for webhook authentication when available
+- DO: Validate all data received from N8N before inserting into the database
+- DON'T: Pass service role keys or secrets through webhook payloads
+- DON'T: Expose N8N internal workflow IDs or execution IDs to the frontend
+
+#### Input Validation & AI Safety
+
+- DO: Validate and sanitize all user inputs before passing to database queries or AI prompts
+- DO: Sanitize conversation messages before including in Gemini prompts (prompt injection defense)
+- DO: Use parameterized queries — never string-concatenate user input into SQL
+- DO: Validate child age ranges (2-18), enforce program age bounds server-side
+- DON'T: Trust client-side data for authorization or business rule decisions
+- Follow OWASP top 10 guidelines
+
+#### Child Data Protection
+
+- DO: Treat all child PII (names, ages, medical info) as Sensitive-level data
+- DO: Scope child records to their parent/family via `family_id` relationship
+- DO: Ensure staff can only view children registered in their organization's programs
+- DON'T: Expose child data in URL parameters, logs, or error messages
+- DON'T: Store unnecessary child data — collect only what registration requires
+
+#### Access Control Patterns
+
+Use these exact patterns. Do not invent new access control approaches.
+
+**Family-scoped (Sensitive data — families, children, payments):**
+```sql
+CREATE POLICY "Families access own data" ON table_name
+  FOR SELECT TO authenticated
+  USING (auth.uid() = user_id);
+```
+
+**Organization-scoped (Staff accessing org data):**
+```sql
+CREATE POLICY "Staff access org data" ON table_name
+  FOR SELECT TO authenticated
+  USING (organization_id IN (
+    SELECT organization_id FROM public.staff WHERE user_id = auth.uid()
+  ));
+```
+
+**Public read (Programs, locations, sessions):**
+```sql
+CREATE POLICY "Public can view active records" ON table_name
+  FOR SELECT TO public
+  USING (is_active = true);
+```
+
+**Anonymous insert with restricted access (Conversations):**
+```sql
+-- Allow anonymous creation for registration flow
+CREATE POLICY "Anyone can start conversation" ON conversations
+  FOR INSERT TO public
+  WITH CHECK (true);
+
+-- But only the owning family can read/update
+CREATE POLICY "Family reads own conversations" ON conversations
+  FOR SELECT TO authenticated
+  USING (family_id IN (SELECT id FROM public.families WHERE user_id = auth.uid()));
+```
+
+**Service role only (System tables):**
+```sql
+-- No authenticated or public policies. Access only via Edge Functions.
+CREATE POLICY "Service role only" ON table_name
+  FOR ALL TO service_role
+  USING (true);
+```
+
+#### Change Management
+
+- Every schema change MUST go through a migration in `supabase/migrations/`
+- Include a rollback comment block at the top of sensitive migrations
+- Changes to these areas require extra review before merge:
+  - RLS policies (any CREATE/DROP/ALTER POLICY)
+  - Auth functions or triggers (anything touching `auth.users`)
+  - Payment-related tables or Stripe integration
+  - Service role access patterns
+  - Edge Function JWT verification settings
+  - New `VITE_` environment variables
+  - N8N webhook endpoint changes
+
+#### Security Checklist
+
+Before marking ANY task complete, verify:
+1. New tables have RLS enabled with appropriate policies per sensitivity level
+2. New functions include `SET search_path = ''`
+3. No secrets or tokens exposed in client-side code or `VITE_` vars
+4. Family data is scoped with `auth.uid()` — child data scoped via family relationship
+5. No `USING (true)` policies on authenticated/public roles for sensitive tables
+6. Migration has descriptive name and rollback procedure
+7. Edge Functions use JWT verification (or document why not)
+8. AI-facing inputs are validated for prompt injection
+9. Child PII is not leaked in URLs, logs, or error responses
+10. Organization-scoped queries verify the caller's org membership
 
 ---
 

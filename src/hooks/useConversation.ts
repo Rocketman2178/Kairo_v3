@@ -6,9 +6,11 @@ import type { N8NMessageResponse } from '../services/ai/n8nWebhook';
 import { sendMessageToKai } from '../services/ai/kaiAgent';
 
 const isDev = import.meta.env.DEV;
-const devLog = (...args: unknown[]) => { if (isDev) devLog(...args); };
+const devLog = (...args: unknown[]) => { if (isDev) console.log(...args); };
 
 const TEMP_IDS_STORAGE_KEY = 'kairo_temp_ids';
+const CONVERSATION_ID_STORAGE_KEY = 'kairo_conversation_id';
+const CONVERSATION_MAX_AGE_MS = 30 * 60 * 1000; // 30 minutes
 
 interface KairoChatMessage {
   conversation_id: string;
@@ -119,7 +121,77 @@ export function useConversation(options: UseConversationOptions) {
   useEffect(() => {
     let cancelled = false;
 
-    const init = async () => {
+    const tryRestoreConversation = async (): Promise<boolean> => {
+      try {
+        const storedId = localStorage.getItem(CONVERSATION_ID_STORAGE_KEY);
+        if (!storedId) return false;
+
+        // Fetch the conversation record
+        const { data: conv, error: convError } = await (supabase
+          .from('conversations')
+          .select('*')
+          .eq('id', storedId)
+          .single() as any);
+
+        if (convError || !conv) return false;
+
+        // Check if conversation is too old (30 min)
+        const updatedAt = new Date(conv.updated_at || conv.created_at).getTime();
+        if (Date.now() - updatedAt > CONVERSATION_MAX_AGE_MS) {
+          localStorage.removeItem(CONVERSATION_ID_STORAGE_KEY);
+          return false;
+        }
+
+        // Check if conversation is in a terminal state
+        if (conv.state === 'confirmed' || conv.state === 'error') {
+          localStorage.removeItem(CONVERSATION_ID_STORAGE_KEY);
+          return false;
+        }
+
+        // Fetch chat messages for this conversation
+        const { data: chatMessages, error: chatError } = await supabase
+          .from('kairo_chat')
+          .select('*')
+          .eq('conversation_id', storedId)
+          .order('created_at', { ascending: true });
+
+        if (cancelled) return false;
+        if (chatError || !chatMessages || chatMessages.length === 0) return false;
+
+        // Restore messages
+        const restoredMessages: Message[] = chatMessages.map((msg: any) => ({
+          id: msg.id || crypto.randomUUID(),
+          role: msg.role as Message['role'],
+          content: msg.content,
+          timestamp: new Date(msg.created_at),
+          metadata: msg.metadata ? {
+            quickReplies: msg.metadata.quickReplies,
+            recommendations: msg.metadata.recommendations,
+            requestedFullSession: msg.metadata.requestedSession,
+            sessionIssue: msg.metadata.sessionIssue,
+          } : undefined,
+        }));
+
+        // Restore context from conversation record
+        const restoredContext = conv.context as ConversationContext;
+
+        setConversationId(storedId);
+        setMessages(restoredMessages);
+        setState(conv.state as ConversationState);
+        setContext({
+          ...restoredContext,
+          conversationId: storedId,
+        });
+
+        devLog('Restored conversation:', storedId, 'with', restoredMessages.length, 'messages');
+        return true;
+      } catch (e) {
+        devLog('Failed to restore conversation:', e);
+        return false;
+      }
+    };
+
+    const createNewConversation = async () => {
       try {
         const initialContext = {
           organizationId,
@@ -147,6 +219,7 @@ export function useConversation(options: UseConversationOptions) {
 
         if (data) {
           setConversationId(data.id);
+          localStorage.setItem(CONVERSATION_ID_STORAGE_KEY, data.id);
           setContext({
             conversationId: data.id,
             ...initialContext,
@@ -157,6 +230,13 @@ export function useConversation(options: UseConversationOptions) {
           console.error('Failed to initialize conversation:', error);
           onErrorRef.current?.(error as Error);
         }
+      }
+    };
+
+    const init = async () => {
+      const restored = await tryRestoreConversation();
+      if (!cancelled && !restored) {
+        await createNewConversation();
       }
     };
 
@@ -490,6 +570,7 @@ export function useConversation(options: UseConversationOptions) {
     setMessages([]);
     setState('greeting');
     setRegistrationRedirect(null);
+    localStorage.removeItem(CONVERSATION_ID_STORAGE_KEY);
 
     try {
       const initialContext = {
@@ -517,6 +598,7 @@ export function useConversation(options: UseConversationOptions) {
 
       if (data) {
         setConversationId(data.id);
+        localStorage.setItem(CONVERSATION_ID_STORAGE_KEY, data.id);
         setContext({
           conversationId: data.id,
           ...initialContext,

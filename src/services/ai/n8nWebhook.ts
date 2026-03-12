@@ -1,7 +1,7 @@
 import type { ConversationContext, ConversationState, SessionRecommendation, RegistrationRedirect } from '../../types/conversation';
 
 const isDev = import.meta.env.DEV;
-const devLog = (...args: unknown[]) => { if (isDev) devLog(...args); };
+const devLog = (...args: unknown[]) => { if (isDev) console.log(...args); };
 
 export interface N8NMessageRequest {
   message: string;
