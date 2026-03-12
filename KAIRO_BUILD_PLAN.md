@@ -1,6 +1,6 @@
 # Kairo Platform - Strategic Build Plan
 
-**Version:** 2.12
+**Version:** 2.13
 **Last Updated:** March 11, 2026
 **Current Stage:** Stage 2 COMPLETE | Stage 3 Starting (Payments & Registration Flow)
 
@@ -54,7 +54,7 @@ This version incorporates comprehensive feedback from the Tiger Tank session inc
 
 6. **Language Upsell Model** — Concept: Starter/Growth users select 1-2 included languages. If they use an additional language, system auto-notifies them of revenue generated through that language and prompts upgrade. Turns language into natural upsell trigger. Pro = unlimited. (CONCEPT TO EXPLORE)
 
-7. **Voice AI in Starter** — Consider offering basic inbound voice registration in Starter (e.g., 50 min/mo) as product hook for solopreneurs. Marginal cost ~$1.10/mo. Currently voice is Pro-only. (DECISION NEEDED — tradeoff: reduces Pro differentiation vs. drives trial conversion)
+7. **Voice AI in All Tiers** — ✅ DECIDED: Voice registration ships with initial registration release across all tiers (Starter/Growth/Pro). Voice is a core registration channel, not a Pro differentiator. Pro differentiation comes from advanced features (custom AI personality, analytics depth, API access), not registration channels. (APPROVED — March 2026)
 
 ---
 
@@ -78,7 +78,7 @@ Previous version incorporated detailed customer feedback adding:
 | Stage 2: Kai Intelligence (Core) | January 9, 2026 | COMPLETE |
 | Tiger Tank Feedback Session | January 12, 2026 | COMPLETE |
 | Stage 3: Payments & Registration Flow | January-February 2026 | IN PROGRESS |
-| Stage 2B: Voice & Multi-Language | March 2026 | PLANNED |
+| Stage 2B: Voice & Multi-Language | April-May 2026 | IN PROGRESS — ships with registration release |
 | V1 Beta Ready (5 pilot customers) | March 15, 2026 | TARGET |
 | V2 with Reporting + Staff Scheduling | May 2026 | TARGET |
 | V3 with Compliance Package | August 2026 | TARGET |
@@ -513,10 +513,10 @@ Research required to inform Kairo's tiered pricing model.
 
 ---
 
-### Stage 2B: Voice & Multi-Language (PLANNED - Tiger Tank Priority)
-**Status:** PLANNED
-**Priority:** HIGH - Specific customer requests from Tiger Tank
-**Target:** March 2026
+### Stage 2B: Voice & Multi-Language (IN PROGRESS - Ships with Registration)
+**Status:** IN PROGRESS — Voice registration is a core feature across all tiers
+**Priority:** HIGH - Ships alongside Stage 3 as part of registration release
+**Target:** April-May 2026
 
 **Goals:**
 - Voice input capability for hands-free registration
@@ -2826,4 +2826,4 @@ export interface HelpFAQItem {
 
 **Document Owner:** Development Team
 **Review Frequency:** After each stage completion
-**Last Reviewed:** March 11, 2026
+**Last Reviewed:** March 12, 2026
