@@ -14,9 +14,9 @@ export interface DiscountRules {
   earlyBirdDaysBeforeStart: number;
 }
 
-// Backend edge function applies 10% sibling discount (matches organizations.sibling_discount_percent default)
+// Default matches organizations.sibling_discount_percent column default (25% per NBC Sports Engine benchmark)
 const DEFAULT_DISCOUNT_RULES: DiscountRules = {
-  siblingDiscountPercent: 10,
+  siblingDiscountPercent: 25,
   earlyBirdDiscountPercent: 5,
   returningFamilyDiscountPercent: 5,
   earlyBirdDaysBeforeStart: 30

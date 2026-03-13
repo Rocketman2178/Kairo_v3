@@ -657,33 +657,33 @@ Registration Form → Payment → Confirmed Registration → Return User
 #### 3.3 Payment Display Psychology (NBC Data-Driven)
 **Insight:** 86.4% of parents pay in full, only 8% use payment plans
 
-- [ ] Default to "Pay in Full" as primary option with savings indicator
-- [ ] Show per-class cost: "$208 total ($26/class for 8 weeks)"
-- [ ] Payment plan as secondary option, not emphasized
-- [ ] "Most families pay in full" social proof messaging
-- [ ] Quick checkout for returning families
+- [x] Default to "Pay in Full" as primary option with savings indicator
+- [x] Show per-class cost: "$208 total ($26/class for 8 weeks)" — shown in Order Summary
+- [x] Payment plan as secondary option, not emphasized
+- [x] "Most families pay in full" social proof messaging — styled pill in PaymentPlanSelector
+- [ ] Quick checkout for returning families (requires auth / saved payment methods)
 
 #### 3.4 Cart Recovery (Timing Optimized)
 **Insight:** 92.3% register Mon-Fri during work hours
 
-- [ ] Abandoned cart detection
-- [ ] Evening recovery emails (6-8 PM) - when parents have time
+- [x] Abandoned cart detection — useCartAbandonment hook saves on unload
+- [ ] Evening recovery emails (6-8 PM) — requires email sending via n8n or edge function
 - [ ] Multi-touch recovery sequences
-- [ ] Progress auto-save after each field
+- [x] Progress auto-save after each field — cart data updated on step change
 - [ ] "Continue registration" deep links
 
 #### 3.5 Sibling Discounts (NBC Benchmarked)
 **Insight:** $50-60 sibling discount standard (25% off second child)
 
-- [ ] Auto-detect multi-child families
-- [ ] Auto-apply sibling discount (25% off 2nd+ child)
-- [ ] "You're saving $56!" celebration message
-- [ ] "Add another child?" prompt after first completion
+- [x] Auto-detect multi-child families — email lookup on Register page
+- [x] Auto-apply sibling discount (25% off 2nd+ child) — DB default updated to 25% via migration
+- [x] "You're saving $56!" celebration message — shown in PaymentSummary
+- [x] "Add another child?" prompt after first completion — RegistrationConfirmation CTA card
 
 #### 3.6 Re-enrollment
-- [ ] Re-enrollment reminders
-- [ ] One-click re-enroll with previous preferences
-- [ ] Returning family loyalty discount (5%)
+- [ ] Re-enrollment reminders — requires scheduled communication flow
+- [x] One-click re-enroll with previous preferences — returning family auto-fills form
+- [x] Returning family loyalty discount (5%) — applied when email matches existing family
 
 ---
 
