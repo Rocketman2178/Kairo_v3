@@ -6,6 +6,7 @@ import {
   Download,
   Home,
   Share2,
+  PlusCircle,
 } from 'lucide-react';
 import { downloadICS } from '../../utils/calendarExport';
 
@@ -21,6 +22,7 @@ interface RegistrationConfirmationProps {
   amountCents: number;
   isDemo: boolean;
   onGoHome: () => void;
+  onAddAnotherChild?: () => void;
 }
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -46,6 +48,7 @@ export default function RegistrationConfirmation({
   amountCents,
   isDemo,
   onGoHome,
+  onAddAnotherChild,
 }: RegistrationConfirmationProps) {
   function handleAddToCalendar() {
     downloadICS(
@@ -161,6 +164,27 @@ export default function RegistrationConfirmation({
                 </li>
               </ul>
             </div>
+
+            {onAddAnotherChild && (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <PlusCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-medium text-green-900 text-sm">Register another child?</p>
+                    <p className="text-green-700 text-sm mt-0.5">
+                      Save 25% on your next registration with our sibling discount — automatically applied.
+                    </p>
+                    <button
+                      onClick={onAddAnotherChild}
+                      className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 transition-colors text-sm"
+                    >
+                      <PlusCircle className="h-4 w-4" />
+                      Add Another Child — Save 25%
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <button

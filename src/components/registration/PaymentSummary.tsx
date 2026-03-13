@@ -1,4 +1,4 @@
-import { Tag, Percent, Gift } from 'lucide-react';
+import { Tag, Percent, Gift, BookOpen } from 'lucide-react';
 import type { DiscountResult } from '../../utils/discountCalculator';
 
 interface PaymentSummaryProps {
@@ -6,10 +6,15 @@ interface PaymentSummaryProps {
   originalAmountCents: number;
   discount: DiscountResult | null;
   selectedPlanType: 'full' | 'monthly' | 'biweekly';
+  sessionWeeks?: number;
 }
 
 function formatPrice(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
+}
+
+function formatPriceRounded(dollars: number): string {
+  return `$${dollars.toFixed(0)}`;
 }
 
 export default function PaymentSummary({
@@ -17,6 +22,7 @@ export default function PaymentSummary({
   originalAmountCents,
   discount,
   selectedPlanType,
+  sessionWeeks = 9,
 }: PaymentSummaryProps) {
   const hasDiscount = discount && discount.discountPercent > 0;
   const afterDiscount = hasDiscount ? discount.finalPrice : originalAmountCents;
@@ -25,6 +31,9 @@ export default function PaymentSummary({
     (hasDiscount ? discount.savings : 0) +
     (selectedPlanType === 'full' ? afterDiscount - payInFullAmount : 0);
   const finalAmount = selectedPlanType === 'full' ? payInFullAmount : afterDiscount;
+
+  const finalDollars = finalAmount / 100;
+  const perClassDollars = sessionWeeks > 0 ? finalDollars / sessionWeeks : finalDollars;
 
   return (
     <div className="bg-gray-50 rounded-xl p-5 space-y-3">
@@ -61,8 +70,18 @@ export default function PaymentSummary({
         <div className="border-t border-gray-200 pt-2 mt-2">
           <div className="flex justify-between items-center">
             <span className="font-semibold text-gray-900">Total Due</span>
-            <span className="text-xl font-bold text-gray-900">{formatPrice(finalAmount)}</span>
+            <div className="text-right">
+              <span className="text-xl font-bold text-gray-900">{formatPrice(finalAmount)}</span>
+            </div>
           </div>
+          {sessionWeeks > 0 && (
+            <div className="flex items-center justify-end gap-1.5 mt-1">
+              <BookOpen className="h-3.5 w-3.5 text-gray-400" />
+              <span className="text-sm text-gray-500">
+                {formatPriceRounded(perClassDollars)}/class for {sessionWeeks} weeks
+              </span>
+            </div>
+          )}
         </div>
 
         {totalSavings > 0 && (

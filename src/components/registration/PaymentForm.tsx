@@ -107,6 +107,7 @@ export default function PaymentForm({
         originalAmountCents={amountCents}
         discount={discount.discountPercent > 0 ? discount : null}
         selectedPlanType={selectedPlan}
+        sessionWeeks={sessionWeeks}
       />
 
       {!isDemo && clientSecret && (

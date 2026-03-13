@@ -32,7 +32,7 @@ export default function PaymentPlanSelector({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-gray-900">Payment Plan</h3>
-        <span className="text-xs text-gray-500">86% of families pay in full</span>
+        <span className="text-xs text-gray-500 bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">Most families pay in full</span>
       </div>
 
       <div className="grid gap-3">

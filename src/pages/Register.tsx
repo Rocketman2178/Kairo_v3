@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Elements } from '@stripe/react-stripe-js';
 import { supabase } from '../lib/supabase';
@@ -18,6 +18,8 @@ import {
   AlertCircle,
   Timer,
   Shield,
+  Star,
+  Users,
 } from 'lucide-react';
 
 interface PendingRegistration {
@@ -92,6 +94,10 @@ export default function Register() {
   const [isDemo, setIsDemo] = useState(!isStripeConfigured());
   const [, setPaymentPlan] = useState<'full' | 'monthly' | 'biweekly'>('full');
   const [timeRemaining, setTimeRemaining] = useState(0);
+  const [hasOtherRegistrations, setHasOtherRegistrations] = useState(false);
+  const [isReturningFamily, setIsReturningFamily] = useState(false);
+  const [existingFamilyId, setExistingFamilyId] = useState<string | null>(null);
+  const emailLookupTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [formData, setFormData] = useState<FormData>({
     parentFirstName: '',
     parentLastName: '',
@@ -189,6 +195,55 @@ export default function Register() {
     }
   }
 
+  async function lookupFamilyByEmail(email: string) {
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setIsReturningFamily(false);
+      setHasOtherRegistrations(false);
+      setExistingFamilyId(null);
+      return;
+    }
+
+    try {
+      const { data: family } = await supabase
+        .from('families')
+        .select('id, name, phone')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (!family) {
+        setIsReturningFamily(false);
+        setHasOtherRegistrations(false);
+        setExistingFamilyId(null);
+        return;
+      }
+
+      setExistingFamilyId(family.id);
+
+      // Pre-fill name and phone if empty
+      const nameParts = (family.name as string).split(' ');
+      setFormData((prev) => ({
+        ...prev,
+        parentFirstName: prev.parentFirstName || nameParts[0] || '',
+        parentLastName: prev.parentLastName || nameParts.slice(1).join(' ') || '',
+        phone: prev.phone || (family.phone as string) || '',
+      }));
+
+      // Check for active registrations (sibling discount trigger)
+      const { data: registrations } = await supabase
+        .from('registrations')
+        .select('id')
+        .eq('family_id', family.id)
+        .in('status', ['confirmed', 'pending_registration', 'awaiting_payment'])
+        .limit(1);
+
+      const hasSiblings = !!(registrations && registrations.length > 0);
+      setHasOtherRegistrations(hasSiblings);
+      setIsReturningFamily(true);
+    } catch {
+      // Silent failure — don't block registration on lookup errors
+    }
+  }
+
   const createPaymentIntent = useCallback(async () => {
     if (isDemo || !token) return;
 
@@ -268,23 +323,30 @@ export default function Register() {
 
   async function createFamilyAndChild() {
     try {
-      const { data: family, error: familyError } = await supabase
-        .from('families')
-        .insert({
-          name: `${formData.parentFirstName} ${formData.parentLastName}`,
-          email: formData.email,
-          phone: formData.phone,
-        })
-        .select()
-        .single();
+      let currentFamilyId = existingFamilyId;
 
-      if (familyError) throw familyError;
-      setFamilyId(family.id);
+      if (!currentFamilyId) {
+        // New family — create record
+        const { data: family, error: familyError } = await supabase
+          .from('families')
+          .insert({
+            name: `${formData.parentFirstName} ${formData.parentLastName}`,
+            email: formData.email,
+            phone: formData.phone,
+          })
+          .select()
+          .single();
+
+        if (familyError) throw familyError;
+        currentFamilyId = family.id;
+      }
+
+      setFamilyId(currentFamilyId);
 
       const { data: child, error: childError } = await supabase
         .from('children')
         .insert({
-          family_id: family.id,
+          family_id: currentFamilyId,
           first_name: registration?.childName || '',
           date_of_birth: formData.childDateOfBirth || null,
           medical_notes: formData.medicalNotes || null,
@@ -308,25 +370,34 @@ export default function Register() {
       let currentFamilyId = familyId;
       let currentChildId = childId;
 
-      if (!currentFamilyId || !currentChildId) {
-        const { data: family, error: familyError } = await supabase
-          .from('families')
-          .insert({
-            name: `${formData.parentFirstName} ${formData.parentLastName}`,
-            email: formData.email,
-            phone: formData.phone,
-          })
-          .select()
-          .single();
+      if (!currentFamilyId) {
+        // Use existing family if returning, otherwise create new
+        const resolvedFamilyId = existingFamilyId;
+        if (resolvedFamilyId) {
+          currentFamilyId = resolvedFamilyId;
+          setFamilyId(resolvedFamilyId);
+        } else {
+          const { data: family, error: familyError } = await supabase
+            .from('families')
+            .insert({
+              name: `${formData.parentFirstName} ${formData.parentLastName}`,
+              email: formData.email,
+              phone: formData.phone,
+            })
+            .select()
+            .single();
 
-        if (familyError) throw familyError;
-        currentFamilyId = family.id;
-        setFamilyId(family.id);
+          if (familyError) throw familyError;
+          currentFamilyId = family.id;
+          setFamilyId(family.id);
+        }
+      }
 
+      if (!currentChildId) {
         const { data: child, error: childError } = await supabase
           .from('children')
           .insert({
-            family_id: family.id,
+            family_id: currentFamilyId!,
             first_name: registration?.childName || '',
             date_of_birth: formData.childDateOfBirth || null,
             medical_notes: formData.medicalNotes || null,
@@ -369,11 +440,17 @@ export default function Register() {
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const { name, value, type } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
-    }));
+    const newValue = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
+    setFormData((prev) => ({ ...prev, [name]: newValue }));
     if (error) setError(null);
+
+    // Debounced email lookup for returning family / sibling detection
+    if (name === 'email' && typeof newValue === 'string') {
+      if (emailLookupTimeout.current) clearTimeout(emailLookupTimeout.current);
+      emailLookupTimeout.current = setTimeout(() => {
+        lookupFamilyByEmail(newValue);
+      }, 600);
+    }
   }
 
   if (loading) {
@@ -420,6 +497,7 @@ export default function Register() {
         amountCents={registration?.amountCents || 0}
         isDemo={isDemo}
         onGoHome={() => navigate('/')}
+        onAddAnotherChild={() => navigate('/')}
       />
     );
   }
@@ -541,6 +619,30 @@ export default function Register() {
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
                   <p className="text-red-700 text-sm">{error}</p>
+                </div>
+              )}
+
+              {isReturningFamily && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+                  <Star className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-amber-900 text-sm">Welcome back!</p>
+                    <p className="text-amber-700 text-sm mt-0.5">
+                      We found your account and pre-filled your details. A 5% returning family discount has been applied.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {hasOtherRegistrations && (
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
+                  <Users className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-green-900 text-sm">Sibling discount applied!</p>
+                    <p className="text-green-700 text-sm mt-0.5">
+                      25% off for registering another child from your family. Your savings will appear at checkout.
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -730,8 +832,8 @@ export default function Register() {
                 programName={registration?.session.programName || ''}
                 sessionStartDate={registration?.session.startDate}
                 sessionWeeks={9}
-                hasOtherRegistrations={false}
-                isReturningFamily={false}
+                hasOtherRegistrations={hasOtherRegistrations}
+                isReturningFamily={isReturningFamily}
                 clientSecret={clientSecret}
                 isDemo={isDemo}
                 onPaymentPlanChange={setPaymentPlan}

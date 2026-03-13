@@ -5,6 +5,47 @@ Format: `## [Month Year] - Title | Category | Description`
 
 ---
 
+## [March 13, 2026] - Payment Psychology, Sibling Discounts & Re-enrollment | Core Feature | High
+
+**Category:** Core Feature
+**Impact:** High — Addresses 3 critical Stage 3 items (3.3, 3.5, 3.6)
+
+**Description:**
+Three Stage 3 features implemented to improve payment UX, sibling discount accuracy, and returning family experience.
+
+### Feature 1: Payment Display Psychology (Stage 3.3)
+- Added per-class cost display: "$26/class for 9 weeks" shown below total in Order Summary
+- Updated "86% of families pay in full" text to styled "Most families pay in full" chip in PaymentPlanSelector
+- `PaymentSummary.tsx` now accepts `sessionWeeks` prop and calculates per-class cost
+- `PaymentForm.tsx` passes `sessionWeeks` to `PaymentSummary`
+
+### Feature 2: Sibling Discount Auto-Detection Enhancement (Stage 3.5)
+- Updated sibling discount from 10% → **25%** to match NBC Sports Engine benchmark ($50–60 savings on $200–250 programs)
+- `Register.tsx` now performs debounced email lookup when parent enters their email
+- If existing family found: pre-fills parent name and phone, shows "Welcome back!" banner with 5% returning family discount
+- If family has active registrations: shows green "Sibling discount applied!" banner with 25% savings
+- `hasOtherRegistrations` and `isReturningFamily` states properly passed to `PaymentForm` (were hardcoded `false`)
+- Returning families reuse existing `family_id` instead of creating duplicate records
+
+### Feature 3: Re-enrollment Flow (Stage 3.6)
+- `RegistrationConfirmation.tsx` accepts new `onAddAnotherChild?: () => void` prop
+- When `onAddAnotherChild` is provided, shows "Register another child? Save 25% with sibling discount" CTA card
+- `Register.tsx` passes `onAddAnotherChild` handler routing back to home/chat
+- Family record reuse in `createFamilyAndChild()` — returning families skip duplicate family creation
+- `handleDemoPayment` also updated to reuse existing family ID
+
+**Files Changed:**
+- `src/components/registration/PaymentSummary.tsx` — per-class cost display, `sessionWeeks` prop
+- `src/components/registration/PaymentPlanSelector.tsx` — "Most families pay in full" styled chip
+- `src/components/registration/PaymentForm.tsx` — passes `sessionWeeks` to PaymentSummary
+- `src/components/registration/RegistrationConfirmation.tsx` — `onAddAnotherChild` prop + sibling CTA
+- `src/utils/discountCalculator.ts` — sibling discount 10% → 25%
+- `src/pages/Register.tsx` — email lookup, returning family detection, pre-fill, banner UI, family reuse
+
+**No new DB migrations** — all changes are frontend/utility layer.
+
+---
+
 ## [March 2026] - Stage 3 Payments & Registration Flow - Active Development
 
 **Category:** Core Feature

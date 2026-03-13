@@ -14,6 +14,7 @@ export interface DiscountRules {
   earlyBirdDaysBeforeStart: number;
 }
 
+// Backend edge function applies 10% sibling discount (matches organizations.sibling_discount_percent default)
 const DEFAULT_DISCOUNT_RULES: DiscountRules = {
   siblingDiscountPercent: 10,
   earlyBirdDiscountPercent: 5,
