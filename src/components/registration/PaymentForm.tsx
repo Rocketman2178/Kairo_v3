@@ -8,6 +8,7 @@ import { Loader2, Lock, ShieldCheck, AlertCircle } from 'lucide-react';
 import PaymentPlanSelector from './PaymentPlanSelector';
 import PaymentSummary from './PaymentSummary';
 import { calculateDiscount } from '../../utils/discountCalculator';
+import type { PlanType, PaymentFeeConfig } from '../../utils/paymentPlans';
 
 interface PaymentFormProps {
   amountCents: number;
@@ -18,9 +19,10 @@ interface PaymentFormProps {
   isReturningFamily: boolean;
   clientSecret: string | null;
   isDemo: boolean;
-  onPaymentPlanChange: (plan: 'full' | 'monthly' | 'biweekly') => void;
+  onPaymentPlanChange: (plan: PlanType) => void;
   onDemoSubmit: () => void;
   registrationToken: string;
+  feeConfig?: PaymentFeeConfig;
 }
 
 export default function PaymentForm({
@@ -35,10 +37,11 @@ export default function PaymentForm({
   onPaymentPlanChange,
   onDemoSubmit,
   registrationToken,
+  feeConfig,
 }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
-  const [selectedPlan, setSelectedPlan] = useState<'full' | 'monthly' | 'biweekly'>('full');
+  const [selectedPlan, setSelectedPlan] = useState<PlanType>('full');
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,7 +51,7 @@ export default function PaymentForm({
     sessionStartDate: sessionStartDate ? new Date(sessionStartDate) : undefined,
   });
 
-  function handlePlanChange(plan: 'full' | 'monthly' | 'biweekly') {
+  function handlePlanChange(plan: PlanType) {
     setSelectedPlan(plan);
     onPaymentPlanChange(plan);
   }
@@ -98,8 +101,10 @@ export default function PaymentForm({
       <PaymentPlanSelector
         amountCents={amountCents}
         sessionWeeks={sessionWeeks}
+        sessionStartDate={sessionStartDate}
         selectedPlan={selectedPlan}
         onSelectPlan={handlePlanChange}
+        feeConfig={feeConfig}
       />
 
       <PaymentSummary
@@ -108,6 +113,8 @@ export default function PaymentForm({
         discount={discount.discountPercent > 0 ? discount : null}
         selectedPlanType={selectedPlan}
         sessionWeeks={sessionWeeks}
+        sessionStartDate={sessionStartDate}
+        feeConfig={feeConfig}
       />
 
       {!isDemo && clientSecret && (
@@ -153,7 +160,7 @@ export default function PaymentForm({
       <button
         type="submit"
         disabled={processing || (!isDemo && !stripe)}
-        className="w-full py-3.5 px-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
+        className="w-full py-3.5 px-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm hover:shadow-md min-h-[44px]"
       >
         {processing ? (
           <>

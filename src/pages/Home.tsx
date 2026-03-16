@@ -1,10 +1,23 @@
 import { ChatInterface } from '../components/registration/ChatInterface';
+import CartRecoveryBanner from '../components/registration/CartRecoveryBanner';
+import { useCartRecovery } from '../hooks/useCartRecovery';
 import { Link } from 'react-router-dom';
 import { ExternalLink } from 'lucide-react';
 
 export function Home() {
+  const { cartRecovery, recoveryUrl, dismiss } = useCartRecovery();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f1419] via-[#1a2332] to-[#0f1419]">
+      {/* Cart recovery banner — desktop top bar, mobile sticky bottom */}
+      {cartRecovery && recoveryUrl && (
+        <CartRecoveryBanner
+          cart={cartRecovery}
+          recoveryUrl={recoveryUrl}
+          onDismiss={dismiss}
+        />
+      )}
+
       {/* Sticky Header — hidden on mobile where chat is full-bleed */}
       <header className="hidden sm:block sticky top-0 z-50 bg-gradient-to-r from-[#0f1419] via-[#1a2332] to-[#0f1419] border-b border-gray-800 backdrop-blur-sm bg-opacity-95">
         <div className="container mx-auto px-4 py-3">

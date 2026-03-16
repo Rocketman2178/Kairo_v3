@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { saveCartRecovery, clearCartRecovery } from './useCartRecovery';
 
 interface CartData {
   registrationToken: string | null;
@@ -13,6 +14,34 @@ interface CartData {
 
 export function useCartAbandonment(cartData: CartData, isComplete: boolean) {
   const savedRef = useRef(false);
+
+  // Persist cart recovery data to localStorage whenever key fields change,
+  // so the CartRecoveryBanner can surface it on subsequent page visits.
+  useEffect(() => {
+    if (isComplete || !cartData.registrationToken) {
+      if (isComplete) {
+        // Registration completed — clear any recovery data
+        clearCartRecovery();
+      }
+      return;
+    }
+
+    // Keep localStorage in sync with current cart state
+    saveCartRecovery({
+      registrationToken: cartData.registrationToken,
+      programName: cartData.programName,
+      childName: cartData.childName,
+      amountCents: cartData.amountCents,
+      stepAbandoned: ['session_review', 'info_entry', 'payment', 'confirmation'][cartData.currentStep] || 'unknown',
+    });
+  }, [
+    cartData.registrationToken,
+    cartData.programName,
+    cartData.childName,
+    cartData.amountCents,
+    cartData.currentStep,
+    isComplete,
+  ]);
 
   useEffect(() => {
     if (isComplete || !cartData.registrationToken) return;
@@ -63,6 +92,8 @@ export function useCartAbandonment(cartData: CartData, isComplete: boolean) {
 
   function markRecovered() {
     savedRef.current = true;
+    // Clear the localStorage recovery entry since registration is complete
+    clearCartRecovery();
   }
 
   return { markRecovered };

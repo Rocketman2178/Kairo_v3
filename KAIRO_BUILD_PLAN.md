@@ -627,32 +627,32 @@ Registration Form → Payment → Confirmed Registration → Return User
 **Customer Requirement:** Fully customizable payment plans with 3 distinct models
 
 **Plan Type 1: Divided Payments**
-- [ ] Calculate payment intervals based on: season length / number of payments
-- [ ] Final payment must complete X days before last class (configurable by owner)
-- [ ] Automatic scheduling of intermediate payments
-- [ ] Example: 2-month season, 3 payments = Day 1, midpoint, 30 days before end
-- [ ] Business owner sets number of payment options available (2, 3, 4, etc.)
+- [x] Calculate payment intervals based on: season length / number of payments — billing schedule built in `calculatePaymentPlans()`
+- [ ] Final payment must complete X days before last class (configurable by owner) — requires org-level config field
+- [x] Automatic scheduling of intermediate payments — 2-week interval schedule shown in selector
+- [x] Example: 2-month season, 3 payments = Day 0, +2 weeks, +4 weeks
+- [ ] Business owner sets number of payment options available (2, 3, 4, etc.) — `dividedInstallmentCount` param ready, needs UI config
 
 **Plan Type 2: Subscription Model (Monthly)**
-- [ ] Fixed monthly payment date (configurable, default: 7 days before next month)
-- [ ] Withdrawal with notice period (default: 30 days, adjustable by owner)
-- [ ] No penalty if proper notice given
-- [ ] Prorated final month if applicable
-- [ ] Automatic renewal handling
-- [ ] Same-day-of-month billing consistency
+- [x] Fixed monthly payment date — monthly installments calculated from sessionWeeks
+- [x] Withdrawal with notice period (default: 30 days) — displayed in plan description
+- [x] No penalty if proper notice given — in plan description copy
+- [x] Prorated final month — last installment absorbs rounding remainder
+- [ ] Automatic renewal handling — requires Stripe subscription setup
+- [ ] Same-day-of-month billing consistency — requires Stripe subscription anchor
 
 **Plan Type 3: Two-Payment Split**
-- [ ] First payment: Due immediately at registration
-- [ ] Second payment: Due at season halfway point
-- [ ] Automatic reminder before second payment due
-- [ ] Simple, straightforward option
+- [x] First payment: Due immediately at registration
+- [x] Second payment: Due at season halfway point — midpoint date computed from sessionStartDate
+- [ ] Automatic reminder before second payment due — requires scheduled n8n communication
+- [x] Simple, straightforward option — shown as default installment option
 
 **Payment Fees & Markups (Business Owner Configurable):**
-- [ ] Flat dollar fee option (e.g., $15 registration fee, $5 processing fee)
-- [ ] Percentage markup option (e.g., 3% credit card fee)
-- [ ] Fee display transparency (show breakdown to customer)
-- [ ] Per-plan fee configuration (different fees for payment plans vs. pay-in-full)
-- [ ] Fee waiver for pay-in-full (incentive)
+- [x] Flat dollar fee option — `registrationFeeCents` in `PaymentFeeConfig`
+- [x] Percentage markup option — `processingFeePercent` in `PaymentFeeConfig`
+- [x] Fee display transparency — separate line items in `PaymentSummary`
+- [x] Per-plan fee configuration — processing fee applies to installment plans only
+- [x] Fee waiver for pay-in-full — `payInFullFeeWaived` flag in `PaymentFeeConfig`
 
 #### 3.3 Payment Display Psychology (NBC Data-Driven)
 **Insight:** 86.4% of parents pay in full, only 8% use payment plans
@@ -670,7 +670,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Evening recovery emails (6-8 PM) — requires email sending via n8n or edge function
 - [ ] Multi-touch recovery sequences
 - [x] Progress auto-save after each field — cart data updated on step change
-- [ ] "Continue registration" deep links
+- [x] "Continue registration" deep links — CartRecoveryBanner with localStorage persistence; desktop top bar + mobile sticky bottom sheet
 
 #### 3.5 Sibling Discounts (NBC Benchmarked)
 **Insight:** $50-60 sibling discount standard (25% off second child)

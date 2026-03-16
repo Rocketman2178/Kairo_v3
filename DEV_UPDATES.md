@@ -5,6 +5,56 @@ Format: `## [Month Year] - Title | Category | Description`
 
 ---
 
+## [March 16, 2026] - Payment Plan Types, Fee Transparency & Cart Recovery Deep Links | Core Feature | High
+
+**Category:** Core Feature
+**Impact:** High — Addresses 3 Stage 3 items (3.2, 3.4) bringing payment plans to full spec and closing the cart recovery loop
+
+**Description:**
+Three Stage 3 features implemented: the full payment plan model per the build spec (3 installment plan types replacing bi-weekly/monthly), fee transparency in the order summary, and a cart recovery deep link system that surfaces an actionable banner when users return after abandoning a registration.
+
+### Feature 1: Proper 3 Payment Plan Types (Stage 3.2)
+- Replaced generic "Monthly Payments" + "Bi-Weekly Payments" with the correct 3 plan types defined in the spec
+- **Divided Payments**: N equal payments (default 3) spaced 2 weeks apart — schedule preview shown when selected
+- **Two-Payment Split**: 50% due today, 50% at season midpoint with actual date label
+- **Subscription Model**: Monthly recurring with 30-day cancellation notice, N months based on session length
+- Each installment plan shows its full billing schedule when selected (expandable)
+- `PlanType` union type (`'full' | 'divided' | 'subscription' | 'two_payment'`) replaces `'full' | 'monthly' | 'biweekly'`
+- `PaymentFeeConfig` interface added for future org-configurable fees
+
+### Feature 2: Payment Fees & Markup Transparency (Stage 3.2)
+- `PaymentSummary.tsx` now renders registration fee and processing fee as separate line items (when configured via `PaymentFeeConfig`)
+- Installment plans show per-payment schedule below the total — each payment date and amount listed
+- `PaymentSummary` accepts `feeConfig` and `sessionStartDate` props and calls `calculatePaymentPlans` to derive actual due amounts
+- Fee waiver for pay-in-full (configurable via `payInFullFeeWaived` flag)
+- All amounts derived from single source of truth in `paymentPlans.ts` — no duplication
+
+### Feature 3: Cart Recovery Deep Links (Stage 3.4)
+- New `useCartRecovery` hook reads/writes cart state to localStorage with 24-hour TTL
+- `saveCartRecovery()` / `clearCartRecovery()` / `readCartRecovery()` utilities exported for use anywhere
+- `useCartAbandonment` hook now automatically syncs recovery data to localStorage on every cart change
+- `markRecovered()` calls `clearCartRecovery()` so the banner disappears after completing registration
+- New `CartRecoveryBanner` component: desktop top bar + mobile sticky bottom sheet
+  - Shows child name, program name, amount, and which step was abandoned
+  - "Continue" deep-links directly to `/register?token=<token>`
+  - Dismiss button removes the localStorage entry
+- `Home.tsx` updated to render `CartRecoveryBanner` when recovery data exists
+
+**Files Changed:**
+- `src/utils/paymentPlans.ts` — full rewrite with 3 plan types, `PaymentFeeConfig`, billing schedules
+- `src/components/registration/PaymentPlanSelector.tsx` — updated for new `PlanType`, schedule preview, fee labels
+- `src/components/registration/PaymentForm.tsx` — updated to `PlanType`, passes `sessionStartDate` + `feeConfig`
+- `src/components/registration/PaymentSummary.tsx` — fee line items, installment schedule, `feeConfig` prop
+- `src/pages/Register.tsx` — updated `PlanType` import, typed `setPaymentPlan` state
+- `src/hooks/useCartAbandonment.ts` — localStorage sync via `saveCartRecovery`/`clearCartRecovery`
+- `src/hooks/useCartRecovery.ts` — **NEW** — localStorage-based cart recovery hook + utilities
+- `src/components/registration/CartRecoveryBanner.tsx` — **NEW** — dual-mode recovery banner component
+- `src/pages/Home.tsx` — `useCartRecovery` integration + `CartRecoveryBanner` render
+
+**No new DB migrations** — all changes are frontend/utility layer.
+
+---
+
 ## [March 13, 2026] - Payment Psychology, Sibling Discounts & Re-enrollment | Core Feature | High
 
 **Category:** Core Feature

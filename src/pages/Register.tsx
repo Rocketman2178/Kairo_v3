@@ -7,6 +7,7 @@ import { useCartAbandonment } from '../hooks/useCartAbandonment';
 import PaymentForm from '../components/registration/PaymentForm';
 import RegistrationSteps from '../components/registration/RegistrationSteps';
 import RegistrationConfirmation from '../components/registration/RegistrationConfirmation';
+import type { PlanType } from '../utils/paymentPlans';
 import {
   ArrowLeft,
   ArrowRight,
@@ -92,7 +93,7 @@ export default function Register() {
   const [childId, setChildId] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [isDemo, setIsDemo] = useState(!isStripeConfigured());
-  const [, setPaymentPlan] = useState<'full' | 'monthly' | 'biweekly'>('full');
+  const [, setPaymentPlan] = useState<PlanType>('full');
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [hasOtherRegistrations, setHasOtherRegistrations] = useState(false);
   const [isReturningFamily, setIsReturningFamily] = useState(false);
