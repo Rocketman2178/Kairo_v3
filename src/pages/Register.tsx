@@ -206,7 +206,7 @@ export default function Register() {
     try {
       const { data: family } = await supabase
         .from('families')
-        .select('id, name, phone')
+        .select('id, primary_contact_name, phone')
         .eq('email', email)
         .maybeSingle();
 
@@ -220,7 +220,7 @@ export default function Register() {
       setExistingFamilyId(family.id);
 
       // Pre-fill name and phone if empty
-      const nameParts = (family.name as string).split(' ');
+      const nameParts = ((family.primary_contact_name as string) || '').split(' ');
       setFormData((prev) => ({
         ...prev,
         parentFirstName: prev.parentFirstName || nameParts[0] || '',
@@ -330,7 +330,7 @@ export default function Register() {
         const { data: family, error: familyError } = await supabase
           .from('families')
           .insert({
-            name: `${formData.parentFirstName} ${formData.parentLastName}`,
+            primary_contact_name: `${formData.parentFirstName} ${formData.parentLastName}`,
             email: formData.email,
             phone: formData.phone,
           })
@@ -348,8 +348,8 @@ export default function Register() {
         .insert({
           family_id: currentFamilyId,
           first_name: registration?.childName || '',
-          date_of_birth: formData.childDateOfBirth || null,
-          medical_notes: formData.medicalNotes || null,
+          date_of_birth: formData.childDateOfBirth || new Date().toISOString().split('T')[0],
+          medical_info: formData.medicalNotes ? { notes: formData.medicalNotes } : {},
         })
         .select()
         .single();
@@ -380,7 +380,7 @@ export default function Register() {
           const { data: family, error: familyError } = await supabase
             .from('families')
             .insert({
-              name: `${formData.parentFirstName} ${formData.parentLastName}`,
+              primary_contact_name: `${formData.parentFirstName} ${formData.parentLastName}`,
               email: formData.email,
               phone: formData.phone,
             })
@@ -399,8 +399,8 @@ export default function Register() {
           .insert({
             family_id: currentFamilyId!,
             first_name: registration?.childName || '',
-            date_of_birth: formData.childDateOfBirth || null,
-            medical_notes: formData.medicalNotes || null,
+            date_of_birth: formData.childDateOfBirth || new Date().toISOString().split('T')[0],
+            medical_info: formData.medicalNotes ? { notes: formData.medicalNotes } : {},
           })
           .select()
           .single();
