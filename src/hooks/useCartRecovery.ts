@@ -66,7 +66,7 @@ export function readCartRecovery(): CartRecoveryData | null {
     const data: CartRecoveryData = JSON.parse(raw);
     if (!data.registrationToken) return null;
 
-    // Expire carts older than 24 hours (matches DB expires_at)
+    // Expire carts older than 24 hours
     const ageMs = Date.now() - new Date(data.savedAt).getTime();
     if (ageMs > 24 * 60 * 60 * 1000) {
       clearCartRecovery();

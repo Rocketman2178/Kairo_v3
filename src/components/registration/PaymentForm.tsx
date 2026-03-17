@@ -7,6 +7,7 @@ import {
 import { Loader2, Lock, ShieldCheck, AlertCircle } from 'lucide-react';
 import PaymentPlanSelector from './PaymentPlanSelector';
 import PaymentSummary from './PaymentSummary';
+import BiometricAuthPrompt, { BiometricSuccess } from './BiometricAuthPrompt';
 import { calculateDiscount } from '../../utils/discountCalculator';
 import type { PlanType, PaymentFeeConfig } from '../../utils/paymentPlans';
 
@@ -23,11 +24,14 @@ interface PaymentFormProps {
   onDemoSubmit: () => void;
   registrationToken: string;
   feeConfig?: PaymentFeeConfig;
+  /** Parent email — passed to biometric prompt for personalization */
+  parentEmail?: string;
 }
 
 export default function PaymentForm({
   amountCents,
   programName,
+  parentEmail,
   sessionStartDate,
   sessionWeeks = 9,
   hasOtherRegistrations,
@@ -44,6 +48,8 @@ export default function PaymentForm({
   const [selectedPlan, setSelectedPlan] = useState<PlanType>('full');
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [biometricVerified, setBiometricVerified] = useState(false);
+  const [showBiometricPrompt, setShowBiometricPrompt] = useState(true);
 
   const discount = calculateDiscount(amountCents, {
     hasOtherRegistrations,
@@ -98,6 +104,19 @@ export default function PaymentForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Biometric quick-auth for returning families */}
+      {isReturningFamily && !isDemo && !biometricVerified && showBiometricPrompt && (
+        <BiometricAuthPrompt
+          userEmail={parentEmail}
+          onAuthSuccess={() => setBiometricVerified(true)}
+          onDismiss={() => setShowBiometricPrompt(false)}
+        />
+      )}
+
+      {biometricVerified && (
+        <BiometricSuccess />
+      )}
+
       <PaymentPlanSelector
         amountCents={amountCents}
         sessionWeeks={sessionWeeks}

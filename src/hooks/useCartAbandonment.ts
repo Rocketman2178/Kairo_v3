@@ -68,6 +68,27 @@ export function useCartAbandonment(cartData: CartData, isComplete: boolean) {
         abandoned_at_state: abandonedStep,
         recovery_attempts: 0,
         recovered: false,
+      }).select().single().then(({ data }) => {
+        // If email is available at abandonment time, schedule a recovery email
+        // via the trigger-cart-recovery edge function (it will respect timing windows)
+        if (data?.id && cartData.email) {
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+          if (supabaseUrl) {
+            // Fire-and-forget: pre-schedule recovery (function validates timing)
+            fetch(`${supabaseUrl}/functions/v1/trigger-cart-recovery`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${anonKey}`,
+                'Apikey': anonKey,
+              },
+              body: JSON.stringify({ mode: 'single', cartId: data.id }),
+            }).catch(() => {
+              // Silent failure — don't block unload
+            });
+          }
+        }
       });
     }
 

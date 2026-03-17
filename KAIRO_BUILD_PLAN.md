@@ -607,7 +607,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Return registration token and redirect URL
 
 #### 3.1 Payment Processing
-- [ ] Stripe integration
+- [x] Stripe integration — `create-payment-intent` edge function deployed; reads amount from DB, supports all 4 plan types, graceful demo fallback
 - [ ] Apple Pay / Google Pay
 - [ ] Saved payment methods for returning families
 - [ ] Failed payment recovery
@@ -615,13 +615,13 @@ Registration Form → Payment → Confirmed Registration → Return User
 #### 3.1.1 Biometric Authentication (Priority: MEDIUM) - NEW Jan 2026
 **Customer Request:** Face recognition and biometric login options
 
-- [ ] Face ID support (iOS)
-- [ ] Touch ID / Fingerprint support (iOS/Android)
-- [ ] Native biometric prompt integration
-- [ ] Fallback to password/PIN when biometrics unavailable
-- [ ] Device-level security (NO biometric data stored on servers)
-- [ ] Biometric re-authentication for payment confirmation
-- [ ] User preference to enable/disable biometrics
+- [x] Face ID support (iOS) — WebAuthn platform authenticator via `useBiometricAuth` hook
+- [x] Touch ID / Fingerprint support (iOS/Android) — WebAuthn platform authenticator
+- [x] Native biometric prompt integration — `BiometricAuthPrompt` on payment step, `BiometricSetupPrompt` on confirmation
+- [x] Fallback to password/PIN when biometrics unavailable — hook returns `isSupported: false` and component is hidden
+- [x] Device-level security (NO biometric data stored on servers) — credential ID only stored in localStorage, no biometric data sent to server
+- [x] Biometric re-authentication for payment confirmation — shown for returning families on the payment step
+- [ ] User preference to enable/disable biometrics — `useBiometricAuth.clear()` exists but no settings UI yet
 
 #### 3.2 Payment Plan Options (Priority: HIGH) - ENHANCED Jan 2026
 **Customer Requirement:** Fully customizable payment plans with 3 distinct models
@@ -667,8 +667,8 @@ Registration Form → Payment → Confirmed Registration → Return User
 **Insight:** 92.3% register Mon-Fri during work hours
 
 - [x] Abandoned cart detection — useCartAbandonment hook saves on unload
-- [ ] Evening recovery emails (6-8 PM) — requires email sending via n8n or edge function
-- [ ] Multi-touch recovery sequences
+- [x] Recovery email triggering — `trigger-cart-recovery` edge function deployed; 3-touch sequence routed through n8n with `cart_recovery_email` intent; timing windows aligned with NBC data
+- [x] Multi-touch recovery sequences — 3 touches: 30 min–2 hr, 20–28 hr, 68–76 hr; no emails after 7 days
 - [x] Progress auto-save after each field — cart data updated on step change
 - [x] "Continue registration" deep links — CartRecoveryBanner with localStorage persistence; desktop top bar + mobile sticky bottom sheet
 

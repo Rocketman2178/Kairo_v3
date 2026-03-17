@@ -5,6 +5,71 @@ Format: `## [Month Year] - Title | Category | Description`
 
 ---
 
+## [March 17, 2026] - Stripe Payment Intent Function, Biometric Auth & Cart Recovery Emails | Core Feature | High
+
+**Category:** Core Feature
+**Impact:** High — Closes 3 critical Stage 3 gaps: real Stripe payment processing, Face ID/Touch ID for returning families, and automated cart recovery email triggering
+
+**Description:**
+Three Stage 3 features implemented. The `create-payment-intent` edge function completes the real Stripe payment path (was previously always falling back to demo mode). Biometric authentication (WebAuthn/Face ID/Touch ID) is introduced as a new hook, UI component, and integrated into the registration payment step for returning families and the confirmation screen for new users. The `trigger-cart-recovery` edge function enables automated 3-touch email sequences for abandoned carts routed through n8n.
+
+### Feature 1: Stripe `create-payment-intent` Edge Function (Stage 3.1)
+- New `create-payment-intent` edge function handles the full Stripe PaymentIntent creation flow for the anonymous registration path
+- JWT verification deliberately disabled — flow uses registration token auth (anonymous user completing payment)
+- Amount is always read from the database (`registrations.amount_cents`) — never trusted from the client
+- Supports all 4 plan types: `full`, `divided`, `two_payment`, `subscription` — each charges the correct first-installment amount
+- On success: updates `registrations.status` to `awaiting_payment` and stores `payment_intent_id`
+- Returns `{ demo: true }` gracefully when `STRIPE_SECRET_KEY` is not set (backward-compatible with demo mode)
+- Deployed to Kairo Supabase project (`tatunnfxwfsyoiqoaenb`), version 2, ACTIVE
+
+### Feature 2: Biometric Authentication — Face ID / Touch ID (Stage 3.1.1)
+- New `useBiometricAuth` hook — WebAuthn platform authenticator (Face ID, Touch ID, Android fingerprint)
+- No biometric data is ever sent to or stored on the server — device-level security only
+- `register()` — creates a WebAuthn credential and stores credential ID in localStorage
+- `authenticate()` — presents native biometric prompt, returns `true`/`false` result
+- `clear()` — removes stored credential (logout / user disables biometrics)
+- Handles all DOMException error cases with user-friendly messages; auto-clears stale credentials on `InvalidStateError`
+- New `BiometricAuthPrompt` component — shown on the payment step for returning families who have a credential stored
+  - Gradient indigo card with Fingerprint icon, dismiss button, personalized email display
+  - Integrates `BiometricSuccess` indicator when auth completes
+- New `BiometricSetupPrompt` component (exported from same file) — opt-in prompt shown on RegistrationConfirmation for new users
+  - Purple gradient card with "Enable Biometrics" + "Maybe later" buttons
+- `PaymentForm.tsx` — integrated `BiometricAuthPrompt` for returning families; shows `BiometricSuccess` state after auth
+- `RegistrationConfirmation.tsx` — integrated `BiometricSetupPrompt`; accepts new `parentEmail` and `parentName` props
+- `Register.tsx` — passes `parentEmail` to `PaymentForm` and `parentEmail`/`parentName` to `RegistrationConfirmation`
+
+### Feature 3: Cart Recovery Email Edge Function (Stage 3.4)
+- New `trigger-cart-recovery` edge function handles the backend email trigger for abandoned carts
+- Two modes: `sweep` (cron-style, finds all eligible carts) and `single` (target one cart by ID)
+- 3-touch recovery sequence with timing windows based on NBC data (92.3% Mon-Fri registrations):
+  - Touch 1: 30 min – 2 hours after abandonment
+  - Touch 2: 20–28 hours after abandonment
+  - Third touch: 68–76 hours after abandonment
+  - No emails sent after 7 days
+- Authentication: optional `X-Webhook-Key` header validated against `CART_RECOVERY_WEBHOOK_KEY` secret
+- Triggers n8n via `cart_recovery_email` intent with: cartId, registrationToken, email, childName, programName, amountCents, stepAbandoned, recoveryAttempt, deepLinkUrl
+- Increments `abandoned_carts.recovery_attempts` on successful n8n trigger
+- `useCartAbandonment.ts` updated — when a cart is abandoned with an email present, immediately calls the edge function (single mode) so timing window tracking starts
+- Deployed to Kairo Supabase project (`tatunnfxwfsyoiqoaenb`), version 1, ACTIVE
+
+**Files Changed:**
+- `supabase/functions/create-payment-intent/index.ts` — **NEW** — Stripe PaymentIntent edge function
+- `supabase/functions/trigger-cart-recovery/index.ts` — **NEW** — Cart recovery email trigger edge function
+- `src/hooks/useBiometricAuth.ts` — **NEW** — WebAuthn biometric auth hook
+- `src/components/registration/BiometricAuthPrompt.tsx` — **NEW** — BiometricAuthPrompt + BiometricSetupPrompt + BiometricSuccess components
+- `src/components/registration/PaymentForm.tsx` — integrated BiometricAuthPrompt for returning families, added `parentEmail` prop
+- `src/components/registration/RegistrationConfirmation.tsx` — integrated BiometricSetupPrompt, added `parentEmail`/`parentName` props
+- `src/pages/Register.tsx` — passes `parentEmail`/`parentName` to PaymentForm and RegistrationConfirmation
+- `src/hooks/useCartAbandonment.ts` — triggers cart recovery edge function on abandonment when email is known
+
+**Edge Functions Deployed:**
+- `create-payment-intent` — version 2, ACTIVE, JWT disabled (anonymous flow)
+- `trigger-cart-recovery` — version 1, ACTIVE, JWT disabled (webhook key auth)
+
+**No new DB migrations** — all changes use existing schema.
+
+---
+
 ## [March 16, 2026] - Payment Plan Types, Fee Transparency & Cart Recovery Deep Links | Core Feature | High
 
 **Category:** Core Feature

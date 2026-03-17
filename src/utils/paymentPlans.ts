@@ -75,7 +75,7 @@ function buildDividedSchedule(
 
     if (i === 0) {
       label = 'Due today';
-      dueDate = sessionStartDate ? sessionStartDate.toISOString() : new Date().toISOString();
+      dueDate = new Date().toISOString();
     } else if (sessionStartDate) {
       // Spread remaining payments evenly before the start date
       // We want the last payment a week before class starts
@@ -250,7 +250,7 @@ export function calculatePaymentPlans(
 
 export function formatPaymentOption(plan: PaymentPlan): string {
   if (plan.id === 'full' && plan.finalPrice) {
-    return `$${(plan.finalPrice / 100).toFixed(0)} (save $${(plan.savings ?? 0 / 100).toFixed(0)})`;
+    return `$${(plan.finalPrice / 100).toFixed(0)} (save $${((plan.savings ?? 0) / 100).toFixed(0)})`;
   }
 
   if (plan.installments && plan.perPayment) {

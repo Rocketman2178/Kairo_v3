@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   CheckCircle,
   Calendar,
@@ -9,6 +10,7 @@ import {
   PlusCircle,
 } from 'lucide-react';
 import { downloadICS } from '../../utils/calendarExport';
+import { BiometricSetupPrompt } from './BiometricAuthPrompt';
 
 interface RegistrationConfirmationProps {
   childName: string;
@@ -21,6 +23,10 @@ interface RegistrationConfirmationProps {
   locationAddress: string;
   amountCents: number;
   isDemo: boolean;
+  /** Parent email — used for biometric setup. If provided, biometric opt-in is shown. */
+  parentEmail?: string;
+  /** Parent name — used for biometric setup display name. */
+  parentName?: string;
   onGoHome: () => void;
   onAddAnotherChild?: () => void;
 }
@@ -47,9 +53,13 @@ export default function RegistrationConfirmation({
   locationAddress,
   amountCents,
   isDemo,
+  parentEmail,
+  parentName,
   onGoHome,
   onAddAnotherChild,
 }: RegistrationConfirmationProps) {
+  const [biometricSetupDone, setBiometricSetupDone] = useState(false);
+
   function handleAddToCalendar() {
     downloadICS(
       {
@@ -164,6 +174,16 @@ export default function RegistrationConfirmation({
                 </li>
               </ul>
             </div>
+
+            {/* Biometric setup opt-in for new users */}
+            {!isDemo && parentEmail && !biometricSetupDone && (
+              <BiometricSetupPrompt
+                userEmail={parentEmail}
+                userName={parentName || parentEmail}
+                onSetupComplete={() => setBiometricSetupDone(true)}
+                onSkip={() => setBiometricSetupDone(true)}
+              />
+            )}
 
             {onAddAnotherChild && (
               <div className="bg-green-50 border border-green-200 rounded-xl p-4">

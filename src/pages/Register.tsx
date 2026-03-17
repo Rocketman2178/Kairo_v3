@@ -497,6 +497,12 @@ export default function Register() {
         locationAddress={registration?.session.locationAddress || ''}
         amountCents={registration?.amountCents || 0}
         isDemo={isDemo}
+        parentEmail={formData.email || undefined}
+        parentName={
+          formData.parentFirstName
+            ? `${formData.parentFirstName} ${formData.parentLastName}`.trim()
+            : undefined
+        }
         onGoHome={() => navigate('/')}
         onAddAnotherChild={() => navigate('/')}
       />
@@ -840,6 +846,7 @@ export default function Register() {
                 onPaymentPlanChange={setPaymentPlan}
                 onDemoSubmit={handleDemoPayment}
                 registrationToken={token || ''}
+                parentEmail={formData.email}
               />
             </div>
           </>
