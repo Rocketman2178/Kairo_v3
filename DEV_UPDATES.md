@@ -5,6 +5,59 @@ Format: `## [Month Year] - Title | Category | Description`
 
 ---
 
+## [March 18, 2026] - Voice Registration, Apple Pay / Google Pay & Biometric Settings UI | Core Feature | High
+
+**Category:** Core Feature
+**Impact:** High — Closes 3 Stage 2B/3 items: voice input for the Kai chat, express checkout via Apple Pay / Google Pay, and a settings UI to manage biometric login
+
+**Description:**
+Three features implemented across the registration experience. Voice Registration (Stage 2B.1) adds a Web Speech API microphone button to the Kai chat interface — users can speak their answers instead of typing. Apple Pay / Google Pay (Stage 3.1) shows a Payment Request Button above the card form when the browser supports it, enabling one-tap express checkout. Biometric Settings (Stage 3.1.1) adds a toggle panel on the RegistrationConfirmation page so users can enable or disable Face ID / Touch ID after completing a registration, completing the biometric management lifecycle.
+
+### Feature 1: Voice Registration — Web Speech API (Stage 2B.1)
+- New `useVoiceInput` hook — wraps the Web Speech API (SpeechRecognition / webkitSpeechRecognition)
+- Handles webkit prefix automatically for cross-browser support (Chrome, Safari, Edge)
+- `startListening()` opens the microphone; interim transcripts update live
+- `stopListening()` finalises recognition and fires `onFinalTranscript(text)` callback
+- On final transcript: auto-sends the text into the Kai conversation (no manual tap needed)
+- Friendly error messages for each failure case: no-speech, not-allowed, network, etc.
+- New `VoiceIndicator` overlay component: animated emerald pulse rings, live transcript preview, tap-to-stop mic button, cancel option
+- `ChatInterface.tsx` updated: mic button added between text input and send button
+  - Button only shown when `isSupported` (browser has Web Speech API)
+  - Mic button turns red and pulses while listening; tapping it stops recognition
+  - `VoiceIndicator` overlay covers the phone frame during recording
+  - Voice disabled state respects `isLoading`, `!isReady`, and `sessionEnded` flags
+
+### Feature 2: Apple Pay / Google Pay — Payment Request Button (Stage 3.1)
+- `PaymentForm.tsx` updated: imports `PaymentRequestButtonElement` from `@stripe/react-stripe-js`
+- `useEffect` creates a Stripe `paymentRequest` object when stripe + clientSecret are ready
+- `canMakePayment()` check ensures button only renders on supported devices/browsers
+- Express Checkout section appears above the card form with an "or pay with card" divider
+- `paymentmethod` event handler confirms via `stripe.confirmCardPayment()` (handleActions: false)
+- Handles 3DS required: completes ev with 'success', then re-confirms to handle the action
+- On success: redirects to the standard confirmation URL (same as card payment flow)
+- Button theme: dark, 48px height, type 'buy'
+- Amount reflects final price after discounts (sibling, returning family, early bird)
+
+### Feature 3: Biometric Settings UI (Stage 3.1.1)
+- New `BiometricSettings` component — toggle switch panel for managing Face ID / Touch ID
+- Shows current status (enabled / disabled) and allows toggling on/off via `useBiometricAuth`
+- Enable path: calls `register(email, name)` to create a new WebAuthn credential
+- Disable path: calls `clear()` to remove the stored credential ID from localStorage
+- Toggle button is disabled if biometrics cannot be enabled (no email/name provided)
+- `RegistrationConfirmation.tsx` updated: after user dismisses or completes `BiometricSetupPrompt`, `BiometricSettings` panel is shown — provides ongoing management UI
+
+**Files Changed:**
+- `src/hooks/useVoiceInput.ts` — **NEW** — Web Speech API voice input hook
+- `src/components/registration/VoiceIndicator.tsx` — **NEW** — Voice recording overlay component
+- `src/components/registration/ChatInterface.tsx` — mic button + VoiceIndicator integration
+- `src/components/registration/BiometricSettings.tsx` — **NEW** — Biometric toggle settings panel
+- `src/components/registration/RegistrationConfirmation.tsx` — BiometricSettings integrated after setup prompt
+- `src/components/registration/PaymentForm.tsx` — Apple Pay / Google Pay Payment Request Button
+
+**No new DB migrations** — all changes are frontend/UI layer.
+
+---
+
 ## [March 17, 2026] - Stripe Payment Intent Function, Biometric Auth & Cart Recovery Emails | Core Feature | High
 
 **Category:** Core Feature

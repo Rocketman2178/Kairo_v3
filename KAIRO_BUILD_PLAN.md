@@ -524,12 +524,12 @@ Research required to inform Kairo's tiered pricing model.
 - Accent variations for market-specific engagement
 
 #### 2B.1 Voice Registration
-- [ ] Web Speech API integration
-- [ ] Voice activity detection
-- [ ] Speech-to-text transcription
-- [ ] Text-to-speech responses
-- [ ] Fallback to text input
-- [ ] Visual waveform feedback
+- [x] Web Speech API integration — `useVoiceInput` hook (webkit prefix handled, cross-browser)
+- [x] Voice activity detection — interim transcript updates live while user speaks
+- [x] Speech-to-text transcription — final transcript auto-sent into Kai chat
+- [ ] Text-to-speech responses — Kai reads responses aloud (deferred)
+- [x] Fallback to text input — mic button hidden when API unsupported; text input always available
+- [x] Visual waveform feedback — `VoiceIndicator` overlay with animated emerald pulse rings
 - [ ] Phone system integration option (IVR hybrid: "Press 1 for Kai, Press 2 for office")
 
 #### 2B.2 Multi-Language Support (Tiger Tank Priority)
@@ -608,7 +608,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 
 #### 3.1 Payment Processing
 - [x] Stripe integration — `create-payment-intent` edge function deployed; reads amount from DB, supports all 4 plan types, graceful demo fallback
-- [ ] Apple Pay / Google Pay
+- [x] Apple Pay / Google Pay — `PaymentRequestButtonElement` shown above card form when browser supports it; express checkout redirects to same confirmation URL; 3DS handled
 - [ ] Saved payment methods for returning families
 - [ ] Failed payment recovery
 
@@ -621,7 +621,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [x] Fallback to password/PIN when biometrics unavailable — hook returns `isSupported: false` and component is hidden
 - [x] Device-level security (NO biometric data stored on servers) — credential ID only stored in localStorage, no biometric data sent to server
 - [x] Biometric re-authentication for payment confirmation — shown for returning families on the payment step
-- [ ] User preference to enable/disable biometrics — `useBiometricAuth.clear()` exists but no settings UI yet
+- [x] User preference to enable/disable biometrics — `BiometricSettings` panel on RegistrationConfirmation with toggle switch to enable/disable
 
 #### 3.2 Payment Plan Options (Priority: HIGH) - ENHANCED Jan 2026
 **Customer Requirement:** Fully customizable payment plans with 3 distinct models

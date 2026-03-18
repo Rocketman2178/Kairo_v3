@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   PaymentElement,
+  PaymentRequestButtonElement,
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js';
+import type { PaymentRequest } from '@stripe/stripe-js';
 import { Loader2, Lock, ShieldCheck, AlertCircle } from 'lucide-react';
 import PaymentPlanSelector from './PaymentPlanSelector';
 import PaymentSummary from './PaymentSummary';
@@ -50,12 +52,71 @@ export default function PaymentForm({
   const [error, setError] = useState<string | null>(null);
   const [biometricVerified, setBiometricVerified] = useState(false);
   const [showBiometricPrompt, setShowBiometricPrompt] = useState(true);
+  const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
 
   const discount = calculateDiscount(amountCents, {
     hasOtherRegistrations,
     isReturningFamily,
     sessionStartDate: sessionStartDate ? new Date(sessionStartDate) : undefined,
   });
+
+  // ── Apple Pay / Google Pay via Payment Request API ────────────────────────
+  useEffect(() => {
+    if (!stripe || isDemo || !clientSecret) return;
+
+    const finalAmountCents = discount.finalPrice;
+
+    const pr = stripe.paymentRequest({
+      country: 'US',
+      currency: 'usd',
+      total: {
+        label: programName,
+        amount: finalAmountCents,
+      },
+      requestPayerName: false,
+      requestPayerEmail: false,
+    });
+
+    // Only show the button if Apple Pay / Google Pay is available
+    pr.canMakePayment().then((result) => {
+      if (result) {
+        setPaymentRequest(pr);
+      }
+    });
+
+    pr.on('paymentmethod', async (ev) => {
+      // Confirm the payment without redirecting — we handle the UX ourselves
+      const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+        clientSecret,
+        { payment_method: ev.paymentMethod.id },
+        { handleActions: false },
+      );
+
+      if (confirmError) {
+        ev.complete('fail');
+        setError(confirmError.message ?? 'Express payment failed. Please try again.');
+      } else if (paymentIntent?.status === 'requires_action') {
+        // 3D Secure required — fall back to the standard card flow
+        ev.complete('success');
+        const { error: actionError } = await stripe.confirmCardPayment(clientSecret);
+        if (actionError) {
+          setError(actionError.message ?? 'Payment authentication failed.');
+        } else {
+          window.location.href = `${window.location.origin}/register?token=${registrationToken}&payment_status=success`;
+        }
+      } else {
+        ev.complete('success');
+        window.location.href = `${window.location.origin}/register?token=${registrationToken}&payment_status=success`;
+      }
+    });
+
+    return () => {
+      // Clean up listener on re-render (e.g. plan or discount changes)
+      pr.off('paymentmethod');
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stripe, isDemo, clientSecret, discount.finalPrice, programName, registrationToken]);
+  // ──────────────────────────────────────────────────────────────────────────
 
   function handlePlanChange(plan: PlanType) {
     setSelectedPlan(plan);
@@ -138,6 +199,30 @@ export default function PaymentForm({
 
       {!isDemo && clientSecret && (
         <div className="space-y-3">
+          {/* Express checkout — Apple Pay / Google Pay */}
+          {paymentRequest && (
+            <div className="space-y-3">
+              <h3 className="font-semibold text-gray-900">Express Checkout</h3>
+              <PaymentRequestButtonElement
+                options={{
+                  paymentRequest,
+                  style: {
+                    paymentRequestButton: {
+                      theme: 'dark',
+                      height: '48px',
+                      type: 'buy',
+                    },
+                  },
+                }}
+              />
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-gray-200" />
+                <span className="text-xs text-gray-400 font-medium">or pay with card</span>
+                <div className="h-px flex-1 bg-gray-200" />
+              </div>
+            </div>
+          )}
+
           <h3 className="font-semibold text-gray-900">Payment Details</h3>
           <div className="border border-gray-200 rounded-xl p-4 bg-white">
             <PaymentElement

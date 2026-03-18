@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { downloadICS } from '../../utils/calendarExport';
 import { BiometricSetupPrompt } from './BiometricAuthPrompt';
+import { BiometricSettings } from './BiometricSettings';
 
 interface RegistrationConfirmationProps {
   childName: string;
@@ -175,13 +176,19 @@ export default function RegistrationConfirmation({
               </ul>
             </div>
 
-            {/* Biometric setup opt-in for new users */}
+            {/* Biometric auth — first-time setup prompt, then settings management */}
             {!isDemo && parentEmail && !biometricSetupDone && (
               <BiometricSetupPrompt
                 userEmail={parentEmail}
                 userName={parentName || parentEmail}
                 onSetupComplete={() => setBiometricSetupDone(true)}
                 onSkip={() => setBiometricSetupDone(true)}
+              />
+            )}
+            {!isDemo && biometricSetupDone && (
+              <BiometricSettings
+                userEmail={parentEmail}
+                userName={parentName || parentEmail}
               />
             )}
 

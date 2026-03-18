@@ -1,7 +1,9 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { Send, AlertCircle, Star, Sparkles, RotateCcw } from 'lucide-react';
+import { Send, AlertCircle, Star, Sparkles, RotateCcw, Mic } from 'lucide-react';
 import { MessageBubble } from './MessageBubble';
 import { useConversation } from '../../hooks/useConversation';
+import { useVoiceInput } from '../../hooks/useVoiceInput';
+import { VoiceIndicator } from './VoiceIndicator';
 
 interface ChatInterfaceProps {
   organizationId: string;
@@ -114,7 +116,45 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
   }, [messages.length, isReady]);
 
   const [sessionEnded, setSessionEnded] = useState(false);
+  const [showVoiceIndicator, setShowVoiceIndicator] = useState(false);
   const isSendingRef = useRef(false);
+
+  // ── Voice input ────────────────────────────────────────────────────────────
+  const handleVoiceFinal = useCallback((text: string) => {
+    setShowVoiceIndicator(false);
+    // Auto-send the recognized text directly into the chat
+    if (text.trim() && !isSendingRef.current) {
+      isSendingRef.current = true;
+      setError(null);
+      sendMessage(text.trim()).finally(() => {
+        isSendingRef.current = false;
+      });
+    }
+  }, [sendMessage]);
+
+  const {
+    isSupported: voiceSupported,
+    isListening,
+    interimTranscript,
+    error: voiceError,
+    startListening,
+    stopListening,
+  } = useVoiceInput(handleVoiceFinal);
+
+  const handleVoiceToggle = useCallback(() => {
+    if (isListening) {
+      stopListening();
+    } else {
+      setShowVoiceIndicator(true);
+      startListening();
+    }
+  }, [isListening, startListening, stopListening]);
+
+  const handleVoiceCancel = useCallback(() => {
+    stopListening();
+    setShowVoiceIndicator(false);
+  }, [stopListening]);
+  // ──────────────────────────────────────────────────────────────────────────
 
   const handleSendMessage = async (messageOverride?: string) => {
     const messageContent = messageOverride || inputValue;
@@ -390,6 +430,17 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
             )}
           </div>
 
+          {/* Voice input overlay */}
+          {showVoiceIndicator && (
+            <VoiceIndicator
+              isListening={isListening}
+              interimTranscript={interimTranscript}
+              error={voiceError}
+              onStop={stopListening}
+              onCancel={handleVoiceCancel}
+            />
+          )}
+
           <div className="p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] sm:pb-3 border-t border-slate-800 bg-slate-900 flex-shrink-0">
             <div className="flex gap-2">
               <input
@@ -401,6 +452,20 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
                 disabled={isLoading || !isReady || sessionEnded}
                 className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               />
+              {voiceSupported && (
+                <button
+                  onClick={handleVoiceToggle}
+                  disabled={isLoading || !isReady || sessionEnded}
+                  title={isListening ? 'Stop recording' : 'Speak your message'}
+                  className={`px-3 py-2 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                    isListening
+                      ? 'bg-red-500 text-white animate-pulse'
+                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white'
+                  }`}
+                >
+                  <Mic className="w-4 h-4" />
+                </button>
+              )}
               <button
                 onClick={() => handleSendMessage()}
                 disabled={!inputValue.trim() || isLoading || !isReady || sessionEnded}
