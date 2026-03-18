@@ -45,6 +45,8 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "
 const CART_RECOVERY_WEBHOOK_KEY = Deno.env.get("CART_RECOVERY_WEBHOOK_KEY") ?? "";
 const N8N_WEBHOOK_URL = Deno.env.get("N8N_WEBHOOK_URL") ??
   "https://healthrocket.app.n8n.cloud/webhook/kai-conversation";
+// Base URL for deep links in recovery emails — must be absolute for email clients
+const KAIRO_APP_URL = Deno.env.get("KAIRO_APP_URL") ?? "https://kairo.app";
 
 // Recovery timing thresholds (in milliseconds)
 const FIRST_RECOVERY_MIN_MS = 30 * 60 * 1000;       // 30 minutes
@@ -189,7 +191,7 @@ Deno.serve(async (req: Request) => {
         amountCents: cart.cart_data.amount_cents ?? 0,
         stepAbandoned: cart.abandoned_at_state,
         recoveryAttempt: attempt,
-        deepLinkUrl: `/register?token=${token}`,
+        deepLinkUrl: `${KAIRO_APP_URL}/register?token=${token}`,
       };
 
       const triggered = await triggerN8nRecoveryEmail(payload);
@@ -247,7 +249,7 @@ Deno.serve(async (req: Request) => {
           amountCents: cart.cart_data.amount_cents ?? 0,
           stepAbandoned: cart.abandoned_at_state,
           recoveryAttempt: attempt,
-          deepLinkUrl: `/register?token=${token}`,
+          deepLinkUrl: `${KAIRO_APP_URL}/register?token=${token}`,
         };
 
         const triggered = await triggerN8nRecoveryEmail(payload);
