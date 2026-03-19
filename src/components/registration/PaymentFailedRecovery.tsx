@@ -7,7 +7,7 @@
  * Stage 3.1 — Failed Payment Recovery
  */
 
-import { AlertCircle, RefreshCw, CreditCard, MessageCircle, ChevronRight, PhoneCall } from 'lucide-react';
+import { AlertCircle, RefreshCw, CreditCard, MessageCircle, ChevronRight, ArrowLeft } from 'lucide-react';
 import type { PaymentFailureReason } from './PaymentForm';
 
 interface PaymentFailedRecoveryProps {
@@ -178,7 +178,7 @@ export default function PaymentFailedRecovery({
           onClick={onGoBack}
           className="w-full flex items-center justify-center gap-2 px-4 py-3 text-gray-500 hover:text-gray-700 text-sm transition-colors"
         >
-          <PhoneCall className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4" />
           <span>Start a New Registration</span>
         </button>
       </div>

@@ -277,7 +277,7 @@ export function getStrings(lang: LanguageCode): LanguageStrings {
 /** Utility: fill template variables in a translation string */
 export function t(template: string, vars: Record<string, string> = {}): string {
   return Object.entries(vars).reduce(
-    (str, [key, value]) => str.replace(`{${key}}`, value),
+    (str, [key, value]) => str.replaceAll(`{${key}}`, value),
     template
   );
 }
