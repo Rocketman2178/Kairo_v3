@@ -527,7 +527,7 @@ Research required to inform Kairo's tiered pricing model.
 - [x] Web Speech API integration — `useVoiceInput` hook (webkit prefix handled, cross-browser)
 - [x] Voice activity detection — interim transcript updates live while user speaks
 - [x] Speech-to-text transcription — final transcript auto-sent into Kai chat
-- [ ] Text-to-speech responses — Kai reads responses aloud (deferred)
+- [x] Text-to-speech responses — Kai reads responses aloud via `useTtsOutput` hook (Web Speech API, language-aware, markdown stripped)
 - [x] Fallback to text input — mic button hidden when API unsupported; text input always available
 - [x] Visual waveform feedback — `VoiceIndicator` overlay with animated emerald pulse rings
 - [ ] Phone system integration option (IVR hybrid: "Press 1 for Kai, Press 2 for office")
@@ -535,12 +535,12 @@ Research required to inform Kairo's tiered pricing model.
 #### 2B.2 Multi-Language Support (Tiger Tank Priority)
 **Tiger Tank Insight:** Call data analysis identified Cantonese as needed language
 
-- [ ] English (primary)
-- [ ] Spanish (secondary) - HIGH PRIORITY
+- [x] English (primary) — full EN translation strings in `languageService.ts`
+- [x] Spanish (secondary) - HIGH PRIORITY — full ES translation strings; toggle in chat header
 - [ ] Cantonese (tertiary) - Identified from call data analysis
-- [ ] Language detection (automatic)
-- [ ] Translation layer with cultural adaptation
-- [ ] Language preference saved to family profile
+- [x] Language detection (automatic) — reads `navigator.language`, falls back to EN
+- [x] Translation layer with cultural adaptation — `getStrings(lang)` + `t(template, vars)` interpolation
+- [ ] Language preference saved to family profile (currently saved to localStorage)
 
 #### 2B.3 Accent Variations (Tiger Tank Request)
 **Customer Request:** English with Spanish accent for Miami market, British for soccer
@@ -610,7 +610,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [x] Stripe integration — `create-payment-intent` edge function deployed; reads amount from DB, supports all 4 plan types, graceful demo fallback
 - [x] Apple Pay / Google Pay — `PaymentRequestButtonElement` shown above card form when browser supports it; express checkout redirects to same confirmation URL; 3DS handled
 - [ ] Saved payment methods for returning families
-- [ ] Failed payment recovery
+- [x] Failed payment recovery — `PaymentFailedRecovery` panel with contextual error messages, retry, different card, and support actions; `classifyStripeError` maps decline codes to friendly UX
 
 #### 3.1.1 Biometric Authentication (Priority: MEDIUM) - NEW Jan 2026
 **Customer Request:** Face recognition and biometric login options

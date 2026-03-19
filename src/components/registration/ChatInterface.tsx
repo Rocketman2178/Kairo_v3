@@ -1,9 +1,19 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { Send, AlertCircle, Star, Sparkles, RotateCcw, Mic } from 'lucide-react';
+import { Send, AlertCircle, Star, Sparkles, RotateCcw, Mic, Volume2, VolumeX } from 'lucide-react';
 import { MessageBubble } from './MessageBubble';
 import { useConversation } from '../../hooks/useConversation';
 import { useVoiceInput } from '../../hooks/useVoiceInput';
+import { useTtsOutput } from '../../hooks/useTtsOutput';
 import { VoiceIndicator } from './VoiceIndicator';
+import {
+  getStoredLanguage,
+  setStoredLanguage,
+  getStrings,
+  t,
+  SUPPORTED_LANGUAGES,
+  LANGUAGE_LABELS,
+  type LanguageCode,
+} from '../../services/ai/languageService';
 
 interface ChatInterfaceProps {
   organizationId: string;
@@ -15,16 +25,30 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
   const [inputValue, setInputValue] = useState('');
   const [showFallbackForm, setShowFallbackForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [language, setLanguage] = useState<LanguageCode>(getStoredLanguage);
+  const [ttsEnabled, setTtsEnabled] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const hasAddedInitialMessage = useRef(false);
   const hasAddedFallbackMessage = useRef(false);
+  const lastSpokenMessageId = useRef<string | null>(null);
+
+  const strings = getStrings(language);
+
+  const handleLanguageToggle = useCallback(() => {
+    const currentIdx = SUPPORTED_LANGUAGES.indexOf(language);
+    const nextLang = SUPPORTED_LANGUAGES[(currentIdx + 1) % SUPPORTED_LANGUAGES.length];
+    setLanguage(nextLang);
+    setStoredLanguage(nextLang);
+    // Reset initial message so Kai greets in the new language
+    hasAddedInitialMessage.current = false;
+  }, [language]);
 
   const onErrorCallback = useCallback((err: Error) => {
     console.error('Conversation error:', err);
-    const errorMessage = err.message || 'Something went wrong. Please try again.';
+    const errorMessage = err.message || strings.errorGeneric;
     setError(errorMessage);
-  }, []);
+  }, [strings.errorGeneric]);
 
   const onFallbackCallback = useCallback(() => {
     setShowFallbackForm(true);
@@ -103,17 +127,43 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
 
   const isReady = Boolean(conversationId);
 
+  const greetingRef = useRef(strings.greeting);
+  useEffect(() => {
+    greetingRef.current = strings.greeting;
+  }, [strings.greeting]);
+
   useEffect(() => {
     if (hasAddedInitialMessage.current) return;
-    if (!isReady) return; // Wait for conversation init (may restore messages)
+    if (!isReady) return;
     if (messages.length === 0) {
       hasAddedInitialMessage.current = true;
-      addAssistantMessageRef.current("Hi there! I'm Kai, your registration assistant for Soccer Stars. I can help you find the perfect soccer program for your child and get them signed up in just a few minutes. What would you like help with today?");
+      addAssistantMessageRef.current(greetingRef.current);
     } else {
-      // Messages were restored from a previous session
       hasAddedInitialMessage.current = true;
     }
   }, [messages.length, isReady]);
+
+  // ── TTS — speak new Kai messages when TTS is enabled ─────────────────────
+  const { isSupported: ttsSupported, isSpeaking, speak: ttsSpeak, stop: ttsStop } = useTtsOutput({ language });
+
+  useEffect(() => {
+    if (!ttsEnabled || !ttsSupported || isLoading) return;
+    // Find the most recent assistant message that hasn't been spoken yet
+    const assistantMessages = messages.filter((m) => m.role === 'assistant');
+    if (assistantMessages.length === 0) return;
+    const latest = assistantMessages[assistantMessages.length - 1];
+    if (latest.id === lastSpokenMessageId.current) return;
+    lastSpokenMessageId.current = latest.id;
+    ttsSpeak(latest.content);
+  }, [messages, isLoading, ttsEnabled, ttsSupported, ttsSpeak]);
+
+  const handleTtsToggle = useCallback(() => {
+    if (isSpeaking) {
+      ttsStop();
+    }
+    setTtsEnabled((prev) => !prev);
+  }, [isSpeaking, ttsStop]);
+  // ─────────────────────────────────────────────────────────────────────────
 
   const [sessionEnded, setSessionEnded] = useState(false);
   const [showVoiceIndicator, setShowVoiceIndicator] = useState(false);
@@ -122,7 +172,6 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
   // ── Voice input ────────────────────────────────────────────────────────────
   const handleVoiceFinal = useCallback((text: string) => {
     setShowVoiceIndicator(false);
-    // Auto-send the recognized text directly into the chat
     if (text.trim() && !isSendingRef.current) {
       isSendingRef.current = true;
       setError(null);
@@ -165,19 +214,17 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
     setError(null);
 
     try {
-      if (messageContent.toLowerCase() === "no, that's all") {
+      if (messageContent.toLowerCase() === strings.noThanks.toLowerCase() || messageContent.toLowerCase() === "no, that's all") {
         addUserMessage(messageContent);
         const childName = context.childName || 'your child';
         setTimeout(() => {
-          addAssistantMessage(
-            `Thanks for registering ${childName}! If you need anything else in the future, I'm always here to help. Have a great day!`
-          );
+          addAssistantMessage(t(strings.sessionEndedMessage, { childName }));
         }, 500);
         setSessionEnded(true);
         return;
       }
 
-      if (messageContent.toLowerCase() === 'sign up another child') {
+      if (messageContent.toLowerCase() === 'sign up another child' || messageContent.toLowerCase() === strings.signUpAnotherChild.toLowerCase()) {
         const cleanOverride: Partial<typeof context> = {
           childName: undefined,
           childAge: undefined,
@@ -262,8 +309,8 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
                     <Star className="w-5 h-5 fill-emerald-600" />
                   </div>
                   <div>
-                    <h1 className="font-semibold text-sm">Complete Registration</h1>
-                    <p className="text-emerald-100 text-xs">Just a few more details</p>
+                    <h1 className="font-semibold text-sm">{strings.fallbackTitle}</h1>
+                    <p className="text-emerald-100 text-xs">{strings.fallbackSubtitle}</p>
                   </div>
                 </div>
                 <button
@@ -277,7 +324,7 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
                   className="flex items-center gap-1 px-2 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-medium transition-colors"
                 >
                   <RotateCcw className="w-3 h-3" />
-                  <span>Try Chat</span>
+                  <span>{strings.tryChat}</span>
                 </button>
               </div>
             </div>
@@ -287,45 +334,45 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
                   <div className="w-12 h-12 bg-emerald-600/20 rounded-full flex items-center justify-center mx-auto mb-3">
                     <Star className="w-6 h-6 text-emerald-400" />
                   </div>
-                  <p className="text-white font-medium mb-2">Registration Received!</p>
-                  <p className="text-sm text-slate-400">We&apos;ll follow up with program details at {fallbackForm.parentEmail}</p>
+                  <p className="text-white font-medium mb-2">{strings.fallbackSuccessTitle}</p>
+                  <p className="text-sm text-slate-400">{strings.fallbackSuccessMessage} {fallbackForm.parentEmail}</p>
                 </div>
               ) : (
                 <>
-                  <p className="text-xs text-slate-400">Our chat assistant is temporarily unavailable. Complete this form and we&apos;ll get back to you.</p>
+                  <p className="text-xs text-slate-400">{strings.fallbackUnavailableNote}</p>
                   <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Child&apos;s Name *</label>
-                    <input value={fallbackForm.childName} onChange={(e) => setFallbackForm(f => ({...f, childName: e.target.value}))} className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="First name" />
+                    <label className="text-xs text-slate-400 mb-1 block">{strings.fallbackChildName}</label>
+                    <input value={fallbackForm.childName} onChange={(e) => setFallbackForm(f => ({...f, childName: e.target.value}))} className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder={strings.fallbackChildNamePlaceholder} />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Child&apos;s Age</label>
+                    <label className="text-xs text-slate-400 mb-1 block">{strings.fallbackChildAge}</label>
                     <input value={fallbackForm.childAge} onChange={(e) => setFallbackForm(f => ({...f, childAge: e.target.value}))} type="number" min="2" max="18" className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Age" />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Preferred Program</label>
-                    <input value={fallbackForm.preferredProgram} onChange={(e) => setFallbackForm(f => ({...f, preferredProgram: e.target.value}))} className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="e.g., Soccer Stars, Mini Stars" />
+                    <label className="text-xs text-slate-400 mb-1 block">{strings.fallbackProgram}</label>
+                    <input value={fallbackForm.preferredProgram} onChange={(e) => setFallbackForm(f => ({...f, preferredProgram: e.target.value}))} className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder={strings.fallbackProgramPlaceholder} />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-400 mb-1 block">City</label>
+                    <label className="text-xs text-slate-400 mb-1 block">{strings.fallbackCity}</label>
                     <input value={fallbackForm.city} onChange={(e) => setFallbackForm(f => ({...f, city: e.target.value}))} className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="City" />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Schedule Preference</label>
-                    <input value={fallbackForm.schedule} onChange={(e) => setFallbackForm(f => ({...f, schedule: e.target.value}))} className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="e.g., Saturdays morning" />
+                    <label className="text-xs text-slate-400 mb-1 block">{strings.fallbackSchedule}</label>
+                    <input value={fallbackForm.schedule} onChange={(e) => setFallbackForm(f => ({...f, schedule: e.target.value}))} className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder={strings.fallbackSchedulePlaceholder} />
                   </div>
                   <div className="border-t border-slate-700 pt-3 mt-1">
-                    <p className="text-xs text-slate-400 mb-2 font-medium">Parent Contact Info</p>
+                    <p className="text-xs text-slate-400 mb-2 font-medium">{strings.fallbackParentContact}</p>
                   </div>
                   <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Your Name</label>
+                    <label className="text-xs text-slate-400 mb-1 block">{strings.fallbackParentName}</label>
                     <input value={fallbackForm.parentName} onChange={(e) => setFallbackForm(f => ({...f, parentName: e.target.value}))} className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Full name" />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Email *</label>
+                    <label className="text-xs text-slate-400 mb-1 block">{strings.fallbackEmail}</label>
                     <input value={fallbackForm.parentEmail} onChange={(e) => setFallbackForm(f => ({...f, parentEmail: e.target.value}))} type="email" className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="email@example.com" />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Phone</label>
+                    <label className="text-xs text-slate-400 mb-1 block">{strings.fallbackPhone}</label>
                     <input value={fallbackForm.parentPhone} onChange={(e) => setFallbackForm(f => ({...f, parentPhone: e.target.value}))} type="tel" className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="(555) 123-4567" />
                   </div>
                   <button
@@ -333,7 +380,7 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
                     disabled={!fallbackForm.childName || !fallbackForm.parentEmail || fallbackSubmitting}
                     className="w-full py-2.5 bg-gradient-to-r from-emerald-600 to-teal-500 text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity mt-2"
                   >
-                    {fallbackSubmitting ? 'Submitting...' : 'Submit Registration'}
+                    {fallbackSubmitting ? strings.fallbackSubmitting : strings.fallbackSubmit}
                   </button>
                 </>
               )}
@@ -356,25 +403,53 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
                 <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-emerald-600">
                   <Star className="w-5 h-5 fill-emerald-600" />
                 </div>
-              <div>
-                <h1 className="font-semibold text-sm">Soccer Stars</h1>
-                <p className="text-emerald-100 text-xs">Youth Soccer Programs</p>
+                <div>
+                  <h1 className="font-semibold text-sm">Soccer Stars</h1>
+                  <p className="text-emerald-100 text-xs">Youth Soccer Programs</p>
+                </div>
               </div>
-              </div>
-              {messages.length > 1 && (
+              <div className="flex items-center gap-1.5">
+                {/* Language toggle */}
                 <button
-                  onClick={() => {
-                    hasAddedInitialMessage.current = false;
-                    setSessionEnded(false);
-                    resetConversation();
-                  }}
-                  className="flex items-center gap-1 px-2 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-medium transition-colors"
-                  title="Start new conversation"
+                  onClick={handleLanguageToggle}
+                  title={`Switch language (current: ${LANGUAGE_LABELS[language]})`}
+                  className="px-2 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-bold transition-colors min-w-[32px] text-center"
                 >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>New</span>
+                  {LANGUAGE_LABELS[language]}
                 </button>
-              )}
+                {/* TTS toggle — only shown if supported */}
+                {ttsSupported && (
+                  <button
+                    onClick={handleTtsToggle}
+                    title={ttsEnabled ? strings.stopSpeaking : strings.speakResponses}
+                    className={`px-2 py-1 rounded-lg text-xs font-medium transition-colors ${
+                      ttsEnabled
+                        ? 'bg-white/30 text-white'
+                        : 'bg-white/20 hover:bg-white/30 text-white/80'
+                    }`}
+                  >
+                    {ttsEnabled && isSpeaking ? (
+                      <VolumeX className="w-3.5 h-3.5" />
+                    ) : (
+                      <Volume2 className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                )}
+                {messages.length > 1 && (
+                  <button
+                    onClick={() => {
+                      hasAddedInitialMessage.current = false;
+                      setSessionEnded(false);
+                      resetConversation();
+                    }}
+                    className="flex items-center gap-1 px-2 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-medium transition-colors"
+                    title="Start new conversation"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>{strings.startNew}</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -399,7 +474,7 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
                     const childName = context.childName || 'your child';
                     addAssistantMessage(
                       `I've signed up ${childName} for ${programName}! Would you like to sign up another child?`,
-                      ['Sign up another child', 'No, that\'s all']
+                      [strings.signUpAnotherChild, strings.noThanks]
                     );
                   }}
                   onJoinWaitlist={(sessionId, programName) => {
@@ -447,7 +522,7 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Type your message..."
+                placeholder={strings.chatPlaceholder}
                 maxLength={500}
                 disabled={isLoading || !isReady || sessionEnded}
                 className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
@@ -456,7 +531,7 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
                 <button
                   onClick={handleVoiceToggle}
                   disabled={isLoading || !isReady || sessionEnded}
-                  title={isListening ? 'Stop recording' : 'Speak your message'}
+                  title={isListening ? strings.stopRecording : strings.speakMessage}
                   className={`px-3 py-2 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                     isListening
                       ? 'bg-red-500 text-white animate-pulse'
@@ -475,7 +550,7 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
               </button>
             </div>
             <p className="text-[10px] text-slate-500 mt-2 text-center">
-              Powered by Kairo
+              {strings.poweredBy}
             </p>
           </div>
         </div>

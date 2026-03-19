@@ -5,6 +5,65 @@ Format: `## [Month Year] - Title | Category | Description`
 
 ---
 
+## [March 19, 2026] - Multi-Language Support, Failed Payment Recovery & Text-to-Speech | Core Feature | High
+
+**Category:** Core Feature
+**Impact:** High — Closes 3 Stage 2B/3 items: Spanish language support for the registration flow, contextual payment failure recovery UI, and TTS so Kai can read responses aloud.
+
+**Description:**
+Three features implemented across the registration experience. Multi-Language Support (Stage 2B.2) adds a language service with full English/Spanish translations, a language toggle in the Kai chat header, and automatic browser-language detection persisted to localStorage. Failed Payment Recovery (Stage 3.1) adds a full-screen recovery panel when a Stripe payment fails — maps decline codes to friendly messages and offers "Try Again", "Use Different Card", and "Contact Support" actions without losing the user's registration data. Text-to-Speech (Stage 2B.1) completes the voice experience by allowing Kai to read responses aloud using the Web Speech API, with a speaker toggle in the chat header.
+
+### Feature 1: Multi-Language Support — English & Spanish (Stage 2B.2)
+- New `src/services/ai/languageService.ts` — language service with full EN/ES translation strings for all registration UI copy
+- `getStoredLanguage()` — reads preference from localStorage, falls back to browser `navigator.language`
+- `setStoredLanguage()` — persists language selection to localStorage
+- `getStrings(lang)` — returns the full `LanguageStrings` interface for the given language
+- `t(template, vars)` — interpolates variables into translation strings (e.g. `{childName}`)
+- `LANGUAGE_LOCALE` map — BCP-47 tags for Speech API (`en-US`, `es-US`)
+- `ChatInterface.tsx` updated — language toggle button (EN/ES) added to the header; all UI strings (placeholder, buttons, fallback form, messages) now use translations; Kai greeting is sent in the selected language on first message; resetting language triggers a fresh greeting
+- Language preference is per-session (localStorage) and survives page refresh
+
+### Feature 2: Failed Payment Recovery UI (Stage 3.1)
+- New `src/components/registration/PaymentFailedRecovery.tsx` — full recovery panel component
+  - Maps `PaymentFailureReason` enum to contextual headlines, descriptions, and tips
+  - Recovery actions: "Try Again" (same card), "Use Different Card" (resets PaymentIntent), "Contact Support" (mailto), "Start New Registration" (back to home)
+  - "Use Different Card" path calls `createPaymentIntent()` to issue a fresh PaymentIntent
+  - Reassurance note: "Your spot is still reserved. No charge was made."
+  - "Try Again" button hidden for reasons where retrying same details won't help (expired card, insufficient funds)
+- `PaymentForm.tsx` updated:
+  - New `PaymentFailureReason` exported type (`card_declined`, `insufficient_funds`, `expired_card`, `incorrect_cvc`, `processing_error`, `authentication_required`, `generic`)
+  - `classifyStripeError(code)` — maps Stripe decline/error codes to `PaymentFailureReason`
+  - New `onPaymentFailed?: (reason, stripeMessage?) => void` prop — fires on any Stripe error from card payment, express checkout, and 3DS flows
+- `Register.tsx` updated:
+  - `paymentFailure` state tracks `{ reason, stripeMessage }` when payment fails
+  - Step 2 header and PaymentForm/recovery panel swap based on failure state
+
+### Feature 3: Text-to-Speech Kai Responses (Stage 2B.1)
+- New `src/hooks/useTtsOutput.ts` — Web Speech API SpeechSynthesis wrapper hook
+  - `speak(text)` — cancels any current speech, strips markdown, speaks the text in the current language
+  - `stop()` — cancels ongoing speech
+  - `isSupported` — feature detection
+  - `isSpeaking` — live speaking state
+  - Language-aware: uses `LANGUAGE_LOCALE` to set `utterance.lang` so TTS engine uses the correct voice
+  - Markdown stripping: removes `**bold**`, `*italic*`, `[links](url)`, inline code, headings for clean speech
+- `ChatInterface.tsx` updated:
+  - TTS hook integrated; speaker button added to the header (only shown when `isSupported`)
+  - When TTS is enabled, each new assistant message is auto-spoken after it arrives (last spoken message tracked to prevent repeats)
+  - Speaker button shows `VolumeX` while speaking (allows stop), `Volume2` otherwise
+  - TTS disabled/stopped on language change to prevent language mismatch mid-sentence
+
+**Files Changed:**
+- `src/services/ai/languageService.ts` — **NEW** — Language service with EN/ES translations
+- `src/hooks/useTtsOutput.ts` — **NEW** — Web Speech API TTS hook
+- `src/components/registration/PaymentFailedRecovery.tsx` — **NEW** — Payment failure recovery panel
+- `src/components/registration/ChatInterface.tsx` — language toggle, TTS toggle, all strings from languageService
+- `src/components/registration/PaymentForm.tsx` — `PaymentFailureReason` type, `onPaymentFailed` prop, `classifyStripeError` helper
+- `src/pages/Register.tsx` — `paymentFailure` state, PaymentFailedRecovery integration
+
+**No new DB migrations** — all changes are frontend/UI layer.
+
+---
+
 ## [March 18, 2026] - Voice Registration, Apple Pay / Google Pay & Biometric Settings UI | Core Feature | High
 
 **Category:** Core Feature

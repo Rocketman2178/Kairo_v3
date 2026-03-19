@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase';
 import { getStripe, isStripeConfigured } from '../lib/stripe';
 import { useCartAbandonment } from '../hooks/useCartAbandonment';
 import PaymentForm from '../components/registration/PaymentForm';
+import type { PaymentFailureReason } from '../components/registration/PaymentForm';
+import PaymentFailedRecovery from '../components/registration/PaymentFailedRecovery';
 import RegistrationSteps from '../components/registration/RegistrationSteps';
 import RegistrationConfirmation from '../components/registration/RegistrationConfirmation';
 import type { PlanType } from '../utils/paymentPlans';
@@ -98,6 +100,10 @@ export default function Register() {
   const [hasOtherRegistrations, setHasOtherRegistrations] = useState(false);
   const [isReturningFamily, setIsReturningFamily] = useState(false);
   const [existingFamilyId, setExistingFamilyId] = useState<string | null>(null);
+  const [paymentFailure, setPaymentFailure] = useState<{
+    reason: PaymentFailureReason;
+    stripeMessage?: string;
+  } | null>(null);
   const emailLookupTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [formData, setFormData] = useState<FormData>({
     parentFirstName: '',
@@ -827,27 +833,50 @@ export default function Register() {
         {step === 2 && (
           <>
             <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-6 text-white">
-              <h1 className="text-xl font-bold">Payment</h1>
+              <h1 className="text-xl font-bold">
+                {paymentFailure ? 'Payment Issue' : 'Payment'}
+              </h1>
               <p className="text-blue-100 text-sm mt-1">
-                Choose a plan and complete your payment
+                {paymentFailure
+                  ? 'Let\'s get your registration sorted out'
+                  : 'Choose a plan and complete your payment'}
               </p>
             </div>
 
             <div className="p-6">
-              <PaymentForm
-                amountCents={registration?.amountCents || 0}
-                programName={registration?.session.programName || ''}
-                sessionStartDate={registration?.session.startDate}
-                sessionWeeks={9}
-                hasOtherRegistrations={hasOtherRegistrations}
-                isReturningFamily={isReturningFamily}
-                clientSecret={clientSecret}
-                isDemo={isDemo}
-                onPaymentPlanChange={setPaymentPlan}
-                onDemoSubmit={handleDemoPayment}
-                registrationToken={token || ''}
-                parentEmail={formData.email}
-              />
+              {paymentFailure ? (
+                <PaymentFailedRecovery
+                  reason={paymentFailure.reason}
+                  stripeMessage={paymentFailure.stripeMessage}
+                  programName={registration?.session.programName || ''}
+                  amountCents={registration?.amountCents || 0}
+                  onRetry={() => setPaymentFailure(null)}
+                  onUseDifferentCard={() => {
+                    setPaymentFailure(null);
+                    setClientSecret(null);
+                    createPaymentIntent();
+                  }}
+                  onGoBack={() => navigate('/')}
+                />
+              ) : (
+                <PaymentForm
+                  amountCents={registration?.amountCents || 0}
+                  programName={registration?.session.programName || ''}
+                  sessionStartDate={registration?.session.startDate}
+                  sessionWeeks={9}
+                  hasOtherRegistrations={hasOtherRegistrations}
+                  isReturningFamily={isReturningFamily}
+                  clientSecret={clientSecret}
+                  isDemo={isDemo}
+                  onPaymentPlanChange={setPaymentPlan}
+                  onDemoSubmit={handleDemoPayment}
+                  onPaymentFailed={(reason, stripeMessage) => {
+                    setPaymentFailure({ reason, stripeMessage });
+                  }}
+                  registrationToken={token || ''}
+                  parentEmail={formData.email}
+                />
+              )}
             </div>
           </>
         )}

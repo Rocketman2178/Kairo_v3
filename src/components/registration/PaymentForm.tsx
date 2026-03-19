@@ -13,6 +13,15 @@ import BiometricAuthPrompt, { BiometricSuccess } from './BiometricAuthPrompt';
 import { calculateDiscount } from '../../utils/discountCalculator';
 import type { PlanType, PaymentFeeConfig } from '../../utils/paymentPlans';
 
+export type PaymentFailureReason =
+  | 'card_declined'
+  | 'insufficient_funds'
+  | 'expired_card'
+  | 'incorrect_cvc'
+  | 'processing_error'
+  | 'authentication_required'
+  | 'generic';
+
 interface PaymentFormProps {
   amountCents: number;
   programName: string;
@@ -24,10 +33,35 @@ interface PaymentFormProps {
   isDemo: boolean;
   onPaymentPlanChange: (plan: PlanType) => void;
   onDemoSubmit: () => void;
+  onPaymentFailed?: (reason: PaymentFailureReason, stripeMessage?: string) => void;
   registrationToken: string;
   feeConfig?: PaymentFeeConfig;
   /** Parent email — passed to biometric prompt for personalization */
   parentEmail?: string;
+}
+
+/** Map a Stripe decline code to our PaymentFailureReason enum */
+function classifyStripeError(code?: string): PaymentFailureReason {
+  switch (code) {
+    case 'card_declined':
+    case 'do_not_honor':
+    case 'generic_decline':
+      return 'card_declined';
+    case 'insufficient_funds':
+      return 'insufficient_funds';
+    case 'expired_card':
+      return 'expired_card';
+    case 'incorrect_cvc':
+    case 'incorrect_number':
+      return 'incorrect_cvc';
+    case 'authentication_required':
+    case 'payment_intent_authentication_failure':
+      return 'authentication_required';
+    case 'processing_error':
+      return 'processing_error';
+    default:
+      return 'generic';
+  }
 }
 
 export default function PaymentForm({
@@ -42,6 +76,7 @@ export default function PaymentForm({
   isDemo,
   onPaymentPlanChange,
   onDemoSubmit,
+  onPaymentFailed,
   registrationToken,
   feeConfig,
 }: PaymentFormProps) {
@@ -94,13 +129,17 @@ export default function PaymentForm({
 
       if (confirmError) {
         ev.complete('fail');
-        setError(confirmError.message ?? 'Express payment failed. Please try again.');
+        const msg = confirmError.message ?? 'Express payment failed. Please try again.';
+        setError(msg);
+        onPaymentFailed?.(classifyStripeError(confirmError.decline_code ?? confirmError.code), msg);
       } else if (paymentIntent?.status === 'requires_action') {
         // 3D Secure required — fall back to the standard card flow
         ev.complete('success');
         const { error: actionError } = await stripe.confirmCardPayment(clientSecret);
         if (actionError) {
-          setError(actionError.message ?? 'Payment authentication failed.');
+          const msg = actionError.message ?? 'Payment authentication failed.';
+          setError(msg);
+          onPaymentFailed?.('authentication_required', msg);
         } else {
           window.location.href = `${window.location.origin}/register?token=${registrationToken}&payment_status=success`;
         }
@@ -154,11 +193,13 @@ export default function PaymentForm({
     });
 
     if (confirmError) {
-      if (confirmError.type === 'card_error' || confirmError.type === 'validation_error') {
-        setError(confirmError.message || 'Payment failed. Please try again.');
-      } else {
-        setError('An unexpected error occurred. Please try again.');
-      }
+      const isCardOrValidation =
+        confirmError.type === 'card_error' || confirmError.type === 'validation_error';
+      const msg = isCardOrValidation
+        ? (confirmError.message || 'Payment failed. Please try again.')
+        : 'An unexpected error occurred. Please try again.';
+      setError(msg);
+      onPaymentFailed?.(classifyStripeError(confirmError.decline_code ?? confirmError.code), msg);
       setProcessing(false);
     }
   }
