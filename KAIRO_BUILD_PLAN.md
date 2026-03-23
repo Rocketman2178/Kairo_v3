@@ -1,6 +1,6 @@
 # Kairo Platform - Strategic Build Plan
 
-**Version:** 2.14
+**Version:** 2.15
 **Last Updated:** March 23, 2026
 **Current Stage:** Stage 2 COMPLETE | Stage 3 IN PROGRESS (Payments & Registration Flow)
 
@@ -195,6 +195,20 @@ Transform youth sports registration from a painful, complicated process into a s
   - Good at structured data extraction
   - JSON response mode for reliable parsing
   - Temperature: 0.2 for consistent responses
+
+#### Gemini API Enhancement Roadmap (March 2026 Research)
+**Source:** Comprehensive review of [Gemini API Documentation](https://ai.google.dev/gemini-api/docs) — capabilities audit against current Kai implementation.
+
+**Current Gaps Identified:**
+1. **No Function Calling** — Kai uses prompt engineering + if/else routing for intent handling. Gemini function calling would let the model invoke structured tools directly (`search_programs`, `check_availability`, `add_to_waitlist`, etc.), making Kai more reliable and extensible.
+2. **No Response Schema Validation** — Using `responseMimeType: 'application/json'` but no `response_json_schema`. Responses can be any JSON shape, causing parse failures.
+3. **No Context Caching** — System prompt + program catalog rebuilt on every request. Explicit caching (1-hour TTL) would reduce cost and latency significantly.
+4. **No Thinking Mode** — Complex recommendation matching (age + skill + location + schedule + budget) would benefit from Gemini's reasoning capabilities.
+5. **No Google Search Grounding** — Parent FAQs about activities go unanswered or risk hallucination. Grounding provides cited, accurate answers.
+6. **No Gemini Live API** — Voice currently uses Web Speech API (browser-only). Gemini Live API enables server-side real-time voice conversations in 70+ languages with natural tone adaptation.
+7. **Legacy API Usage** — Raw REST `fetch()` calls to `v1beta` endpoint instead of official Gemini SDK.
+
+**Implementation plan detailed in Stage 12: Advanced AI & Optimization.**
 
 **Production Configuration:**
 - **Workflow URL:** `https://healthrocket.app.n8n.cloud/webhook/kai-conversation`
@@ -1796,7 +1810,115 @@ Registration Form → Payment → Confirmed Registration → Return User
 ---
 
 ### Stage 12: Advanced AI & Optimization (PLANNED)
-**Goals:** Predictive models, optimization algorithms
+**Goals:** Predictive models, optimization algorithms, Gemini API modernization
+**Updated:** March 2026 — Gemini API capabilities audit integrated
+
+#### 12.1 Gemini Function Calling (HIGH PRIORITY)
+**Why:** Replaces brittle if/else intent routing with structured, model-driven tool invocation. Makes Kai naturally extensible — adding a new capability means defining a new function declaration, not rewriting prompt logic.
+
+**Function Declarations to Define:**
+- [ ] `search_programs(age, location, activity_type, day_preference, skill_level)` — Find matching programs
+- [ ] `check_session_availability(session_id)` — Verify spots available
+- [ ] `calculate_pricing(session_id, family_id, child_count)` — Calculate pricing with discounts (sibling, early bird, returning)
+- [ ] `add_to_waitlist(session_id, child_name, child_age, family_id)` — Join waitlist with position tracking
+- [ ] `start_enrollment(session_id, family_id)` — Initiate registration flow
+- [ ] `get_program_details(program_id)` — Fetch full program information
+- [ ] `get_family_profile(family_id)` — Retrieve returning family data
+- [ ] `check_schedule_conflicts(family_id, proposed_session_id)` — Detect sibling/family scheduling conflicts
+
+**Implementation Notes:**
+- Use `AUTO` mode — model decides when to call functions vs. respond directly
+- Support parallel function calls (e.g., fetch availability + pricing simultaneously)
+- Support compositional calls (e.g., search programs → check availability → calculate pricing)
+- Each function returns structured data that the model synthesizes into conversational responses
+- Unique function call IDs for proper response mapping
+- Limit active tool set to 10-20 functions for optimal model performance
+
+#### 12.2 Response JSON Schema Enforcement
+**Why:** Guarantees every Kai response has a valid, predictable structure. Eliminates JSON parse failures and fallback handling.
+
+- [ ] Define strict JSON schema for Kai response format:
+  ```json
+  {
+    "message": "string (required)",
+    "nextState": "string (required)",
+    "extractedData": "object",
+    "quickReplies": "array of strings",
+    "recommendations": "array of session objects",
+    "progress": "number 0-100"
+  }
+  ```
+- [ ] Set `response_json_schema` in `generationConfig` alongside `responseMimeType`
+- [ ] Remove manual JSON parse try/catch fallback logic
+- [ ] Add semantic validation layer (schema guarantees syntax, not semantic correctness)
+
+#### 12.3 Gemini SDK Migration
+**Why:** Replace raw `fetch()` calls to `v1beta` REST endpoint with official Gemini SDK. Gains: automatic retries, better error handling, streaming support, easier access to new features.
+
+- [ ] Migrate N8N Gemini calls to use `@google/generative-ai` SDK (or equivalent for N8N)
+- [ ] Migrate legacy `kai-conversation` edge function (if still in use) to SDK
+- [ ] Pin model version explicitly (e.g., `gemini-2.5-flash` or `gemini-3-flash`) instead of `gemini-flash-latest` to prevent unexpected behavior changes
+- [ ] Implement proper error handling with SDK error types
+- [ ] Add request/response logging through SDK hooks
+
+#### 12.4 Context Caching (COST OPTIMIZATION)
+**Why:** System prompt + program catalog is large and doesn't change often. Caching avoids resending thousands of tokens on every request, reducing cost and latency.
+
+- [ ] Implement explicit context caching for system instruction + program catalog
+- [ ] Set TTL to 1 hour (programs don't change more frequently)
+- [ ] Cache per-organization (different orgs have different program catalogs)
+- [ ] Monitor cache hit rates and cost savings
+- [ ] Minimum token threshold: 1,024 tokens for Flash models (easily met by Kai's system prompt)
+- [ ] Cached content functions as prompt prefix — no behavior change, just cost reduction
+
+#### 12.5 Thinking Mode for Recommendations
+**Why:** Complex recommendation matching (age + skill level + location + schedule + budget + sibling coordination) benefits from model reasoning. Improves recommendation quality without significant latency cost.
+
+- [ ] Enable `thinkingLevel: "low"` for recommendation requests (search_programs, get_alternatives)
+- [ ] Enable `thinkingLevel: "medium"` for complex multi-child enrollment scenarios
+- [ ] Keep thinking disabled (`minimal`) for simple FAQ/chitchat responses
+- [ ] Optionally log thinking output for debugging recommendation quality
+- [ ] Monitor latency impact — thinking adds processing time
+
+#### 12.6 Google Search Grounding
+**Why:** Parents ask Kai general questions about activities ("Is swimming good for toddlers?", "What age should kids start soccer?"). Without grounding, Kai either refuses or risks hallucination. Google Search grounding provides accurate, cited answers.
+
+- [ ] Enable Google Search as a tool alongside function calling (tools can be combined)
+- [ ] Configure grounding for general knowledge queries only (not program/enrollment questions)
+- [ ] Implement citation rendering in chat UI (groundingChunks → clickable source links)
+- [ ] Display search suggestions using `searchEntryPoint` HTML/CSS
+- [ ] Monitor grounding usage for cost (billed per search query on Gemini 3+)
+
+#### 12.7 Gemini Live API — Voice Enrollment (DIFFERENTIATOR)
+**Why:** Current voice uses Web Speech API (browser-only, English-centric). Gemini Live API enables server-side real-time voice with 70+ languages, natural tone adaptation, and barge-in support. Major competitive differentiator — parents can literally talk to Kai.
+
+- [ ] Evaluate server-to-server vs. client-to-server WebSocket architecture
+- [ ] Implement WebSocket connection for real-time audio streaming
+- [ ] Input: 16-bit PCM audio at 16kHz from parent's microphone
+- [ ] Output: 24kHz audio responses from Kai
+- [ ] Enable barge-in (parent can interrupt Kai mid-response)
+- [ ] Integrate function calling within Live API (search programs, enroll by voice)
+- [ ] Audio transcription for conversation logging and compliance
+- [ ] Affective dialog — Kai adapts tone to match parent's mood/urgency
+- [ ] Phone system integration (IVR → Gemini Live API for voice-first enrollment)
+- [ ] Replaces/enhances Stage 2B.1 Web Speech API with server-side voice
+
+**Prerequisite:** Stage 2B voice features should be stable before migrating to Live API.
+
+#### 12.8 URL Context for Provider Enrichment (FUTURE)
+**Why:** Automatically enrich program descriptions by pulling in activity provider websites. Could be used during migration to import program info from competitor platforms.
+
+- [ ] Use URL context tool to fetch provider websites during program setup
+- [ ] Auto-generate program descriptions from provider content
+- [ ] Support up to 20 URLs per request (Gemini limit)
+- [ ] Useful for migration toolkit — import program details from iClassPro/competitor pages
+
+#### 12.9 Predictive AI Models
+- [ ] Enrollment demand forecasting
+- [ ] Churn prediction scoring
+- [ ] Optimal pricing recommendations
+- [ ] Capacity utilization optimization
+- [ ] Seasonal trend analysis
 
 ---
 
@@ -3065,4 +3187,4 @@ export interface HelpFAQItem {
 
 **Document Owner:** Development Team
 **Review Frequency:** After each stage completion
-**Last Reviewed:** March 12, 2026
+**Last Reviewed:** March 23, 2026
