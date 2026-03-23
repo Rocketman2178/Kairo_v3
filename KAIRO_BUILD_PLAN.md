@@ -1,8 +1,8 @@
 # Kairo Platform - Strategic Build Plan
 
-**Version:** 2.13
-**Last Updated:** March 11, 2026
-**Current Stage:** Stage 2 COMPLETE | Stage 3 Starting (Payments & Registration Flow)
+**Version:** 2.14
+**Last Updated:** March 23, 2026
+**Current Stage:** Stage 2 COMPLETE | Stage 3 IN PROGRESS (Payments & Registration Flow)
 
 ---
 
@@ -33,6 +33,45 @@ This version incorporates comprehensive feedback from the Tiger Tank session inc
 3. **Complex Payment Workflows** - Custom plans during registration, financial aid integration
 4. **Migration Safety Net** - Credit card preservation, make-up credits, rollback capability
 5. **Private Lesson Complexity** - Filter-first approach for 10+ slot presentations
+
+---
+
+## Swim School Deep Dive Feedback Integration (March 18, 2026)
+
+**Source:** Deep dive session with Matt (Hubbard Family Swim School, Phoenix AZ) — 15-20 year swim school veteran, highly sophisticated operator running perpetual enrollment with iClassPro
+
+### Key Insights Integrated
+
+1. **Smart Multi-Class Waitlisting** — Parents want "any Goldfish class Tues/Wed/Thu between 4:30-5:00" across 20-30 matching classes, with auto-clear when one is filled. Current systems force individual waitlist entries per class. (Added to Stage 2.3)
+
+2. **Skill-Level-Based Registration** — Swim schools assign classes by skill level first, age second. A 5-year-old who's never swum is in a completely different class than a 5-year-old who can do freestyle. Age-only filtering is insufficient. (Added to Stage 2.2)
+
+3. **Perpetual (Gym Model) Enrollment** — Hubbard runs perpetual enrollment (enroll once, stay until you cancel) vs. term-based seasons. The system must support both models. Impacts billing, transfers, and re-enrollment flows. (Added to Stage 3)
+
+4. **Makeup Class Token System** — Cancel in advance → receive a makeup token → token is level-locked, expires in 12 months, can only book into open spots. Configurable rules per org (expiration, limits, fees). (Added to Stage 3.7)
+
+5. **Transfer Management** — Perpetual schools constantly move kids between classes (schedule changes, skill progression). Need transfer flow with history, billing adjustments, and waitlist handling. (Added to Stage 3.8)
+
+6. **Lane/Space Assignment** — 12 teaching spaces in one pool; teachers rotate lanes each half hour by level. Need physical space tracking within a facility. (Added to Stage 6.5)
+
+7. **Non-Teaching Staff Scheduling** — Lifeguards, water watchers, site supervisors need to appear on the schedule even though they're not teaching classes. (Added to Stage 5.5)
+
+8. **Proactive AI Feature Discovery** — Matt's self-described "killer feature": surface feature adoption recommendations to operators who don't know what they don't know. E.g., "You have 47 families who missed 2+ classes — enable auto-retention campaigns?" (Added to Stage 4.4)
+
+9. **API-First Data Accessibility** — Matt's biggest iClassPro complaint: source of truth but data is locked away, making automations and marketing harder than they need to be. Kairo must make data freely accessible from day one. (Added to Architecture Decisions)
+
+10. **Attendance-Based Automated Actions** — Configurable rules: "all kids who missed 2+ classes in a row" → auto-trigger outreach. More granular than churn scoring alone. (Enhanced Stage 4.3)
+
+11. **Multiple Check-In Methods** — QR code, app check-in, phone number lookup, kiosk mode, staff-assisted. (Added to Stage 5.3)
+
+12. **Parent Portal (Post-Registration)** — Parents need to view schedule, book makeups, see skill progress, manage transfers — filtered by their child's skill level. (Added to Stage 3.9)
+
+13. **Variable Billing Models** — Per-class billing (4 Mondays vs. 5 Mondays = different monthly charge), flat monthly, advance billing, arrears billing. (Enhanced Stage 3.2)
+
+14. **iClassPro Migration Complexity** — iClassPro has tokens, skill levels, perpetual enrollment data structures that Kairo must support for migration. (Updated Migration Toolkit)
+
+### Strategic Takeaway
+The swim school vertical is fundamentally different from soccer/field sports. Soccer schedules 126 classes with 2,000 kids. Swim schools schedule 2,000 individual children into specific lanes/times with skill-level prerequisites. Items 1-5 above are prerequisites for swim school adoption, not nice-to-haves.
 
 ---
 
@@ -229,6 +268,17 @@ Transform youth sports registration from a painful, complicated process into a s
 - **Flexibility**: Route to different AI models based on conversation state
 - **Secure**: API keys stored in n8n, never exposed to frontend
 
+### API-First Data Accessibility (NEW - Swim School Deep Dive)
+**Swim School Insight:** Matt's biggest iClassPro complaint — it's the source of truth but locks data away, making automations, marketing, and reactivation campaigns harder than they need to be. Kairo must make data freely accessible from day one, not as an afterthought in Stage 10.
+
+**Architectural Principle:** Every data operation in Kairo should be accessible via API. If it works in the UI, it works via API. This isn't a feature — it's how the platform is built.
+
+- All Supabase RPC functions serve as the API layer (already in place)
+- Real-time subscriptions available for external integrations
+- Webhook events for key actions (registration, cancellation, payment, attendance)
+- Data export capabilities built into every data table
+- No data lock-in: families, children, registrations, payments all exportable at any time
+
 ### Database
 - **Supabase PostgreSQL** with Row Level Security
 - **Database views** for optimized n8n queries
@@ -330,7 +380,7 @@ Business owners have been burned by platform transitions. Soccer Shots took 3 ye
 
 | Source | Priority | Status | Notes |
 |--------|----------|--------|-------|
-| iClass | Complete | DONE | Data structure and features integrated |
+| iClass | Complete | NEEDS UPDATE | Data structure analyzed; swim school deep dive revealed additional complexity: perpetual enrollment, makeup tokens, skill levels, lane assignments, transfer history not yet in schema |
 | Configio | **URGENT** | PENDING | Being sunset soon - immediate action required |
 | NBC Sports Engine | **HIGH** | ANALYZED | Critical insights: 74.8% preschool revenue, pricing patterns |
 
@@ -486,6 +536,18 @@ Research required to inform Kairo's tiered pricing model.
 - [x] Up to 3 top recommendations shown
 - [ ] Location-based sorting (proximity) - Deferred to later stage
 
+#### 2.2.1 Skill-Level-Based Registration (NEW - Swim School Deep Dive)
+**Swim School Insight:** Classes are assigned by skill level first, age second. A 5-year-old beginner is in a different class than a 5-year-old who can do freestyle. Age-only filtering is insufficient for swim schools and gymnastics.
+
+- [ ] Add `skill_level` field to children table (e.g., "Goldfish", "Starfish", "Level 1-6")
+- [ ] Add `required_skill_level` field to sessions table (prerequisite)
+- [ ] Kai asks skill level during registration when program requires it
+- [ ] Session matching filters by skill level + age (not just age)
+- [ ] Skill level display on SessionCard UI
+- [ ] Organization-configurable skill level names and hierarchy
+- [ ] Skill assessment quiz option during registration (optional per org)
+- [ ] Skill progression tracking (how long at each level)
+
 #### 2.3 Waitlist Prevention (COMPLETE)
 - [x] Adjacent day suggestions (Wed full -> Tue/Thu)
 - [x] Alternative time slots (same location)
@@ -496,6 +558,18 @@ Research required to inform Kairo's tiered pricing model.
 - [x] Integration with conversation flow
 - [x] Waitlist as last resort (<20% target)
 - [x] AI intelligently suggests registration over waitlist when spots available
+
+#### 2.3.1 Smart Multi-Class Waitlisting (NEW - Swim School Deep Dive)
+**Swim School Insight:** Matt's #1 operational pain point. Parents want "any afternoon Goldfish class on Tues/Wed/Thu" which could match 20-30 classes. Current systems force parents to waitlist for each class individually, then manually remove themselves from all other waitlists when one opens.
+
+- [ ] Multi-class waitlist request: parent specifies criteria (level, days, time range) instead of a single class
+- [ ] System auto-adds to all matching class waitlists in one action
+- [ ] Auto-clear: when one waitlist converts to enrollment, automatically remove from all other waitlisted classes
+- [ ] Waitlist notification: "A spot opened in Goldfish - Tues 4:30pm. Click to enroll." with countdown timer
+- [ ] Priority scoring across waitlists (time waiting, family loyalty tier, etc.)
+- [ ] Waitlist position visibility to parents ("You are #3 of 8")
+- [ ] Admin dashboard: view all waitlists, manually promote, bulk manage
+- [ ] Database function `smart_waitlist_enroll()` — handles enrollment + auto-clear in one transaction
 
 **Files Created/Updated:**
 - `src/services/ai/n8nWebhook.ts` - N8N webhook service layer
@@ -685,6 +759,94 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [x] One-click re-enroll with previous preferences — returning family auto-fills form
 - [x] Returning family loyalty discount (5%) — applied when email matches existing family
 
+#### 3.7 Makeup Class Token System (NEW - Swim School Deep Dive)
+**Swim School Insight:** Critical operational feature. Parents cancel in advance → receive a makeup token → token is level-locked, expires after configurable period, can only book into classes with open spots.
+
+**Token Mechanics:**
+- [ ] Token generation: auto-issue when class cancelled X hours in advance (configurable, default: 1 hour)
+- [ ] Token level-locking: token tied to the skill level of the missed class
+- [ ] Token expiration: configurable per org (default: 12 months)
+- [ ] Token usage: can only book into classes with available spots at the matching level
+- [ ] Token limit: configurable max tokens per child per month (optional)
+- [ ] Token fees: optional makeup class fee (configurable per org, default: $0)
+
+**Parent Experience:**
+- [ ] View available makeup tokens in parent portal
+- [ ] Browse available makeup slots filtered by token level
+- [ ] One-tap makeup booking from available classes
+- [ ] Token expiration warnings (30 days, 7 days before expiry)
+- [ ] Makeup booking confirmation with calendar integration
+
+**Admin Management:**
+- [ ] Token dashboard: view all active tokens, expired tokens, usage rates
+- [ ] Manual token issuance (admin override)
+- [ ] Bulk token management (e.g., issue tokens for weather cancellation)
+- [ ] Token policy configuration per organization
+- [ ] Makeup attendance tracking (distinguish regular vs. makeup students)
+
+**Capacity Awareness:**
+- [ ] Makeup bookings respect class capacity limits
+- [ ] Absent student frees a spot that a makeup student can fill
+- [ ] Makeup students highlighted on teacher's roster (visual indicator)
+
+#### 3.8 Transfer Management (NEW - Swim School Deep Dive)
+**Swim School Insight:** Perpetual enrollment schools constantly move kids between classes — schedule changes, skill progression, family schedule shifts. This is a daily operation, not an edge case.
+
+- [ ] Transfer request flow (parent-initiated or admin-initiated)
+- [ ] Transfer destination search: show available classes matching child's level with open spots
+- [ ] Billing adjustment: prorated credit/charge for different-priced classes
+- [ ] Transfer history: full audit trail of all class changes per child
+- [ ] Waitlist impact: transferring out of a class frees a spot, auto-notify waitlisted families
+- [ ] Batch transfers: admin can move multiple children at once (e.g., class cancelled, move all to another)
+- [ ] Transfer reason tracking (for analytics: schedule conflict, skill progression, coach preference, etc.)
+- [ ] Transfer limits: configurable max transfers per billing period (optional)
+
+#### 3.9 Parent Portal - Post-Registration (NEW - Swim School Deep Dive)
+**Swim School Insight:** After registration, parents need ongoing access to manage their child's enrollment — not just a one-time chat flow. Views filtered by child's skill level.
+
+**Core Features:**
+- [ ] View current class schedule with teacher, location, time
+- [ ] Book makeup classes using tokens (see 3.7)
+- [ ] Request class transfers (see 3.8)
+- [ ] View skill progress and level history
+- [ ] View attendance history (present, absent, makeup)
+- [ ] Account notes visible to staff (medical info, special needs, allergies)
+- [ ] Update family contact information
+
+**Communication:**
+- [ ] View messages from organization
+- [ ] First-class indicator visible to teachers (star icon = child's first day)
+- [ ] Emergency notifications from facility
+
+**Filtered Views:**
+- [ ] Classes filtered by child's current skill level (not full schedule)
+- [ ] Only show eligible makeup slots
+- [ ] Age-appropriate program suggestions for siblings
+
+#### 3.10 Perpetual Enrollment Model (NEW - Swim School Deep Dive)
+**Swim School Insight:** Hubbard runs perpetual enrollment (gym membership model) — enroll once, stay until you cancel. Fundamentally different from term/season-based. System must support both.
+
+**Perpetual Model:**
+- [ ] Enrollment type flag per organization: `perpetual` vs. `term_based` vs. `hybrid`
+- [ ] No end date on enrollment (ongoing until cancelled)
+- [ ] Monthly recurring billing (not season-based lump sum)
+- [ ] Cancellation with notice period (configurable, default: 30 days)
+- [ ] Automatic monthly charge on billing date
+- [ ] No re-enrollment needed — child stays in class indefinitely
+- [ ] Graduation/level-up triggers transfer to next level class (not cancellation + re-registration)
+
+**Variable Monthly Billing (Perpetual):**
+- [ ] Per-class billing: charge based on how many classes fall in that month (4 Mondays = 4 classes, 5 Mondays = 5 classes)
+- [ ] Flat monthly billing: same charge regardless of class count
+- [ ] Bill-in-advance option (charge on 1st of month for upcoming month)
+- [ ] Bill-in-arrears option (charge after month completes)
+- [ ] Holiday/closure credit handling (auto-credit for cancelled classes)
+
+**Billing Date Flexibility:**
+- [ ] Configurable billing date per org (1st, 15th, custom)
+- [ ] Option to bill X days before month starts (e.g., 27th for next month)
+- [ ] Anniversary billing (bill on enrollment date each month)
+
 ---
 
 ### Stage 3.5: Preschool Partnership Module (PLANNED)
@@ -785,6 +947,14 @@ Registration Form → Payment → Confirmed Registration → Return User
 #### 4.3 Intelligent Churn Prevention & Retention (Priority: HIGH) - ENHANCED Jan 2026
 **Customer Request:** Automations that learn from experience and automatically help reduce churn with auto-initiated retention campaigns
 
+**Attendance-Based Automated Actions (NEW - Swim School Deep Dive):**
+- [ ] Configurable attendance rules engine (e.g., "missed 2+ classes in a row" → trigger action)
+- [ ] Daily automated attendance summary for admins (configurable: missed X classes in Y period)
+- [ ] Auto-trigger outreach when attendance rule fires (email, SMS, push, or staff alert)
+- [ ] Attendance pattern detection (declining attendance over time, not just consecutive misses)
+- [ ] Configurable actions per rule: send message, flag for staff review, add to at-risk list, schedule call
+- [ ] Attendance rule templates (pre-built for common scenarios)
+
 **Churn Risk Scoring:**
 - [ ] Churn risk scoring algorithm (learns from historical data)
 - [ ] Risk factors: engagement, attendance, payment issues, time since last interaction
@@ -810,6 +980,29 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Track which interventions work for which family types
 - [ ] Continuous improvement of messaging
 - [ ] ROI tracking per campaign type
+
+#### 4.4 Proactive AI Feature Discovery (NEW - Swim School Deep Dive)
+**Swim School Insight:** Matt's self-described "killer feature" — most operators don't use features because they don't know they exist. Even elite operators underutilize their software. The platform should proactively surface feature adoption recommendations.
+
+**Proactive Insights Engine:**
+- [ ] Detect underused features based on org's data (e.g., "You have waitlist data but haven't enabled smart waitlisting")
+- [ ] Surface actionable recommendations: "47 families missed 2+ classes this month — enable auto-retention campaigns?"
+- [ ] Feature utilization scoring per organization (% of available features actively used)
+- [ ] Guided activation: one-click enable with explanation of what it does and expected impact
+- [ ] Tiered discovery: show simple features first, introduce advanced features as org matures
+
+**AI-Driven Business Insights:**
+- [ ] Best customer identification (highest LTV, most referrals, longest tenure)
+- [ ] Flight risk identification (declining engagement patterns)
+- [ ] Top determiners for churn (data-driven, not assumptions)
+- [ ] Revenue opportunity alerts ("Adding a Thursday 5pm class could capture 12 waitlisted families")
+- [ ] Seasonal pattern alerts ("Registration typically spikes in 3 weeks — prepare marketing now")
+
+**Delivery:**
+- [ ] Admin dashboard notification center with priority-ranked insights
+- [ ] Weekly email digest of top 3 insights (configurable frequency)
+- [ ] In-app contextual tips when admin navigates to relevant section
+- [ ] "Did you know?" cards on the admin home screen
 
 ---
 
@@ -851,6 +1044,15 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Offline attendance with sync
 - [ ] Attendance history and reporting
 
+**Multiple Check-In Methods (NEW - Swim School Deep Dive):**
+- [ ] QR code scan (parent shows QR on phone, staff scans)
+- [ ] App-based self check-in (parent taps "Check In" in parent portal)
+- [ ] Phone number lookup (staff enters last 4 digits to find family)
+- [ ] Kiosk mode: self-service check-in station at facility entrance
+- [ ] Staff-assisted check-in (coach marks present from roster)
+- [ ] Configurable check-in methods per organization (enable/disable each method)
+- [ ] Check-in time tracking (late arrivals flagged)
+
 #### 5.4 Incident Report System (Priority: HIGH) - ENHANCED Jan 2026
 **Customer Requirement:** Standardized incident reporting with supervisor review workflow
 
@@ -883,6 +1085,18 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Substitute instructor support
 - [ ] Background check status tracking
 - [ ] **Smart notification system** — class reminders, SMS notifications, important alerts for coaches
+
+#### 5.5.1 Non-Teaching Staff Scheduling (NEW - Swim School Deep Dive)
+**Swim School Insight:** Swim schools need lifeguards, water watchers, and site supervisors on the schedule. These staff aren't teaching classes but must be scheduled, visible on the daily roster, and tracked for hours.
+
+- [ ] Staff role types: `teaching` vs. `non_teaching` (lifeguard, water watcher, site supervisor, admin)
+- [ ] Non-teaching staff appear on facility schedule alongside class assignments
+- [ ] Shift-based scheduling (not class-based): start time, end time, location, role
+- [ ] Non-teaching staff visible on poolside/fieldside printable schedules
+- [ ] Certification tracking per role (lifeguard cert expiry, first aid, CPR)
+- [ ] Certification expiry warnings (30 days, 7 days before expiry)
+- [ ] Minimum staffing requirements per facility (e.g., "1 lifeguard per pool at all times")
+- [ ] Staffing gap alerts when minimum requirements not met
 
 #### 5.6 Curriculum Timer System (Priority: MEDIUM-HIGH) - NEW Jan 2026
 **Customer Context:** One of the hardest things for new coaches is managing class timing. They often spend too much time on early sections and miss the scrimmage at the end.
@@ -1054,6 +1268,31 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Toggle which sort options are visible to parents
 - [ ] Set proximity radius for location-based sorting
 - [ ] Enable/disable urgency messaging for low-availability sessions
+
+#### 6.5 Lane/Space Assignment Within Facility (NEW - Swim School Deep Dive)
+**Swim School Insight:** Hubbard's pool has 12 teaching spaces/lanes. Teachers rotate lanes each half hour based on which level they're teaching. The system must track physical space assignment within a facility, not just which class is happening when.
+
+**Facility Space Setup:**
+- [ ] Define teaching spaces/lanes per location (e.g., "Lane 1", "Lane 2", "Deep End", "Shallow End")
+- [ ] Space capacity: max students per space (may differ from class max)
+- [ ] Space attributes: depth, size, equipment, accessibility
+- [ ] Visual facility map (drag-and-drop space layout editor)
+
+**Schedule Integration:**
+- [ ] Assign classes to specific spaces/lanes on the schedule
+- [ ] Teacher-to-space assignment per time block (30-min intervals)
+- [ ] Teacher rotation view: which lane am I in each half hour?
+- [ ] Conflict detection: two classes assigned to same space at same time
+- [ ] Space utilization reporting (% of spaces used per time block)
+
+**Printable Schedules (Poolside/Fieldside):**
+- [ ] Printable daily schedule organized by space/lane (not just time)
+- [ ] Student names visible per space per time block
+- [ ] Teacher names visible per space per time block
+- [ ] Skill level indicators per student
+- [ ] Makeup student highlighting (different color/icon)
+- [ ] TV/display mode for poolside monitors (auto-refreshing)
+- [ ] Print-optimized layout (landscape, minimal margins)
 
 ---
 

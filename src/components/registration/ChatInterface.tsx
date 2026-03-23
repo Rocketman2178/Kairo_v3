@@ -35,15 +35,6 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
 
   const strings = getStrings(language);
 
-  const handleLanguageToggle = useCallback(() => {
-    const currentIdx = SUPPORTED_LANGUAGES.indexOf(language);
-    const nextLang = SUPPORTED_LANGUAGES[(currentIdx + 1) % SUPPORTED_LANGUAGES.length];
-    setLanguage(nextLang);
-    setStoredLanguage(nextLang);
-    // Reset initial message so Kai greets in the new language
-    hasAddedInitialMessage.current = false;
-  }, [language]);
-
   const onErrorCallback = useCallback((err: Error) => {
     console.error('Conversation error:', err);
     const errorMessage = err.message || strings.errorGeneric;
@@ -70,6 +61,17 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
     onError: onErrorCallback,
     onFallbackToForm: onFallbackCallback,
   });
+
+  const handleLanguageToggle = useCallback(() => {
+    const currentIdx = SUPPORTED_LANGUAGES.indexOf(language);
+    const nextLang = SUPPORTED_LANGUAGES[(currentIdx + 1) % SUPPORTED_LANGUAGES.length];
+    setLanguage(nextLang);
+    setStoredLanguage(nextLang);
+    // Reset conversation so Kai re-greets in the new language
+    hasAddedInitialMessage.current = false;
+    setSessionEnded(false);
+    resetConversation();
+  }, [language, resetConversation]);
 
   const addAssistantMessageRef = useRef(addAssistantMessage);
   useEffect(() => {

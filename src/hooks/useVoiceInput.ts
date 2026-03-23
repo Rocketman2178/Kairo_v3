@@ -61,6 +61,7 @@ export function useVoiceInput(
   const [error, setError] = useState<string | null>(null);
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const micStreamRef = useRef<MediaStream | null>(null);
   const finalBufferRef = useRef('');
 
   // Keep callback ref current so the recognition closure never goes stale
@@ -69,10 +70,11 @@ export function useVoiceInput(
     onFinalRef.current = onFinalTranscript;
   }, [onFinalTranscript]);
 
-  // Abort recognition on unmount
+  // Abort recognition and release mic on unmount
   useEffect(() => {
     return () => {
       recognitionRef.current?.abort();
+      micStreamRef.current?.getTracks().forEach((t) => t.stop());
     };
   }, []);
 
@@ -83,10 +85,24 @@ export function useVoiceInput(
     // onend handler will fire, submit whatever was captured, and reset state
   }, []);
 
-  const startListening = useCallback(() => {
+  const startListening = useCallback(async () => {
     const SpeechRecog = getSpeechRecognitionConstructor();
     if (!SpeechRecog) {
       setError('Voice input is not supported in this browser. Please use Chrome or Safari.');
+      return;
+    }
+
+    // Request microphone permission first — this triggers the browser's
+    // permission dialog if not already granted. Without this, some browsers
+    // silently deny SpeechRecognition.start() with a 'not-allowed' error.
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Keep the stream alive so the mic stays "warm" for SpeechRecognition.
+      // Released in onend/onerror to avoid macOS race conditions.
+      micStreamRef.current?.getTracks().forEach((t) => t.stop());
+      micStreamRef.current = stream;
+    } catch {
+      setError('Microphone access denied. Please allow microphone access in your browser settings and try again.');
       return;
     }
 
@@ -100,7 +116,7 @@ export function useVoiceInput(
     const recognition = new SpeechRecog();
     recognition.lang = language;
     recognition.interimResults = true;
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.maxAlternatives = 1;
 
     recognition.onstart = () => {
@@ -132,11 +148,15 @@ export function useVoiceInput(
         const message = ERROR_MESSAGES[event.error] ?? 'Voice input failed. Please type your message instead.';
         setError(message);
       }
+      micStreamRef.current?.getTracks().forEach((t) => t.stop());
+      micStreamRef.current = null;
       setIsListening(false);
       setInterimTranscript('');
     };
 
     recognition.onend = () => {
+      micStreamRef.current?.getTracks().forEach((t) => t.stop());
+      micStreamRef.current = null;
       setIsListening(false);
       setInterimTranscript('');
 
