@@ -2,6 +2,7 @@
   # create-payment-intent Edge Function
 
   Creates a Stripe PaymentIntent for a pending registration.
+  Handles Stripe Customer creation/reuse for saved payment methods.
   Called from the Register.tsx payment step.
 
   ## Security
@@ -12,12 +13,12 @@
   - STRIPE_SECRET_KEY is stored in Supabase secrets only
 
   ## Flow
-  1. Client sends { registrationToken, paymentPlanType, email }
+  1. Client sends { registrationToken, paymentPlanType, email, familyId? }
   2. Function validates token and fetches registration from DB
-  3. Calculates final amount based on plan type and discounts
-  4. Creates Stripe PaymentIntent
-  5. Updates registration status to 'awaiting_payment'
-  6. Returns { clientSecret }
+  3. Creates or reuses Stripe Customer for the family (enables saved payment methods)
+  4. Creates Stripe PaymentIntent with setup_future_usage to save method after payment
+  5. Saves stripe_customer_id back to families table
+  6. Returns { clientSecret, stripeCustomerId }
 */
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
@@ -40,6 +41,7 @@ interface PaymentIntentRequest {
   registrationToken: string;
   paymentPlanType?: PlanType;
   email?: string;
+  familyId?: string;
 }
 
 interface RegistrationRecord {
@@ -51,22 +53,35 @@ interface RegistrationRecord {
   session_id: string;
 }
 
+interface FamilyRecord {
+  id: string;
+  stripe_customer_id: string | null;
+  primary_contact_name: string;
+}
+
 function calculatePlanAmount(baseCents: number, planType: PlanType): number {
   switch (planType) {
     case "two_payment":
-      // First payment is 50%
       return Math.ceil(baseCents / 2);
     case "divided":
-      // First of 3 payments
       return Math.ceil(baseCents / 3);
-    case "subscription": {
-      // Approximate first monthly payment (base / 2 for 8-week season)
+    case "subscription":
       return Math.ceil(baseCents / 2);
-    }
     case "full":
     default:
       return baseCents;
   }
+}
+
+async function stripePost(path: string, params: Record<string, string>): Promise<Response> {
+  return fetch(`https://api.stripe.com/v1${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams(params).toString(),
+  });
 }
 
 Deno.serve(async (req: Request) => {
@@ -74,7 +89,6 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
-  // If Stripe is not configured, return demo mode
   if (!STRIPE_SECRET_KEY) {
     return new Response(
       JSON.stringify({ demo: true, message: "Stripe not configured" }),
@@ -84,7 +98,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body: PaymentIntentRequest = await req.json();
-    const { registrationToken, paymentPlanType = "full", email } = body;
+    const { registrationToken, paymentPlanType = "full", email, familyId } = body;
 
     if (!registrationToken) {
       return new Response(
@@ -93,7 +107,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Use service role to read registration data (no auth required for anonymous flow)
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // Fetch pending registration — amount comes from DB, not client
@@ -111,7 +124,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Check expiry
     if (new Date(registration.expires_at) < new Date()) {
       return new Response(
         JSON.stringify({ error: true, message: "Registration has expired. Please start a new registration." }),
@@ -119,11 +131,56 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Calculate the amount for this payment based on plan type
     const chargeAmountCents = calculatePlanAmount(registration.amount_cents, paymentPlanType);
 
-    // Create Stripe PaymentIntent
-    const stripeBody = new URLSearchParams({
+    // ── Stripe Customer management ───────────────────────────────────────────
+    // Look up existing family to check for stripe_customer_id
+    let stripeCustomerId: string | null = null;
+    let familyRecord: FamilyRecord | null = null;
+
+    if (familyId) {
+      const { data: family } = await supabase
+        .from("families")
+        .select("id, stripe_customer_id, primary_contact_name")
+        .eq("id", familyId)
+        .single<FamilyRecord>();
+      familyRecord = family;
+      stripeCustomerId = family?.stripe_customer_id ?? null;
+    } else if (email) {
+      const { data: family } = await supabase
+        .from("families")
+        .select("id, stripe_customer_id, primary_contact_name")
+        .eq("email", email)
+        .maybeSingle<FamilyRecord>();
+      familyRecord = family ?? null;
+      stripeCustomerId = family?.stripe_customer_id ?? null;
+    }
+
+    // Create Stripe Customer if we have an email but no customer yet
+    if (!stripeCustomerId && email) {
+      const customerParams: Record<string, string> = { email };
+      if (familyRecord?.primary_contact_name) {
+        customerParams.name = familyRecord.primary_contact_name;
+      }
+      customerParams["metadata[registration_id]"] = registration.id;
+
+      const customerRes = await stripePost("/customers", customerParams);
+      if (customerRes.ok) {
+        const customer = await customerRes.json();
+        stripeCustomerId = customer.id;
+
+        // Save stripe_customer_id back to the family record
+        if (familyRecord?.id) {
+          await supabase
+            .from("families")
+            .update({ stripe_customer_id: stripeCustomerId })
+            .eq("id", familyRecord.id);
+        }
+      }
+    }
+
+    // ── Create PaymentIntent ─────────────────────────────────────────────────
+    const paymentIntentParams: Record<string, string> = {
       amount: chargeAmountCents.toString(),
       currency: "usd",
       "payment_method_types[]": "card",
@@ -131,20 +188,18 @@ Deno.serve(async (req: Request) => {
       "metadata[registration_token]": registrationToken,
       "metadata[plan_type]": paymentPlanType,
       "metadata[full_amount_cents]": registration.amount_cents.toString(),
-    });
+      // Save payment method after successful payment (enables quick checkout next time)
+      setup_future_usage: "off_session",
+    };
 
     if (email) {
-      stripeBody.append("receipt_email", email);
+      paymentIntentParams.receipt_email = email;
+    }
+    if (stripeCustomerId) {
+      paymentIntentParams.customer = stripeCustomerId;
     }
 
-    const stripeResponse = await fetch("https://api.stripe.com/v1/payment_intents", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: stripeBody.toString(),
-    });
+    const stripeResponse = await stripePost("/payment_intents", paymentIntentParams);
 
     if (!stripeResponse.ok) {
       const stripeError = await stripeResponse.json();
@@ -171,6 +226,7 @@ Deno.serve(async (req: Request) => {
         clientSecret: paymentIntent.client_secret,
         paymentIntentId: paymentIntent.id,
         amountCents: chargeAmountCents,
+        stripeCustomerId: stripeCustomerId ?? null,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

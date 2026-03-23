@@ -10,8 +10,10 @@ import { Loader2, Lock, ShieldCheck, AlertCircle } from 'lucide-react';
 import PaymentPlanSelector from './PaymentPlanSelector';
 import PaymentSummary from './PaymentSummary';
 import BiometricAuthPrompt, { BiometricSuccess } from './BiometricAuthPrompt';
+import SavedPaymentMethods from './SavedPaymentMethods';
 import { calculateDiscount } from '../../utils/discountCalculator';
 import type { PlanType, PaymentFeeConfig } from '../../utils/paymentPlans';
+import type { SavedCard } from '../../hooks/useSavedPaymentMethods';
 
 export type PaymentFailureReason =
   | 'card_declined'
@@ -38,6 +40,15 @@ interface PaymentFormProps {
   feeConfig?: PaymentFeeConfig;
   /** Parent email — passed to biometric prompt for personalization */
   parentEmail?: string;
+  /** Saved payment methods for returning families */
+  savedCards?: SavedCard[];
+  savedCardsLoading?: boolean;
+  /** Called when user selects a saved card for quick checkout */
+  onQuickPay?: (card: SavedCard) => void;
+  /** Whether quick checkout is processing */
+  quickPayProcessing?: boolean;
+  /** Method ID currently being processed via quick checkout */
+  quickPayMethodId?: string | null;
 }
 
 /** Map a Stripe decline code to our PaymentFailureReason enum */
@@ -79,6 +90,11 @@ export default function PaymentForm({
   onPaymentFailed,
   registrationToken,
   feeConfig,
+  savedCards = [],
+  savedCardsLoading = false,
+  onQuickPay,
+  quickPayProcessing = false,
+  quickPayMethodId = null,
 }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
@@ -237,6 +253,18 @@ export default function PaymentForm({
         sessionStartDate={sessionStartDate}
         feeConfig={feeConfig}
       />
+
+      {/* Saved payment methods — shown for returning families with saved cards */}
+      {!isDemo && isReturningFamily && (savedCards.length > 0 || savedCardsLoading) && onQuickPay && (
+        <SavedPaymentMethods
+          methods={savedCards}
+          loading={savedCardsLoading}
+          error={null}
+          onQuickPay={onQuickPay}
+          processingQuickPay={quickPayProcessing}
+          processingMethodId={quickPayMethodId}
+        />
+      )}
 
       {!isDemo && clientSecret && (
         <div className="space-y-3">

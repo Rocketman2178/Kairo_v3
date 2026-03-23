@@ -5,6 +5,91 @@ Format: `## [Month Year] - Title | Category | Description`
 
 ---
 
+## [March 23, 2026] - Saved Payment Methods, Re-enrollment Reminders & Analytics Dashboard | Core Feature | High
+
+**Category:** Core Feature
+**Impact:** High — Closes Stage 3.1/3.3 (saved cards + quick checkout), Stage 3.6 (reenrollment reminders), and starts Stage 4.1 (analytics dashboard)
+
+**Description:**
+Three features implemented across payment UX, lifecycle communications, and business intelligence. Saved Payment Methods + Quick Checkout completes the returning-family registration experience by auto-saving cards via Stripe Customers and enabling one-click re-registration. Re-enrollment Reminders adds an edge function that detects families whose season ended 14–35 days ago and triggers personalized n8n email campaigns to bring them back. The Analytics Dashboard (Stage 4.1) is a live-data page at `/analytics` showing conversion funnel, revenue by program, abandoned cart drop-off points, and recovery rate.
+
+### Feature 1: Saved Payment Methods + Quick Checkout (Stage 3.1 + 3.3)
+- DB migration: `families.stripe_customer_id` (text, indexed) — stores Stripe Customer ID after first payment
+- `create-payment-intent` edge function updated (v3):
+  - Looks up or creates a Stripe Customer when `email`/`familyId` provided
+  - Saves `stripe_customer_id` back to families table on creation
+  - Adds `setup_future_usage: 'off_session'` to PaymentIntent — card saved automatically after payment
+  - Returns `stripeCustomerId` in response
+- New `list-payment-methods` edge function (v1, JWT disabled):
+  - Validates access via `registrationToken` + `email` pair
+  - Returns masked card data (brand, last4, expiry, isDefault) from Stripe
+  - Returns empty array gracefully when Stripe unconfigured
+- New `quick-checkout` edge function (v1, JWT disabled):
+  - Creates and confirms a PaymentIntent server-side using a saved payment method
+  - Verifies payment method belongs to the family's Stripe Customer (ownership check)
+  - Handles 3DS by returning `requiresAction: true` + `clientSecret` for frontend handling
+  - Calls `confirm_registration` RPC on successful payment
+- New `useSavedPaymentMethods` hook — fetches saved cards from `list-payment-methods` edge function; enabled only on step 2 for returning families
+- New `SavedPaymentMethods` component:
+  - Shows saved cards with brand, last4, expiry
+  - Card selection with default indicator
+  - "Quick Pay with saved card" button
+  - "or pay with a new card" divider below
+- `PaymentForm.tsx` updated: accepts `savedCards`, `savedCardsLoading`, `onQuickPay`, `quickPayProcessing`, `quickPayMethodId` props; renders `SavedPaymentMethods` above Stripe Elements for returning families
+- `Register.tsx` updated:
+  - Imports and calls `useSavedPaymentMethods` hook (enabled on step 2 + isReturningFamily)
+  - `handleQuickPay` — calls quick-checkout edge function, handles 3DS fallback, marks recovered on success
+  - Passes `familyId` to `create-payment-intent` so Stripe Customer is linked to the known family record
+  - Wires all new props to `PaymentForm`
+
+### Feature 2: Re-enrollment Reminders Edge Function (Stage 3.6)
+- DB migration: `registrations.reenrollment_reminder_sent_at` (timestamptz, partial index on NULL) — prevents duplicate reminder sends
+- New `trigger-reenrollment-reminders` edge function (v1, JWT disabled, webhook key auth):
+  - `sweep` mode: finds up to 50 confirmed registrations with sessions ending 14–35 days ago that haven't had a reminder sent
+  - `single` mode: targets one registration by ID (for manual triggers)
+  - Triggers n8n webhook with `reenrollment_reminder` intent including family, child, program, session, and pricing data
+  - Marks `reenrollment_reminder_sent_at` after successful n8n trigger to prevent duplicates
+  - Authentication: `X-Webhook-Key` header validated against `REENROLLMENT_WEBHOOK_KEY` secret
+
+### Feature 3: Analytics Dashboard — Core Analytics (Stage 4.1)
+- New `src/pages/Analytics.tsx` — live analytics page at `/analytics`
+- Real Supabase data queries (no mock data):
+  - Confirmed registrations + total revenue (filtered by time range)
+  - Conversations count for top-of-funnel (conversion rate = confirmed / conversations)
+  - Abandoned carts count + recovery rate
+  - Average registration amount
+- **Conversion Funnel** component: 5 stages (Chat started → Session selected → Info submitted → Payment initiated → Complete) with percentage bars
+- **Drop-off Points** panel: abandoned carts broken down by step_abandoned with percentage distribution
+- **Revenue by Program** chart: bar chart of top 6 programs by revenue, with registration count
+- Time range selector: 7d / 30d / 90d / All time
+- Refresh button + last-updated timestamp
+- Mobile-first layout: 2-col on mobile → 6-col metric grid on desktop, 2-col charts on large screens
+- Source/device tracking placeholder card noting upcoming Stage 4.1 additions
+- Route `/analytics` added to `App.tsx`
+
+**Files Changed:**
+- `supabase/migrations/20260323000001_add_stripe_customer_id_and_reenrollment.sql` — **NEW** — DB columns for saved cards + reenrollment tracking
+- `supabase/functions/create-payment-intent/index.ts` — Updated (v3) — Stripe Customer creation/reuse, setup_future_usage
+- `supabase/functions/list-payment-methods/index.ts` — **NEW** (v1) — List saved Stripe cards for returning family
+- `supabase/functions/quick-checkout/index.ts` — **NEW** (v1) — Server-side confirmation with saved card
+- `supabase/functions/trigger-reenrollment-reminders/index.ts` — **NEW** (v1) — Reenrollment reminder sweep/single trigger
+- `src/hooks/useSavedPaymentMethods.ts` — **NEW** — Hook to fetch saved cards from edge function
+- `src/components/registration/SavedPaymentMethods.tsx` — **NEW** — Saved cards UI + Quick Pay button
+- `src/components/registration/PaymentForm.tsx` — saved cards props + SavedPaymentMethods render
+- `src/pages/Register.tsx` — useSavedPaymentMethods hook, handleQuickPay, familyId in payment intent
+- `src/pages/Analytics.tsx` — **NEW** — Live analytics dashboard page
+- `src/App.tsx` — `/analytics` route added
+
+**DB Migrations Applied:** `add_stripe_customer_id_and_reenrollment` → Kairo (`tatunnfxwfsyoiqoaenb`)
+
+**Edge Functions Deployed:**
+- `create-payment-intent` — version 3, ACTIVE (Stripe Customer + setup_future_usage)
+- `list-payment-methods` — version 1, ACTIVE, JWT disabled
+- `quick-checkout` — version 1, ACTIVE, JWT disabled
+- `trigger-reenrollment-reminders` — version 1, ACTIVE, JWT disabled (webhook key auth)
+
+---
+
 ## [March 19, 2026] - Multi-Language Support, Failed Payment Recovery & Text-to-Speech | Core Feature | High
 
 **Category:** Core Feature

@@ -609,7 +609,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 #### 3.1 Payment Processing
 - [x] Stripe integration — `create-payment-intent` edge function deployed; reads amount from DB, supports all 4 plan types, graceful demo fallback
 - [x] Apple Pay / Google Pay — `PaymentRequestButtonElement` shown above card form when browser supports it; express checkout redirects to same confirmation URL; 3DS handled
-- [ ] Saved payment methods for returning families
+- [x] Saved payment methods for returning families — `families.stripe_customer_id` stored; `list-payment-methods` edge function returns masked cards; `SavedPaymentMethods` component with quick-pay button; `useSavedPaymentMethods` hook
 - [x] Failed payment recovery — `PaymentFailedRecovery` panel with contextual error messages, retry, different card, and support actions; `classifyStripeError` maps decline codes to friendly UX
 
 #### 3.1.1 Biometric Authentication (Priority: MEDIUM) - NEW Jan 2026
@@ -661,7 +661,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [x] Show per-class cost: "$208 total ($26/class for 8 weeks)" — shown in Order Summary
 - [x] Payment plan as secondary option, not emphasized
 - [x] "Most families pay in full" social proof messaging — styled pill in PaymentPlanSelector
-- [ ] Quick checkout for returning families (requires auth / saved payment methods)
+- [x] Quick checkout for returning families — `quick-checkout` edge function; server-side payment confirmation with saved card; 3DS fallback to Stripe Elements; `handleQuickPay` in Register.tsx
 
 #### 3.4 Cart Recovery (Timing Optimized)
 **Insight:** 92.3% register Mon-Fri during work hours
@@ -681,7 +681,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [x] "Add another child?" prompt after first completion — RegistrationConfirmation CTA card
 
 #### 3.6 Re-enrollment
-- [ ] Re-enrollment reminders — requires scheduled communication flow
+- [x] Re-enrollment reminders — `trigger-reenrollment-reminders` edge function; sweep/single modes; targets sessions ended 14–35 days ago; triggers n8n `reenrollment_reminder` intent; `reenrollment_reminder_sent_at` column prevents duplicates
 - [x] One-click re-enroll with previous preferences — returning family auto-fills form
 - [x] Returning family loyalty discount (5%) — applied when email matches existing family
 
@@ -712,18 +712,18 @@ Registration Form → Payment → Confirmed Registration → Return User
 
 ---
 
-### Stage 4: Business Intelligence (PLANNED)
+### Stage 4: Business Intelligence (IN PROGRESS)
 **Goals:** Analytics, reporting, predictive insights, proactive interventions
-**Updated:** January 2026 with customer feedback enhancements
+**Updated:** March 23, 2026 — Stage 4.1 analytics dashboard live
 
 **Key Features:**
 
 #### 4.1 Core Analytics
-- [ ] Conversion funnel visualization
-- [ ] Abandoned cart analytics
-- [ ] Source/device tracking
-- [ ] Drop-off analysis
-- [ ] Revenue forecasting
+- [x] Conversion funnel visualization — 5-stage funnel (Chat → Session → Info → Payment → Complete) with live Supabase data at `/analytics`
+- [x] Abandoned cart analytics — drop-off breakdown by step_abandoned with recovery rate metric
+- [ ] Source/device tracking — planned: registration event instrumentation for referral channel + device type
+- [x] Drop-off analysis — abandoned cart step breakdown in Analytics dashboard
+- [x] Revenue forecasting — revenue by program chart (top 6) + total revenue + average registration amount; time range filter (7d/30d/90d/all)
 
 #### 4.2 Proactive Kai Chat Intervention (Priority: HIGH) - NEW Jan 2026
 **Customer Question:** Can we collect behavioral data and make recommendations on when to insert a chat popup?

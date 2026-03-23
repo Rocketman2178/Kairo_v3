@@ -8,6 +8,7 @@ import { Demo } from './pages/Demo';
 import Register from './pages/Register';
 import { TestScenarios } from './pages/TestScenarios';
 import { SplashPage } from './pages/SplashPage';
+import { Analytics } from './pages/Analytics';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
           <Route path="/test-data" element={<TestDataDashboard />} />
           <Route path="/test-scenarios" element={<TestScenarios />} />
           <Route path="/splash" element={<SplashPage />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

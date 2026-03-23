@@ -4,6 +4,8 @@ import { Elements } from '@stripe/react-stripe-js';
 import { supabase } from '../lib/supabase';
 import { getStripe, isStripeConfigured } from '../lib/stripe';
 import { useCartAbandonment } from '../hooks/useCartAbandonment';
+import { useSavedPaymentMethods } from '../hooks/useSavedPaymentMethods';
+import type { SavedCard } from '../hooks/useSavedPaymentMethods';
 import PaymentForm from '../components/registration/PaymentForm';
 import type { PaymentFailureReason } from '../components/registration/PaymentForm';
 import PaymentFailedRecovery from '../components/registration/PaymentFailedRecovery';
@@ -104,6 +106,8 @@ export default function Register() {
     reason: PaymentFailureReason;
     stripeMessage?: string;
   } | null>(null);
+  const [quickPayProcessing, setQuickPayProcessing] = useState(false);
+  const [quickPayMethodId, setQuickPayMethodId] = useState<string | null>(null);
   const emailLookupTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [formData, setFormData] = useState<FormData>({
     parentFirstName: '',
@@ -115,6 +119,13 @@ export default function Register() {
     emergencyContactPhone: '',
     medicalNotes: '',
     agreedToTerms: false,
+  });
+
+  // Load saved payment methods when we reach step 2 and email is set for a returning family
+  const { methods: savedCards, loading: savedCardsLoading } = useSavedPaymentMethods({
+    registrationToken: token,
+    email: formData.email,
+    enabled: step === 2 && isReturningFamily && !isDemo,
   });
 
   const { markRecovered } = useCartAbandonment(
@@ -269,6 +280,7 @@ export default function Register() {
           registrationToken: token,
           paymentPlanType: 'full',
           email: formData.email,
+          familyId: familyId ?? existingFamilyId ?? undefined,
         }),
       });
 
@@ -290,6 +302,66 @@ export default function Register() {
       setIsDemo(true);
     }
   }, [token, formData.email, isDemo]);
+
+  const handleQuickPay = useCallback(async (card: SavedCard) => {
+    if (!token || !formData.email) return;
+
+    setQuickPayProcessing(true);
+    setQuickPayMethodId(card.methodId);
+    setError(null);
+
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/quick-checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${anonKey}`,
+          Apikey: anonKey,
+        },
+        body: JSON.stringify({
+          registrationToken: token,
+          email: formData.email,
+          paymentMethodId: card.methodId,
+          planType: 'full',
+          familyId: familyId ?? existingFamilyId ?? undefined,
+          childId: childId ?? undefined,
+        }),
+      });
+
+      const data: {
+        success?: boolean;
+        requiresAction?: boolean;
+        clientSecret?: string;
+        error?: boolean;
+        message?: string;
+        declineCode?: string;
+      } = await response.json();
+
+      if (data.error) {
+        setPaymentFailure({ reason: 'card_declined', stripeMessage: data.message });
+        return;
+      }
+
+      if (data.requiresAction && data.clientSecret) {
+        // 3DS required — fall through to standard Stripe Elements flow with this client secret
+        setClientSecret(data.clientSecret);
+        return;
+      }
+
+      if (data.success) {
+        markRecovered();
+        setStep(3);
+      }
+    } catch {
+      setError('Quick checkout failed. Please try entering your card details instead.');
+    } finally {
+      setQuickPayProcessing(false);
+      setQuickPayMethodId(null);
+    }
+  }, [token, formData.email, familyId, existingFamilyId, childId, markRecovered]);
 
   function validateStep2(): boolean {
     if (!formData.parentFirstName.trim() || !formData.parentLastName.trim()) {
@@ -875,6 +947,11 @@ export default function Register() {
                   }}
                   registrationToken={token || ''}
                   parentEmail={formData.email}
+                  savedCards={savedCards}
+                  savedCardsLoading={savedCardsLoading}
+                  onQuickPay={handleQuickPay}
+                  quickPayProcessing={quickPayProcessing}
+                  quickPayMethodId={quickPayMethodId}
                 />
               )}
             </div>
