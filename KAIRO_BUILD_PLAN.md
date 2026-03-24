@@ -1,8 +1,29 @@
 # Kairo Platform - Strategic Build Plan
 
-**Version:** 2.15
-**Last Updated:** March 23, 2026
+**Version:** 2.16
+**Last Updated:** March 24, 2026
 **Current Stage:** Stage 2 COMPLETE | Stage 3 IN PROGRESS (Payments & Registration Flow)
+
+---
+
+## NBC/Soccer Shots Feature Roadmap Integration (March 24, 2026)
+
+**Source:** "We Need ALL of these features.xlsx" — 115 features from Soccer Shots franchise roadmap (NBC Sports Engine platform)
+**Analysis:** Cross-referenced against existing Kairo build plan; translated Soccer Shots-specific items into platform-generic capabilities.
+
+### Features Added by Stage
+| Stage | Features Added | Key Areas |
+|-------|---------------|-----------|
+| Stage 3 (Registration & Payments) | 40+ | Payment plan controls, transfer funds, registration page search/filter, waitlist improvements, hidden classes, keyword search, zip code filtering |
+| Stage 3.5 (Preschool Partnerships) | 2 | Roster upload, director communications |
+| Stage 5 (Coach & Staff Tools) | 20+ | Calendar bulk actions, single-day reschedule/cancel, slot redesign, mobile attendance enhancements, medical notes, curriculum display |
+| Stage 8 (Multi-Location & Franchise) | 12 | Territory management, data integrity protections, merchandise fulfillment module |
+| Stage 9 (Communications) | 15 | Scheduled email send, SMS compliance, auto-reply, carrier delivery, email templates, agreement management |
+| Stage 10 (Organization Toggles) | 7 | Gender options, medical fields, merchandise toggle, custom questions, upsell controls |
+
+### Swim School Deep Dive Integration (March 18, 2026)
+**Source:** Deep dive session with Matt (Hubbard Family Swim School, Phoenix AZ) — 15+ years swim school operations experience
+**Features Added:** Smart multi-class waitlisting (2.3.1), skill-level registration (2.2.1), perpetual enrollment (3.10), makeup token system (3.7), transfer management (3.8), parent portal (3.9), lane/space assignment (6.5), non-teaching staff scheduling (5.5.1), attendance-based automated actions (4.3), proactive AI feature discovery (4.4)
 
 ---
 
@@ -688,6 +709,8 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Handle registration redirect URL from AI response
 - [ ] Create registration form component (pre-filled from chat)
 - [ ] Payment integration in registration form
+- [ ] Login redirects to last page visited (not backend dashboard) — NBC Priority 1
+- [ ] Confirmation screen detail overhaul — show full class details, dates, pricing breakdown before checkout — NBC Priority 2
 
 **N8N Workflow Updates:**
 - [ ] Update webhook to accept temp IDs
@@ -699,6 +722,30 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [x] Apple Pay / Google Pay — `PaymentRequestButtonElement` shown above card form when browser supports it; express checkout redirects to same confirmation URL; 3DS handled
 - [x] Saved payment methods for returning families — `families.stripe_customer_id` stored; `list-payment-methods` edge function returns masked cards; `SavedPaymentMethods` component with quick-pay button; `useSavedPaymentMethods` hook
 - [x] Failed payment recovery — `PaymentFailedRecovery` panel with contextual error messages, retry, different card, and support actions; `classifyStripeError` maps decline codes to friendly UX
+
+#### 3.1.0 Payment Infrastructure Enhancements (NEW - NBC Feature Roadmap)
+**Source:** Soccer Shots franchise feature roadmap (115 features analyzed March 2026)
+
+**Payment Plan Controls:**
+- [ ] Payment plan start/end date control — set installment start to "class start" or specific date (NBC Priority 1)
+- [ ] Maximum proration amount cap — configurable per class (NBC Priority 1)
+- [ ] Transfer funds between classes — move collected payments when child transfers (NBC Priority 1)
+- [ ] Override proration on transfers — admin toggle to bypass auto-proration (NBC Priority 1)
+- [ ] Adjust transfer of funds for recurring/installment plans — allow transfer of last payment regardless of calendar month (NBC Priority 1)
+- [ ] Recurring payment display clarity — if not paying in full, show that recurring payments exist at checkout + confirmation email (NBC Priority 2)
+- [ ] Proration display in price details — show "prorated" label when applicable (NBC Priority 3)
+
+**Admin Payment Operations:**
+- [ ] Pay Later (admin-initiated) — admin registers child, parent receives link to log in and pay (NBC Priority 3)
+- [ ] Refund + cancel in one step — atomic operation instead of cancel-then-refund (NBC Enhancement)
+- [ ] Overdue charge email from billing screen — one-click "send invoice" button with auto-generated payment link (NBC Priority 2)
+- [ ] Built-in charge creation — ability to choose a class when creating a manual charge on an account (NBC Priority 2)
+- [ ] Search billing manager by email — not just account name (NBC Enhancement)
+
+**Payment Data Integrity:**
+- [ ] Remove ability to delete offline payments — audit trail preservation (NBC Priority 1)
+- [ ] Remove ability to delete offline refunds — audit trail preservation (NBC Priority 1)
+- [ ] SE Payout Report accuracy — correct payout timing, account for bank holidays, Stripe rolling schedule (NBC Priority 1)
 
 #### 3.1.1 Biometric Authentication (Priority: MEDIUM) - NEW Jan 2026
 **Customer Request:** Face recognition and biometric login options
@@ -773,6 +820,43 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [x] One-click re-enroll with previous preferences — returning family auto-fills form
 - [x] Returning family loyalty discount (5%) — applied when email matches existing family
 
+#### 3.6.1 Registration Page & Discovery Enhancements (NEW - NBC Feature Roadmap)
+**Source:** Soccer Shots franchise feature roadmap — customer-facing registration improvements
+
+**Search & Filtering:**
+- [ ] Zip code filter — sort classes by distance, configurable default radius (10 miles default) (NBC Priority 1)
+- [ ] Keyword search on customer-facing site — search by keyword, not just dropdown filters (NBC Priority 1)
+- [ ] Registration page filter sharing — select filters, generate shareable URL with those filters pre-applied (NBC Priority 1)
+- [ ] Combinable filters — Location + Session, Location + Program, Sub-Program + Session, etc. (NBC Priority 1)
+- [ ] Share individual class link — direct URL to a specific class for email/social sharing (NBC Priority 1)
+- [ ] Mobile filter pinning — Filters button more obvious, pinned to top when scrolling on mobile (NBC Priority 1)
+- [ ] Canadian postal code support — display "Postal Code" label for Canadian addresses (NBC Priority 1)
+- [ ] Zip code no-results redirect — if no locations found, show customizable message with link to location finder (NBC Enhancement)
+- [ ] Age dropdown filter — filter to active classes only vs. all classes (NBC Priority 2)
+- [ ] Age in years and months — half-year precision for young children (e.g., 3.5 years) (NBC Priority 2)
+
+**Class Visibility & Presentation:**
+- [ ] Hidden/unlisted classes — ability to hide a class from registration page and email a direct registration link (NBC Priority 1)
+- [ ] "Notify me" for classes not yet open — pre-registration interest capture for future classes (NBC Priority 3)
+- [ ] Suggested classes during checkout — "Registering for Winter? Here's the Spring class at same location" (NBC Priority 1)
+- [ ] Direct-to-consumer product upsells — suggested products (jerseys, gear) at checkout (NBC Priority 2)
+- [ ] Total number of sessions visible — show "8 sessions" on customer-facing class listing (NBC Enhancement)
+- [ ] External registration link-out — allow org to link to an external site for specific program enrollment (NBC Priority 1)
+
+**Registration Flow:**
+- [ ] Marketing opt-in checkboxes — separate email and SMS opt-in during registration (NBC Enhancement)
+- [ ] SMS verification during checkout — checkbox for customer to initiate phone verification (NBC Priority 2)
+- [ ] Custom class questions per class/location — configurable intake questions (allergies, shirt size, medical) (NBC Priority 2)
+- [ ] Custom fields on classes — org-defined fields for reporting/filtering (Region, County, pre-scheduled makeup) (NBC Enhancement)
+- [ ] Account age lockout improvement — better error messaging instead of 24-hour lockout; 2-3 attempts before lock (NBC Priority 3)
+
+**Waitlist Enhancements:**
+- [ ] Waitlist confirmation email clarity — distinct subject "Waitlist Confirmation" (not "Order Confirmation"); clear next steps (NBC Priority 1)
+- [ ] Waitlist-to-registration continuity — preserve all registration data (merchandise orders, etc.) when converting from waitlist (NBC Priority 1)
+- [ ] Don't delete declined waitlist registrations — make inactive instead of deleting; preserve history (NBC Priority 2)
+- [ ] Waitlist slot available email improvements — clearer email with decline button when spot opens (NBC Enhancement)
+- [ ] Waitlist visible from member view — show waitlist status on both account and member views (NBC Priority 2)
+
 #### 3.7 Makeup Class Token System (NEW - Swim School Deep Dive)
 **Swim School Insight:** Critical operational feature. Parents cancel in advance → receive a makeup token → token is level-locked, expires after configurable period, can only book into classes with open spots.
 
@@ -814,6 +898,8 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Batch transfers: admin can move multiple children at once (e.g., class cancelled, move all to another)
 - [ ] Transfer reason tracking (for analytics: schedule conflict, skill progression, coach preference, etc.)
 - [ ] Transfer limits: configurable max transfers per billing period (optional)
+- [ ] Transfer UX overhaul — make transfer process easier with clear fund movement display (NBC Priority 1)
+- [ ] Class transfer data accuracy — ensure transfer data reports correctly for CRM/accounting (NBC Priority 1)
 
 #### 3.9 Parent Portal - Post-Registration (NEW - Swim School Deep Dive)
 **Swim School Insight:** After registration, parents need ongoing access to manage their child's enrollment — not just a one-time chat flow. Views filtered by child's skill level.
@@ -827,6 +913,11 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] View attendance history (present, absent, makeup)
 - [ ] Account notes visible to staff (medical info, special needs, allergies)
 - [x] Update family contact information — inline edit for name and phone in portal
+
+**Account Management:**
+- [ ] View all past classes (not just current) on account view (NBC Priority 2)
+- [ ] Search accounts by email + multiple strings with AND logic (NBC Priority 2)
+- [ ] New registration search — search by email, display email, show child birthdate (NBC Priority 2)
 
 **Communication:**
 - [ ] View messages from organization
@@ -880,6 +971,8 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] School-specific discount codes
 - [ ] Partner performance dashboard
 - [ ] Class naming convention: "Venue Name | Program | Season Year"
+- [ ] Roster upload — bulk enrollment from partner-submitted rosters (NBC Enhancement)
+- [ ] Include school directors in communications — email directors even if not enrolled in class (NBC Priority 2)
 
 **Top Partner Types (from NBC data):**
 - Montessori schools (significant segment)
@@ -1049,6 +1142,35 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] File and media sharing
 - [ ] Searchable message history
 
+#### 5.2.5 Calendar View & Scheduling Operations (NEW - NBC Feature Roadmap)
+**Source:** Soccer Shots franchise feature roadmap — calendar-based scheduling features
+
+**Calendar View with Bulk Actions (NBC Priority 1):**
+- [ ] Visual calendar interface for class scheduling
+- [ ] Bulk assign instructor — assign to full slot from calendar
+- [ ] Bulk message attendees from calendar
+- [ ] Bulk message instructors from calendar
+- [ ] Bulk track attendance from calendar
+- [ ] Bulk track skills from calendar
+- [ ] Bulk print/export attendance from calendar
+- [ ] Edit class from calendar view — same as normal edit but accessible inline
+- [ ] Multi-edit class dates in bulk from class admin (NBC Priority 1)
+
+**Single-Day Operations (NBC Priority 1):**
+- [ ] Reschedule a specific day of a class — without changing series end date
+- [ ] Cancel a single day of a class — without affecting other occurrences
+- [ ] Makeup class scheduling from calendar — reschedule a single occurrence
+- [ ] Coach substitution on a single day — without full schedule change (NBC Priority 2)
+- [ ] Remove coach from single session without substituting — for multi-coach classes (NBC Priority 3)
+- [ ] Reschedule/cancel/move location from mobile app — not just browser (NBC Priority 1)
+
+**Slot-Level Redesign (NBC Priority 2):**
+- [ ] Start/end dates at slot level (not just class level)
+- [ ] Age requirements at slot level
+- [ ] Skill/curriculum designation at slot level
+- [ ] Slot title/name field
+- [ ] UI update to show information for the specific day the class occurs on
+
 #### 5.3 Mobile-Friendly Attendance (Priority: HIGH)
 **Problem Solved:** Current systems have small touch targets causing accidental multi-taps
 
@@ -1101,6 +1223,18 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Substitute instructor support
 - [ ] Background check status tracking
 - [ ] **Smart notification system** — class reminders, SMS notifications, important alerts for coaches
+
+**Mobile Attendance Enhancements (NEW - NBC Feature Roadmap):**
+- [ ] Slot occurrence indicator — "Class 5 of 7" on mobile attendance screen (NBC Priority 1)
+- [ ] Show class curriculum/program level on coach schedule — Mini/Classic/Premier visible (NBC Priority 1)
+- [ ] Medical notes icon on attendance — visual flag if child has medical notes/special needs (NBC Priority 1)
+- [ ] Attendance notes — add notes to attendance sheet with role-based permissions (NBC Priority 1)
+- [ ] Classroom/group field on attendance — room or field assignment visible (NBC Priority 1)
+- [ ] Printed attendance with custom questions — configurable additional fields on printouts (NBC Priority 1)
+- [ ] Primary coach designation — explicitly set primary vs. assistant coach per slot (NBC Priority 2)
+- [ ] Coach calendar restricted to own classes — hide other coaches' classes when "My View" is off (NBC Priority 1)
+- [ ] Sort by group on mobile class attendance — configurable sort order (NBC Priority 2)
+- [ ] Coach group edit permissions — coaches can edit group but not substitute instructors (NBC Priority 1)
 
 #### 5.5.1 Non-Teaching Staff Scheduling (NEW - Swim School Deep Dive)
 **Swim School Insight:** Swim schools need lifeguards, water watchers, and site supervisors on the schedule. These staff aren't teaching classes but must be scheduled, visible on the daily roster, and tracked for hours.
@@ -1375,6 +1509,42 @@ Registration Form → Payment → Confirmed Registration → Return User
 ### Stage 8: Multi-Location & Franchise (PLANNED)
 **Goals:** Multi-location operators, franchise support
 
+#### 8.1 Multi-Tenant Organization Controls (NEW - NBC Feature Roadmap)
+**Source:** Soccer Shots franchise feature roadmap — franchise/organization-level controls
+
+**Organization Structure:**
+- [ ] Territory management — geographic territory assignment per location with picklist (replaces "zones") (NBC Enhancement)
+- [ ] Configurable profile fields per organization — enable/disable gender options, custom fields per org (NBC Priority 1)
+- [ ] Per-location pricing flexibility — hybrid pricing for high-location/low-density businesses (e.g., 200+ preschool locations, 1-2 classes each) (Tiger Tank feedback)
+
+**Admin Data Integrity:**
+- [ ] Prevent deletion of registrations/classes with registration history — soft-delete only (NBC Enhancement)
+- [ ] Prevent deletion of offline payments/refunds — audit trail preservation (NBC Priority 1)
+- [ ] Class transfer data accuracy for CRM/accounting — complete revenue data for transfers (NBC Priority 1)
+
+**Admin Operations:**
+- [ ] Access edit class modal from account screen — quick navigation (NBC Enhancement)
+- [ ] Class admin search by multiple strings — AND logic, not order-specific (NBC Enhancement)
+- [ ] Increase character limit for class name and description (NBC Priority 3)
+- [ ] Physician name/office phone hide option — configurable per org (NBC Priority 3)
+
+#### 8.2 Merchandise & Fulfillment Module (NEW - NBC Feature Roadmap)
+**Source:** Soccer Shots franchise feature roadmap — jersey/merchandise fulfillment system
+**Context:** Any organization selling uniforms, jerseys, equipment, or branded gear needs a fulfillment pipeline integrated with registration.
+
+**Fulfillment Pipeline:**
+- [ ] Merchandise fulfillment trigger on registration — auto-trigger when class registration completes
+- [ ] Admin registration triggers fulfillment — same pipeline for admin-initiated registrations (NBC Priority 1)
+- [ ] Bundle multiple orders per family — combine shipments instead of sending individually (NBC Priority 1)
+- [ ] Fulfillment partner integration — API to send orders to fulfillment vendors
+- [ ] Size prompt timing — only prompt for size when due (not at registration if not needed yet) (NBC Priority 1)
+
+**Merchandise Management:**
+- [ ] Product catalog per organization — jerseys, equipment, branded gear
+- [ ] Size exchange processing — handle size exchanges directly in platform (NBC Priority 2)
+- [ ] Coupon application to annual fees — allow discount codes on recurring fees (NBC Priority 2)
+- [ ] Direct-to-consumer product suggestions at checkout — upsell gear during registration (NBC Priority 2)
+
 ---
 
 ### Stage 8.5: Benchmarking Intelligence Dashboard (PLANNED) - NEW Jan 2026
@@ -1617,6 +1787,30 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Scheduled sending
 - [ ] Delivery tracking and analytics
 
+#### 9.6.1 Communications Enhancements (NEW - NBC Feature Roadmap)
+**Source:** Soccer Shots franchise feature roadmap — email, SMS, and notification improvements
+
+**Email Capabilities:**
+- [ ] Scheduled email send — schedule emails for future date/time with cancel ability (NBC Priority 1)
+- [ ] Email sender control — choose which email address outgoing messages are sent from (NBC Priority 1)
+- [ ] Select multiple classes easily when sending emails — anywhere emails can currently be sent (NBC Priority 1)
+- [ ] Email based on current roster at send time — not at scheduling time (NBC Priority 1)
+- [ ] Saveable email templates — save and reuse templates in the email editor (NBC Priority 3)
+- [ ] Order confirmation email customization — match shopping cart styling, consistent branding (NBC Priority 1)
+- [ ] Admin order confirmation emails — send same email to admin as customer (NBC Priority 2)
+
+**SMS Capabilities:**
+- [ ] SMS carrier compliance — backend changes to ensure carriers don't block messages (NBC Priority 1)
+- [ ] Auto-reply for SMS responses — "This number is not monitored, contact your local office" (NBC Priority 1)
+- [ ] SMS delivery tracking — see who received, failed, message statuses (NBC Enhancement)
+- [ ] SMS verification visibility — more visible verification process during checkout (NBC Priority 2)
+- [ ] SMS prefix for all orgs — softer language, show verification status, show if user blocked (NBC Priority 1)
+
+**Agreements & Compliance:**
+- [ ] Corporate disclaimers — centrally managed disclaimers available at franchise/org level (NBC Priority 2)
+- [ ] Unsigned agreement visibility on attendance — show if agreements incomplete (NBC Enhancement)
+- [ ] Bulk export signed agreements as PDF — per-signer PDFs for childcare centers (NBC Enhancement)
+
 ---
 
 ### Stage 10: White-Label & API (PLANNED)
@@ -1671,6 +1865,13 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Birthday Campaign Automation (on/off)
 - [ ] Re-enrollment Reminders (on/off)
 - [ ] Sibling Discount Auto-Apply (on/off)
+- [ ] Gender Options (enable/disable non-binary, not-specified per org) (NBC Priority 1)
+- [ ] Physician/Medical Fields (show/hide per org) (NBC Priority 3)
+- [ ] SMS Marketing Opt-in Checkbox (enable/disable at registration) (NBC Enhancement)
+- [ ] Merchandise Fulfillment (on/off per org) (NBC Priority 1)
+- [ ] Custom Class Questions (on/off per class/location) (NBC Priority 2)
+- [ ] Notify Me for Future Classes (on/off) (NBC Priority 3)
+- [ ] Class Suggested Upsells at Checkout (on/off) (NBC Priority 1)
 
 **Implementation:**
 - Organization settings table with boolean flags
