@@ -817,15 +817,16 @@ Registration Form → Payment → Confirmed Registration → Return User
 
 #### 3.9 Parent Portal - Post-Registration (NEW - Swim School Deep Dive)
 **Swim School Insight:** After registration, parents need ongoing access to manage their child's enrollment — not just a one-time chat flow. Views filtered by child's skill level.
+**Status:** PARTIALLY COMPLETE — Core portal live at `/portal`; advanced features (makeup booking, transfers, skill progress) pending.
 
 **Core Features:**
-- [ ] View current class schedule with teacher, location, time
+- [x] View current class schedule with teacher, location, time — `/portal` shows confirmed registrations with session details
 - [ ] Book makeup classes using tokens (see 3.7)
 - [ ] Request class transfers (see 3.8)
 - [ ] View skill progress and level history
 - [ ] View attendance history (present, absent, makeup)
 - [ ] Account notes visible to staff (medical info, special needs, allergies)
-- [ ] Update family contact information
+- [x] Update family contact information — inline edit for name and phone in portal
 
 **Communication:**
 - [ ] View messages from organization
@@ -835,7 +836,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 **Filtered Views:**
 - [ ] Classes filtered by child's current skill level (not full schedule)
 - [ ] Only show eligible makeup slots
-- [ ] Age-appropriate program suggestions for siblings
+- [x] Age-appropriate program suggestions for siblings — re-enroll CTA in portal
 
 #### 3.10 Perpetual Enrollment Model (NEW - Swim School Deep Dive)
 **Swim School Insight:** Hubbard runs perpetual enrollment (gym membership model) — enroll once, stay until you cancel. Fundamentally different from term/season-based. System must support both.
@@ -927,19 +928,20 @@ Registration Form → Payment → Confirmed Registration → Return User
 #### 4.2.5 Reporting Engine (NEW - Tiger Tank Critical)
 **Priority:** HIGH - Mentioned by 7/12 reviewers as deal-breaker
 **Tiger Tank Insight:** Operators need printable schedules (poolside/fieldside), custom reports, Excel export
+**Status:** PARTIALLY COMPLETE — Core reports live at `/reports`; advanced builder + staff analytics pending.
 
 **Custom Report Builder:**
 - [ ] Drag-and-drop report designer
-- [ ] Pre-built report templates (enrollment, revenue, attendance)
+- [x] Pre-built report templates — Enrollment (filterable table), Revenue (by program), Schedule (by day) at `/reports`
 - [ ] Custom field selection
 - [ ] Grouping and aggregation options
-- [ ] Date range filtering
-- [ ] Multi-format export (Excel, PDF, CSV)
+- [x] Date range filtering — 7d/30d/90d/all selector on Enrollment + Revenue tabs
+- [x] Multi-format export (CSV) — CSV export on all 3 report tabs; Print button on Schedule tab
 
 **Printable Schedules (Critical for Swim/Sports):**
-- [ ] Single-page daily schedule view
-- [ ] Print-optimized layouts (no wasted space)
-- [ ] Student names visible for attendance
+- [x] Single-page daily schedule view — Schedule tab filtered by day of week
+- [x] Print-optimized layouts — `window.print()` on Schedule tab
+- [x] Student names visible for attendance — student name chips on each class card
 - [ ] Skill level indicators (for swim schools)
 - [ ] Make-up student highlighting
 - [ ] TV/display mode for fieldside/poolside monitors
@@ -952,7 +954,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Schedule adherence metrics
 
 **Financial Reporting:**
-- [ ] Revenue by program/location/time period
+- [x] Revenue by program/location/time period — Revenue tab with program breakdown + date filter
 - [ ] Payment method breakdown
 - [ ] Outstanding balance reports
 - [ ] Refund and credit tracking
@@ -970,14 +972,14 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Attendance rule templates (pre-built for common scenarios)
 
 **Churn Risk Scoring:**
-- [ ] Churn risk scoring algorithm (learns from historical data)
-- [ ] Risk factors: engagement, attendance, payment issues, time since last interaction
-- [ ] Family risk level indicators (Low, Medium, High, Critical)
-- [ ] Predictive alerts before families leave
+- [x] Churn risk scoring algorithm — `computeRisk()` in `/retention` scores 0–100 across 4 factors
+- [x] Risk factors: engagement score, abandoned carts, time since last activity, registration loyalty
+- [x] Family risk level indicators (Low, Medium, High, Critical) — color-coded badges on FamilyRiskCard
+- [ ] Predictive alerts before families leave (ML-based, not rule-based)
 
 **Auto-Retention Campaigns:**
 - [ ] Auto-initiated retention campaigns for at-risk families
-- [ ] Personalized messaging based on risk factors
+- [x] Personalized messaging based on risk factors — email outreach button generates pre-filled mailto with child name + program context
 - [ ] Multi-channel outreach (email, SMS, push)
 - [ ] Escalation paths for non-responsive families
 

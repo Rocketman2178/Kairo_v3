@@ -5,6 +5,62 @@ Format: `## [Month Year] - Title | Category | Description`
 
 ---
 
+## [March 24, 2026] - Parent Portal, Reporting Engine & Churn Prevention Dashboard | Core Feature | High
+
+**Category:** Core Feature
+**Impact:** High — Closes Stage 3.9 (parent portal), Stage 4.2.5 (reporting engine), Stage 4.3 (churn prevention)
+
+**Description:**
+Three features implemented across family-facing UX, business intelligence, and retention tooling. The Parent Portal gives families a self-service view of their registrations, schedule, and account info at `/portal` — accessed by email lookup, no auth account required. The Reporting Engine provides admins with enrollment tables (filterable + CSV export), revenue-by-program breakdown, and a printable class schedule view at `/reports`. The Churn Prevention Dashboard at `/retention` computes a risk score per family based on days since last activity, abandoned carts, and engagement score — showing at-risk families with one-click email outreach templates. All three are accessible from the Analytics dashboard.
+
+### Feature 1: Parent Portal (Stage 3.9)
+- New `src/pages/ParentPortal.tsx` — family self-service portal at `/portal`
+- Email-gate landing screen: family enters registration email → looks up their `families` record
+- Supports `?email=` URL param for pre-fill from confirmation email links
+- **PortalDashboard** component: stats row (active, total, paid), tab bar (Current / History)
+- **RegistrationCard** component: program name, child name+age, day/time/location, status badge, amount, enrolled date
+- **ContactEditor** component: inline edit for `primary_contact_name` and `phone`; email shown as read-only; saves directly to `families` table via Supabase
+- Registrations joined from: `sessions → programs`, `sessions → locations`, `children`
+- Filters out `pending_registration` status rows — shows only actionable records
+- Re-enrollment CTA card at bottom links back to home chat flow with sibling discount messaging
+- Mobile-first, 44px min tap targets throughout
+
+### Feature 2: Reporting Engine (Stage 4.2.5)
+- New `src/pages/Reports.tsx` — admin reporting at `/reports`
+- Three report tabs: **Enrollment**, **Revenue**, **Schedule**
+- **Enrollment Report**: joins registrations + families + children + sessions + programs + locations; search by child/parent/program name; status filter dropdown; mobile card view + desktop table; summary bar (total, confirmed, revenue); CSV export
+- **Revenue Report**: confirmed+paid registrations aggregated by program; horizontal bar chart by revenue share; per-program stats (registrations, avg amount); total revenue + count cards; CSV export
+- **Schedule Report**: active sessions with enrolled student lists; filter by day of week; capacity fill indicator (green/amber/red); student name chips; coach/location/time metadata; print button (`window.print()`); CSV export with one row per student per class
+- `exportCsv()` utility: generates downloadable `.csv` files client-side
+- Date range selector (7d/30d/90d/all) on Enrollment and Revenue tabs
+- Navigation: accessible from Analytics dashboard via quick-link card
+
+### Feature 3: Churn Prevention Dashboard (Stage 4.3)
+- New `src/pages/Retention.tsx` — at-risk family scoring at `/retention`
+- `computeRisk()` function: weighted scoring (0–100) across 4 factors:
+  - Days since last confirmed registration (most weighted: up to 40 pts)
+  - Unrecovered abandoned carts (up to 30 pts)
+  - Low engagement score from `families.engagement_score` (up to 20 pts)
+  - Single-registration status / no loyalty signal (10 pts)
+- Risk levels: **Critical** (≥60), **High** (≥40), **Medium** (≥20), **Low** (<20)
+- **FamilyRiskCard** component: risk score bar, risk factor list, stats row, email outreach button (pre-fills subject + body with personalized template), phone call link
+- Filter tabs by risk level with counts; CSV export of at-risk list
+- Insight card: surfaces total unrecovered abandoned carts with action prompt
+- Risk methodology card: explains scoring factors to admins
+- Navigation: accessible from Analytics dashboard via quick-link card
+
+**Files Changed:**
+- `src/pages/ParentPortal.tsx` — **NEW** — Family self-service portal
+- `src/pages/Reports.tsx` — **NEW** — Admin reporting engine (enrollment, revenue, schedule)
+- `src/pages/Retention.tsx` — **NEW** — Churn prevention at-risk dashboard
+- `src/App.tsx` — `/portal`, `/reports`, `/retention` routes added
+- `src/pages/Analytics.tsx` — Quick-link cards to Reports and Retention added
+
+**No new DB migrations** — all features use existing schema.
+**No new Edge Functions** — all data fetched client-side via Supabase.
+
+---
+
 ## [March 23, 2026] - Saved Payment Methods, Re-enrollment Reminders & Analytics Dashboard | Core Feature | High
 
 **Category:** Core Feature

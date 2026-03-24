@@ -9,6 +9,9 @@ import Register from './pages/Register';
 import { TestScenarios } from './pages/TestScenarios';
 import { SplashPage } from './pages/SplashPage';
 import { Analytics } from './pages/Analytics';
+import { ParentPortal } from './pages/ParentPortal';
+import { Reports } from './pages/Reports';
+import { Retention } from './pages/Retention';
 
 function App() {
   return (
@@ -24,6 +27,9 @@ function App() {
           <Route path="/test-scenarios" element={<TestScenarios />} />
           <Route path="/splash" element={<SplashPage />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/portal" element={<ParentPortal />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/retention" element={<Retention />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

@@ -544,6 +544,39 @@ export function Analytics() {
           )}
         </div>
 
+        {/* Quick links to Reports + Retention */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <button
+            onClick={() => navigate('/reports')}
+            className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-start gap-4 hover:border-indigo-200 hover:shadow-md transition-all text-left group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-100 transition-colors">
+              <BarChart3 className="w-5 h-5 text-indigo-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-slate-800">Reports</p>
+              <p className="text-sm text-slate-500 mt-0.5">
+                Enrollment tables, revenue breakdowns, and printable class schedules with CSV export.
+              </p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/retention')}
+            className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-start gap-4 hover:border-red-200 hover:shadow-md transition-all text-left group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0 group-hover:bg-red-100 transition-colors">
+              <AlertTriangle className="w-5 h-5 text-red-500" />
+            </div>
+            <div>
+              <p className="font-semibold text-slate-800">Churn Prevention</p>
+              <p className="text-sm text-slate-500 mt-0.5">
+                At-risk family scoring based on engagement, abandoned carts, and activity patterns.
+              </p>
+            </div>
+          </button>
+        </div>
+
         {/* Source breakdown hint */}
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-5 flex items-start gap-4">
           <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
