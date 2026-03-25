@@ -25,12 +25,11 @@ interface SessionRow {
   id: string;
   day_of_week: number;
   start_time: string;
-  end_time: string | null;
   start_date: string;
   end_date: string | null;
   capacity: number;
   enrolled_count: number;
-  is_active: boolean;
+  status: string;
   programs: {
     id: string;
     name: string;
@@ -38,6 +37,7 @@ interface SessionRow {
     price_cents: number;
     age_range: string | null;
     duration_weeks: number | null;
+    organization_id: string;
   } | null;
   locations: {
     id: string;
@@ -102,9 +102,9 @@ function SessionBrowseCard({ session, onCopyLink, copiedId }: SessionBrowseCardP
   const navigate = useNavigate();
   const prog = session.programs;
   const loc = session.locations;
-  const spotsRemaining = session.capacity - session.enrolled_count;
+  const spotsRemaining = Math.max(0, session.capacity - session.enrolled_count);
   const fillRate = (session.enrolled_count / session.capacity) * 100;
-  const isFull = spotsRemaining <= 0;
+  const isFull = session.status === 'full' || spotsRemaining <= 0;
   const isFillingFast = !isFull && fillRate >= 75;
 
   const fillBarColor =
@@ -290,19 +290,19 @@ export function Sessions() {
             id,
             day_of_week,
             start_time,
-            end_time,
             start_date,
             end_date,
             capacity,
             enrolled_count,
-            is_active,
-            programs (
+            status,
+            programs!inner (
               id,
               name,
               description,
               price_cents,
               age_range,
-              duration_weeks
+              duration_weeks,
+              organization_id
             ),
             locations (
               id,
@@ -310,8 +310,8 @@ export function Sessions() {
               address
             )
           `)
-          .eq('organization_id', ORG_ID)
-          .eq('is_active', true)
+          .in('status', ['active', 'full'])
+          .eq('programs.organization_id', ORG_ID)
           .order('day_of_week')
           .order('start_time');
 
