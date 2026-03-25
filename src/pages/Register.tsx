@@ -12,6 +12,8 @@ import PaymentFailedRecovery from '../components/registration/PaymentFailedRecov
 import RegistrationSteps from '../components/registration/RegistrationSteps';
 import RegistrationConfirmation from '../components/registration/RegistrationConfirmation';
 import type { PlanType } from '../utils/paymentPlans';
+import { useProactiveTrigger } from '../hooks/useProactiveTrigger';
+import { ProactiveChatPopup } from '../components/registration/ProactiveChatPopup';
 import {
   ArrowLeft,
   ArrowRight,
@@ -109,6 +111,13 @@ export default function Register() {
   const [quickPayProcessing, setQuickPayProcessing] = useState(false);
   const [quickPayMethodId, setQuickPayMethodId] = useState<string | null>(null);
   const emailLookupTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Proactive Kai chat intervention — only active on steps 0-2 (not confirmation)
+  const proactive = useProactiveTrigger(step, {
+    inactivityThresholdSec: 35,
+    timeOnStepThresholdSec: 75,
+    enabled: step < 3 && !loading && !error,
+  });
   const [formData, setFormData] = useState<FormData>({
     parentFirstName: '',
     parentLastName: '',
@@ -983,6 +992,20 @@ export default function Register() {
   return (
     <div className="min-h-screen bg-gray-50 py-6 px-4 pb-24 sm:pb-6">
       <div className="max-w-2xl mx-auto">{mainContent}</div>
+
+      {/* Proactive Kai chat intervention popup */}
+      {proactive.shouldShow && (
+        <ProactiveChatPopup
+          currentStep={step}
+          triggerReason={proactive.triggerReason}
+          onDismiss={proactive.dismiss}
+          onChatWithKai={() => {
+            proactive.dismiss();
+            navigate('/');
+          }}
+          stepLabels={STEPS.map(s => s.label)}
+        />
+      )}
     </div>
   );
 }

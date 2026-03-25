@@ -20,6 +20,9 @@ import {
   Edit2,
   Save,
   X,
+  Ticket,
+  Timer,
+  Info,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -66,6 +69,25 @@ interface RegistrationRecord {
     locationName: string | null;
     locationAddress: string | null;
   };
+}
+
+interface MakeupToken {
+  id: string;
+  skillLevel: string | null;
+  expiresAt: string;
+  issuedAt: string;
+  makeupFeeCents: number;
+  childFirstName: string;
+  childLastName: string | null;
+  sourceProgramName: string | null;
+  expiryUrgency: 'urgent' | 'warning' | 'ok';
+}
+
+interface TokenSummary {
+  activeCount: number;
+  usedCount: number;
+  expiredCount: number;
+  activeTokens: MakeupToken[];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -425,6 +447,210 @@ function ContactEditor({ family, onUpdated }: ContactEditorProps) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Makeup Tokens Panel
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface MakeupTokensPanelProps {
+  familyId: string;
+}
+
+function MakeupTokensPanel({ familyId }: MakeupTokensPanelProps) {
+  const [summary, setSummary] = useState<TokenSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data, error: rpcErr } = await supabase.rpc('get_family_tokens', {
+          p_family_id: familyId,
+        });
+        if (cancelled) return;
+        if (rpcErr) throw rpcErr;
+
+        const tokens: MakeupToken[] = ((data?.active_tokens as unknown[]) ?? []).map((t: unknown) => {
+          const tok = t as Record<string, unknown>;
+          return {
+            id: tok.id as string,
+            skillLevel: (tok.skill_level as string | null) ?? null,
+            expiresAt: tok.expires_at as string,
+            issuedAt: tok.issued_at as string,
+            makeupFeeCents: (tok.makeup_fee_cents as number) ?? 0,
+            childFirstName: tok.child_first_name as string,
+            childLastName: (tok.child_last_name as string | null) ?? null,
+            sourceProgramName: (tok.source_program_name as string | null) ?? null,
+            expiryUrgency: (tok.expiry_urgency as 'urgent' | 'warning' | 'ok') ?? 'ok',
+          };
+        });
+
+        setSummary({
+          activeCount: (data?.active_count as number) ?? 0,
+          usedCount: (data?.used_count as number) ?? 0,
+          expiredCount: (data?.expired_count as number) ?? 0,
+          activeTokens: tokens,
+        });
+      } catch {
+        if (!cancelled) setError('Failed to load makeup tokens.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void load();
+    return () => { cancelled = true; };
+  }, [familyId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-10 gap-2 text-slate-400">
+        <Loader2 className="w-5 h-5 animate-spin" />
+        <span className="text-sm">Loading tokens…</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
+        <p className="text-sm text-red-600">{error}</p>
+      </div>
+    );
+  }
+
+  if (!summary || summary.activeCount === 0) {
+    return (
+      <div className="text-center py-10 text-slate-400">
+        <Ticket className="w-10 h-10 mx-auto mb-3 opacity-30" />
+        <p className="text-sm font-medium text-slate-600">No makeup tokens</p>
+        <p className="text-xs text-slate-400 mt-1">
+          When you cancel a class in advance, you'll receive a makeup token here.
+        </p>
+        {(summary?.usedCount ?? 0) > 0 || (summary?.expiredCount ?? 0) > 0 ? (
+          <p className="text-xs text-slate-400 mt-3">
+            {summary!.usedCount > 0 && `${summary!.usedCount} used`}
+            {summary!.usedCount > 0 && summary!.expiredCount > 0 && ' · '}
+            {summary!.expiredCount > 0 && `${summary!.expiredCount} expired`}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Summary row */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-white rounded-xl border border-slate-200 p-3 text-center">
+          <p className="text-2xl font-bold text-indigo-600">{summary.activeCount}</p>
+          <p className="text-xs text-slate-500 mt-0.5">Available</p>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-3 text-center">
+          <p className="text-2xl font-bold text-emerald-600">{summary.usedCount}</p>
+          <p className="text-xs text-slate-500 mt-0.5">Used</p>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-3 text-center">
+          <p className="text-2xl font-bold text-slate-400">{summary.expiredCount}</p>
+          <p className="text-xs text-slate-500 mt-0.5">Expired</p>
+        </div>
+      </div>
+
+      {/* How tokens work info card */}
+      <div className="flex gap-2 bg-indigo-50 border border-indigo-100 rounded-xl p-3">
+        <Info className="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" />
+        <p className="text-xs text-indigo-700">
+          Use a makeup token to book an open spot in an equivalent class.
+          Tokens are locked to the same program level and expire after 12 months.
+        </p>
+      </div>
+
+      {/* Active token list */}
+      <div className="space-y-3">
+        {summary.activeTokens.map(tok => {
+          const childName = tok.childLastName
+            ? `${tok.childFirstName} ${tok.childLastName}`
+            : tok.childFirstName;
+          const expiresDate = new Date(tok.expiresAt).toLocaleDateString('en-US', {
+            month: 'short', day: 'numeric', year: 'numeric'
+          });
+          const daysLeft = Math.max(
+            0,
+            Math.ceil((new Date(tok.expiresAt).getTime() - Date.now()) / 86_400_000)
+          );
+
+          return (
+            <div
+              key={tok.id}
+              className={`bg-white rounded-xl border p-4 ${
+                tok.expiryUrgency === 'urgent'
+                  ? 'border-red-200 bg-red-50/40'
+                  : tok.expiryUrgency === 'warning'
+                  ? 'border-amber-200 bg-amber-50/30'
+                  : 'border-slate-200'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                    <Ticket className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">{childName}</p>
+                    {tok.sourceProgramName && (
+                      <p className="text-xs text-slate-500">{tok.sourceProgramName}</p>
+                    )}
+                  </div>
+                </div>
+                {tok.makeupFeeCents > 0 && (
+                  <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                    ${(tok.makeupFeeCents / 100).toFixed(0)} fee
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-3 text-xs text-slate-500">
+                {tok.skillLevel && (
+                  <span className="flex items-center gap-1">
+                    <Star className="w-3.5 h-3.5 text-indigo-400" />
+                    Level: {tok.skillLevel}
+                  </span>
+                )}
+                <span className="flex items-center gap-1">
+                  <Timer className={`w-3.5 h-3.5 ${
+                    tok.expiryUrgency === 'urgent' ? 'text-red-400' :
+                    tok.expiryUrgency === 'warning' ? 'text-amber-400' : 'text-slate-400'
+                  }`} />
+                  <span className={
+                    tok.expiryUrgency === 'urgent' ? 'text-red-600 font-medium' :
+                    tok.expiryUrgency === 'warning' ? 'text-amber-600' : ''
+                  }>
+                    {daysLeft === 0 ? 'Expires today' : `Expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`} ({expiresDate})
+                  </span>
+                </span>
+              </div>
+
+              <div className="mt-3 pt-3 border-t border-slate-100">
+                <a
+                  href="/sessions"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700 min-h-[36px]"
+                >
+                  Browse available makeup slots
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Portal Dashboard
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -438,7 +664,7 @@ function PortalDashboard({ family, onSignOut }: PortalDashboardProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [familyProfile, setFamilyProfile] = useState(family);
-  const [tab, setTab] = useState<'upcoming' | 'history'>('upcoming');
+  const [tab, setTab] = useState<'upcoming' | 'history' | 'tokens'>('upcoming');
 
   const loadRegistrations = useCallback(async () => {
     setLoading(true);
@@ -624,9 +850,20 @@ function PortalDashboard({ family, onSignOut }: PortalDashboardProps) {
             >
               History ({history.length})
             </button>
+            <button
+              onClick={() => setTab('tokens')}
+              className={`flex-1 flex items-center justify-center gap-1 text-sm font-medium py-2 rounded-lg transition-colors min-h-[40px] ${
+                tab === 'tokens' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+              }`}
+            >
+              <Ticket className="w-3.5 h-3.5" />
+              Tokens
+            </button>
           </div>
 
-          {loading ? (
+          {tab === 'tokens' ? (
+            <MakeupTokensPanel familyId={family.id} />
+          ) : loading ? (
             <div className="flex flex-col items-center justify-center py-12 text-slate-400 gap-3">
               <Loader2 className="w-8 h-8 animate-spin" />
               <p className="text-sm">Loading registrations…</p>

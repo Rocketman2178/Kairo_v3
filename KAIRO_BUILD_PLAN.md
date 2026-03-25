@@ -825,11 +825,11 @@ Registration Form → Payment → Confirmed Registration → Return User
 
 **Search & Filtering:**
 - [ ] Zip code filter — sort classes by distance, configurable default radius (10 miles default) (NBC Priority 1)
-- [ ] Keyword search on customer-facing site — search by keyword, not just dropdown filters (NBC Priority 1)
-- [ ] Registration page filter sharing — select filters, generate shareable URL with those filters pre-applied (NBC Priority 1)
+- [x] Keyword search on customer-facing site — `/sessions` page with full-text search across program, location, description, day (NBC Priority 1)
+- [x] Registration page filter sharing — URL-param based filters (`?q=&day=&ageMin=&ageMax=`) are shareable and bookmarkable (NBC Priority 1)
 - [ ] Combinable filters — Location + Session, Location + Program, Sub-Program + Session, etc. (NBC Priority 1)
-- [ ] Share individual class link — direct URL to a specific class for email/social sharing (NBC Priority 1)
-- [ ] Mobile filter pinning — Filters button more obvious, pinned to top when scrolling on mobile (NBC Priority 1)
+- [x] Share individual class link — "Share" button per card copies `/sessions?session={id}` to clipboard (NBC Priority 1)
+- [x] Mobile filter pinning — sticky header with Filter button + collapsible filter panel; quick-pill day selectors (NBC Priority 1)
 - [ ] Canadian postal code support — display "Postal Code" label for Canadian addresses (NBC Priority 1)
 - [ ] Zip code no-results redirect — if no locations found, show customizable message with link to location finder (NBC Enhancement)
 - [ ] Age dropdown filter — filter to active classes only vs. all classes (NBC Priority 2)
@@ -859,17 +859,18 @@ Registration Form → Payment → Confirmed Registration → Return User
 
 #### 3.7 Makeup Class Token System (NEW - Swim School Deep Dive)
 **Swim School Insight:** Critical operational feature. Parents cancel in advance → receive a makeup token → token is level-locked, expires after configurable period, can only book into classes with open spots.
+**Status:** PHASE 1 COMPLETE — DB schema + parent portal display done. Token issuance trigger and booking flow pending.
 
 **Token Mechanics:**
-- [ ] Token generation: auto-issue when class cancelled X hours in advance (configurable, default: 1 hour)
-- [ ] Token level-locking: token tied to the skill level of the missed class
-- [ ] Token expiration: configurable per org (default: 12 months)
-- [ ] Token usage: can only book into classes with available spots at the matching level
-- [ ] Token limit: configurable max tokens per child per month (optional)
-- [ ] Token fees: optional makeup class fee (configurable per org, default: $0)
+- [x] Token generation: `issue_makeup_token()` RPC; DB schema supports org-configurable expiry and fee (Phase 2: trigger on cancellation event)
+- [x] Token level-locking: `skill_level` field stored on token; level-lock enforced at query time
+- [x] Token expiration: configurable expiry months (default: 12); auto-expire in `get_family_tokens()`
+- [ ] Token usage: booking flow to use token when selecting makeup class (Phase 2)
+- [ ] Token limit: configurable max tokens per child per month (optional) (Phase 2)
+- [x] Token fees: `makeup_fee_cents` field on token; displayed in parent portal if > 0
 
 **Parent Experience:**
-- [ ] View available makeup tokens in parent portal
+- [x] View available makeup tokens in parent portal — Tokens tab with active/used/expired counts, per-token cards with expiry urgency
 - [ ] Browse available makeup slots filtered by token level
 - [ ] One-tap makeup booking from available classes
 - [ ] Token expiration warnings (30 days, 7 days before expiry)
@@ -997,26 +998,27 @@ Registration Form → Payment → Confirmed Registration → Return User
 
 #### 4.2 Proactive Kai Chat Intervention (Priority: HIGH) - NEW Jan 2026
 **Customer Question:** Can we collect behavioral data and make recommendations on when to insert a chat popup?
+**Status:** PHASE 1 COMPLETE — Behavioral triggers + popup live on Register page. AI recommendation engine and A/B testing pending.
 
 **Behavioral Analytics:**
-- [ ] Track registration drop-off points (where users abandon)
-- [ ] Identify consistent abandonment patterns across users
-- [ ] Time-on-page analysis per registration step
-- [ ] Mouse/touch inactivity detection
-- [ ] Form field error patterns
+- [ ] Track registration drop-off points (where users abandon) — planned: aggregate to analytics dashboard
+- [ ] Identify consistent abandonment patterns across users — planned Phase 2
+- [x] Time-on-page analysis per registration step — `useProactiveTrigger` tracks step entry time, fires at 75s
+- [x] Mouse/touch inactivity detection — fires after 35s of no mouse/keyboard/touch/scroll activity
+- [ ] Form field error patterns — planned Phase 2
 
 **AI Recommendation Engine:**
 - [ ] AI analyzes drop-off patterns and recommends popup placement
-- [ ] Suggest chat intervention at identified friction points
-- [ ] Auto-insert Kai chat at high-abandonment steps
-- [ ] Contextual help based on where user is stuck
+- [x] Suggest chat intervention at identified friction points — step-contextual messages per step 0–3
+- [x] Auto-insert Kai chat at high-abandonment steps — `ProactiveChatPopup` triggers on Register page steps 0–2
+- [x] Contextual help based on where user is stuck — different headline/subtext/CTA per step
 
 **Testing & Optimization:**
 - [ ] A/B testing for popup effectiveness
 - [ ] Measure intervention success rates
 - [ ] Dashboard showing conversion lift from interventions
 - [ ] Manual override for popup placement
-- [ ] Popup frequency controls (don't annoy users)
+- [x] Popup frequency controls — per-step dismiss memory (once dismissed on a step, no re-trigger)
 
 #### 4.2.5 Reporting Engine (NEW - Tiger Tank Critical)
 **Priority:** HIGH - Mentioned by 7/12 reviewers as deal-breaker

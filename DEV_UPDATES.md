@@ -5,6 +5,77 @@ Format: `## [Month Year] - Title | Category | Description`
 
 ---
 
+## [March 24, 2026] - Session Browse Page, Proactive Kai Chat Intervention & Makeup Token System | Core Feature | High
+
+**Category:** Core Feature
+**Impact:** High — Closes Stage 3.6.1 (session browse/search), advances Stage 4.2 (proactive intervention), and launches Stage 3.7 Phase 1 (makeup tokens)
+
+**Description:**
+Three features implemented across customer discovery, behavioral retention, and class cancellation UX. The Session Browse Page gives families a searchable, filterable directory of all available classes at `/sessions` with shareable filter URLs and per-class share links. The Proactive Kai Chat Intervention adds a behavioral analytics hook that tracks inactivity and time-on-step, surfacing a contextual Kai chat popup when abandonment risk is detected on the registration flow. The Makeup Token System Phase 1 establishes the full database schema for tokens with RLS, three DB functions (`issue_makeup_token`, `use_makeup_token`, `get_family_tokens`), and a Tokens tab in the Parent Portal showing active token status with expiry urgency indicators.
+
+### Feature 1: Session Browse Page (Stage 3.6.1)
+- New `src/pages/Sessions.tsx` — browsable session directory at `/sessions`
+- Keyword search: queries program name, description, location, address, day of week
+- Filter panel: day of week (quick-pill day selector + dropdown), min/max age range
+- URL-based shareable filters (`?q=soccer&day=Monday&ageMin=4`) — filters stored in URL params, persist on share/bookmark
+- Per-class "Share" button: copies direct class link (`/sessions?session={id}`) to clipboard with visual confirmation
+- Direct link highlighting: `?session={id}` param highlights the linked class with a ring
+- Grouped display by day of week with session count per day
+- Mobile-first responsive grid (1-col mobile, 2-col desktop)
+- Register button navigates to `/?session={id}` (starts Kai chat); Waitlist button for full classes
+- "Chat with Kai" footer CTA for users who want personalized recommendations
+- "Browse Classes" link added to Home.tsx header nav
+- Route `/sessions` added to App.tsx
+
+### Feature 2: Proactive Kai Chat Intervention (Stage 4.2)
+- New `src/hooks/useProactiveTrigger.ts` — behavioral analytics hook
+  - Tracks inactivity: fires after 35 seconds of no mouse/keyboard/touch/scroll activity
+  - Tracks time-on-step: fires after 75 seconds of lingering on a single registration step
+  - Both timers reset when user advances to the next step
+  - Per-step dismiss memory: once dismissed on a step, does not re-trigger for that step
+  - No PII captured — timing-only events, all in-memory
+- New `src/components/registration/ProactiveChatPopup.tsx` — contextual popup component
+  - Step-contextual messages: different headline/subtext per step (session choice, info form, payment)
+  - Special "Don't lose your spot!" message for inactivity triggers
+  - Mobile: slides up from bottom with backdrop; desktop: slides in from bottom-right corner
+  - Accessible: `role="dialog"`, Escape key to dismiss, auto-focus CTA button
+  - "Chat with Kai" CTA navigates to `/` (home chat); "Not now" dismisses
+- Integrated into `Register.tsx`: hook active on steps 0–2 (not on confirmation step 3)
+
+### Feature 3: Makeup Token System Phase 1 (Stage 3.7)
+- New `supabase/migrations/20260324000001_add_makeup_token_system.sql`
+  - `makeup_tokens` table: org/family/child scoped, skill-level locked, expiry-tracked, status lifecycle (`active`/`used`/`expired`/`cancelled`/`forfeited`)
+  - Indexes: family, child, (status, expires_at) partial, organization
+  - `updated_at` trigger with `SET search_path = ''`
+  - RLS: families see own tokens; staff see org tokens; service_role has full access
+  - `issue_makeup_token()` — creates token with configurable expiry (default 12 months) and optional fee
+  - `use_makeup_token()` — atomic redemption with FOR UPDATE lock; returns error for expired/used tokens
+  - `get_family_tokens()` — auto-expires stale active tokens, returns counts + active token list with child/program info and expiry urgency labels (`urgent` <7 days, `warning` <30 days, `ok`)
+  - Permissions: `issue_makeup_token` → service_role only; `use_makeup_token` → authenticated+service_role; `get_family_tokens` → authenticated+anon
+- `MakeupTokensPanel` component added to `src/pages/ParentPortal.tsx`
+  - Active/Used/Expired counts summary row
+  - "How tokens work" info card explaining level-lock and expiry
+  - Per-token card: child name, source program, skill level, days until expiry with urgency color (red/amber/none), makeup fee badge if applicable
+  - "Browse available makeup slots" link → `/sessions`
+  - Empty state with explanation when no tokens exist
+- **Tokens** tab added to Parent Portal tab bar alongside Current/History
+
+**Files Changed:**
+- `src/pages/Sessions.tsx` — **NEW** — Browsable session directory with search/filter
+- `src/pages/ParentPortal.tsx` — Tokens tab + MakeupTokensPanel component + MakeupToken/TokenSummary types
+- `src/hooks/useProactiveTrigger.ts` — **NEW** — Behavioral analytics hook for abandonment detection
+- `src/components/registration/ProactiveChatPopup.tsx` — **NEW** — Contextual Kai popup for at-risk users
+- `src/pages/Register.tsx` — useProactiveTrigger hook + ProactiveChatPopup render
+- `src/pages/Home.tsx` — "Browse Classes" link added to header nav
+- `src/App.tsx` — `/sessions` route added
+- `supabase/migrations/20260324000001_add_makeup_token_system.sql` — **NEW** — makeup_tokens table + 3 RPC functions
+
+**DB Migration Applied:** `add_makeup_token_system` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓
+**No new Edge Functions deployed.**
+**No n8n workflow changes.**
+
+---
+
 ## [March 24, 2026] - Parent Portal, Reporting Engine & Churn Prevention Dashboard | Core Feature | High
 
 **Category:** Core Feature

@@ -2,7 +2,7 @@ import { ChatInterface } from '../components/registration/ChatInterface';
 import CartRecoveryBanner from '../components/registration/CartRecoveryBanner';
 import { useCartRecovery } from '../hooks/useCartRecovery';
 import { Link } from 'react-router-dom';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, LayoutGrid } from 'lucide-react';
 
 export function Home() {
   const { cartRecovery, recoveryUrl, dismiss } = useCartRecovery();
@@ -36,6 +36,13 @@ export function Home() {
                   <span>Test Scenarios</span>
                 </Link>
               )}
+              <Link
+                to="/sessions"
+                className="flex items-center gap-2 px-4 py-2 bg-[#1a2332] border border-gray-700 text-gray-300 text-sm font-medium rounded-lg hover:border-[#6366f1]/50 hover:text-white transition-all"
+              >
+                <LayoutGrid className="w-4 h-4" />
+                <span>Browse Classes</span>
+              </Link>
               <a
                 href="/demo"
                 target="_blank"

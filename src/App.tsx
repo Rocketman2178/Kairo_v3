@@ -12,6 +12,7 @@ import { Analytics } from './pages/Analytics';
 import { ParentPortal } from './pages/ParentPortal';
 import { Reports } from './pages/Reports';
 import { Retention } from './pages/Retention';
+import { Sessions } from './pages/Sessions';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
           <Route path="/portal" element={<ParentPortal />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/retention" element={<Retention />} />
+          <Route path="/sessions" element={<Sessions />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
