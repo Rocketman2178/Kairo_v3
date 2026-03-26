@@ -17,6 +17,7 @@ import {
   CheckCheck,
   ArrowLeft,
   LayoutGrid,
+  EyeOff,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -30,6 +31,7 @@ interface SessionRow {
   capacity: number;
   enrolled_count: number;
   status: string;
+  is_hidden: boolean;
   programs: {
     id: string;
     name: string;
@@ -131,6 +133,12 @@ function SessionBrowseCard({ session, onCopyLink, copiedId }: SessionBrowseCardP
             {ageLabel && (
               <span className="px-2 py-0.5 bg-[#0f1419] text-[#06b6d4] text-xs rounded-full border border-[#06b6d4]/30 whitespace-nowrap">
                 {ageLabel}
+              </span>
+            )}
+            {session.is_hidden && (
+              <span className="flex items-center gap-1 px-2 py-0.5 bg-gray-800 text-gray-400 text-xs rounded-full border border-gray-700 whitespace-nowrap">
+                <EyeOff className="w-3 h-3" />
+                Private
               </span>
             )}
             {isFillingFast && (
@@ -284,7 +292,11 @@ export function Sessions() {
       setLoading(true);
       setError(null);
       try {
-        const { data, error: err } = await supabase
+        // Fetch all non-hidden active/full sessions, PLUS the specific
+        // hidden session if a direct ?session= link was provided
+        const directSessionId = new URLSearchParams(window.location.search).get('session');
+
+        const baseQuery = supabase
           .from('sessions')
           .select(`
             id,
@@ -295,6 +307,7 @@ export function Sessions() {
             capacity,
             enrolled_count,
             status,
+            is_hidden,
             programs!inner (
               id,
               name,
@@ -315,9 +328,59 @@ export function Sessions() {
           .order('day_of_week')
           .order('start_time');
 
+        // Always exclude hidden sessions from the general listing;
+        // the direct-linked hidden session is fetched separately below
+        const { data, error: err } = await baseQuery.eq('is_hidden', false);
+
+        // If there's a direct session link and that session isn't already loaded,
+        // fetch it individually so direct links to private classes work
+        let extraSession: SessionRow | null = null;
+        if (directSessionId) {
+          const { data: directData } = await supabase
+            .from('sessions')
+            .select(`
+              id,
+              day_of_week,
+              start_time,
+              start_date,
+              end_date,
+              capacity,
+              enrolled_count,
+              status,
+              is_hidden,
+              programs!inner (
+                id,
+                name,
+                description,
+                price_cents,
+                age_range,
+                duration_weeks,
+                organization_id
+              ),
+              locations (
+                id,
+                name,
+                address
+              )
+            `)
+            .eq('id', directSessionId)
+            .eq('programs.organization_id', ORG_ID)
+            .in('status', ['active', 'full'])
+            .maybeSingle();
+
+          if (directData) {
+            const alreadyIncluded = (data ?? []).some((s: SessionRow) => s.id === directSessionId);
+            if (!alreadyIncluded) {
+              extraSession = directData as unknown as SessionRow;
+            }
+          }
+        }
+
         if (cancelled) return;
         if (err) throw err;
-        setSessions((data as unknown as SessionRow[]) ?? []);
+        const allSessions = [...((data as unknown as SessionRow[]) ?? [])];
+        if (extraSession) allSessions.push(extraSession);
+        setSessions(allSessions);
       } catch (e) {
         if (!cancelled) setError('Failed to load sessions. Please try again.');
       } finally {

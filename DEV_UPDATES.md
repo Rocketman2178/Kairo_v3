@@ -5,6 +5,51 @@ Format: `## [Month Year] - Title | Category | Description`
 
 ---
 
+## [March 25, 2026] - Hidden/Unlisted Classes, Suggested Classes During Checkout & Marketing Opt-Ins | Core Feature | High
+
+**Category:** Core Feature
+**Impact:** High — Advances Stage 3.6.1 (hidden classes NBC Priority 1, suggested classes NBC Priority 1, marketing opt-ins NBC Enhancement)
+
+**Description:**
+Three registration and discovery features implemented. Hidden/Unlisted Classes adds `is_hidden` and `direct_link_token` to the sessions table; the public `/sessions` page filters these out automatically but still loads the session if a direct `?session={id}` link is shared, showing a "Private" badge. Suggested Classes During Checkout shows up to 3 other available sessions on registration step 0 in a "Registering for another time?" card, giving families an easy way to switch to a different time slot without abandoning the flow. Marketing Opt-In Checkboxes adds explicit email and SMS consent checkboxes to the registration form step 1 (Your Information) — email defaults on, SMS defaults off — and persists both preferences to the `families` table for use in communications pipelines.
+
+### Feature 1: Hidden/Unlisted Classes (Stage 3.6.1 — NBC Priority 1)
+- New `supabase/migrations/20260325000001_add_hidden_sessions_and_marketing_optins.sql`
+  - `sessions.is_hidden` (boolean, default false) — hides session from public `/sessions` listing
+  - `sessions.direct_link_token` (text, unique, nullable) — future admin-generated shareable token for private class links
+  - Indexes on `is_hidden` (partial, where false) and `direct_link_token` (partial, where not null)
+- `Sessions.tsx` — `is_hidden` added to `SessionRow` type; Supabase query now filters `.eq('is_hidden', false)` for general listing
+- Direct link handling: if `?session={id}` references a hidden session, a second targeted query fetches just that session and appends it to the list — direct links to private classes work correctly
+- `EyeOff` badge with "Private" label shown on hidden session cards when accessed via direct link
+
+### Feature 2: Suggested Classes During Checkout (Stage 3.6.1 — NBC Priority 1)
+- `Register.tsx` — new `SuggestedSession` interface and `suggestedSessions` state
+- `useEffect` fires when registration loads: fetches up to 3 non-hidden active/full sessions excluding the current one, ordered by start date
+- Step 0 (Confirm Session) renders a "Registering for another time?" section below the Continue button when suggestions exist
+- Each suggestion card shows: program name, day + time + location, spots remaining (or Full badge)
+- Clicking a suggestion navigates to `/?session={id}` to start a fresh Kai chat for that class
+- `Sparkles` icon, hover states, and arrow cues make the section discoverable but non-intrusive
+
+### Feature 3: Marketing Opt-In Checkboxes (Stage 3.6.1 — NBC Enhancement)
+- `families.email_opt_in` (boolean, default true) and `families.sms_opt_in` (boolean, default false) added via same migration
+- `FormData` interface in `Register.tsx` extended with `emailOptIn` and `smsOptIn` fields
+- Step 1 (Your Information) now includes a "Communication Preferences" section with two labeled checkboxes:
+  - Email updates (defaulted on): class reminders, schedule changes, seasonal announcements
+  - SMS alerts (defaulted off): urgent notifications; includes "Msg & data rates may apply" CAN-SPAM/TCPA disclosure
+- Both checkboxes use existing `handleInputChange` (type=checkbox branch); values persisted to `families` table in `createFamilyAndChild` and `handleDemoPayment`
+- `Mail` and `MessageSquare` Lucide icons used for visual distinction between channels
+
+**Files Changed:**
+- `supabase/migrations/20260325000001_add_hidden_sessions_and_marketing_optins.sql` — **NEW** — `is_hidden`, `direct_link_token` on sessions; `email_opt_in`, `sms_opt_in` on families
+- `src/pages/Sessions.tsx` — `is_hidden` in SessionRow type; filtered query; direct-link fallback fetch; EyeOff Private badge; EyeOff import
+- `src/pages/Register.tsx` — SuggestedSession type; suggestedSessions state; fetch useEffect; step 0 suggestions card; emailOptIn/smsOptIn in FormData; opt-in checkboxes in step 1; opt-ins saved to families insert; Mail/MessageSquare/Sparkles imports
+
+**DB Migration Applied:** `add_hidden_sessions_and_marketing_optins` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓
+**No new Edge Functions deployed.**
+**No n8n workflow changes.**
+
+---
+
 ## [March 24, 2026] - Session Browse Page, Proactive Kai Chat Intervention & Makeup Token System | Core Feature | High
 
 **Category:** Core Feature
@@ -584,7 +629,7 @@ Migrated AI orchestration from Supabase Edge Functions to N8N workflow architect
 
 **Changes:**
 - New architecture: Frontend → N8N Webhook → Gemini → Supabase
-- N8N workflow `WN1T9cPLJjgg4urm` deployed at `healthrocket.app.n8n.cloud`
+- N8N workflow `K45jpp5o2D1cqjLu` deployed at `healthrocket.app.n8n.cloud`
 - `src/services/ai/n8nWebhook.ts` — new frontend service layer
 - Database views and functions optimized for N8N queries
 - Deprecated: `kai-conversation` Edge Function, `session-recommendations` Edge Function, `find-alternatives` Edge Function, `kaiAgent.ts` service

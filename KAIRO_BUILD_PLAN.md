@@ -1,7 +1,7 @@
 # Kairo Platform - Strategic Build Plan
 
-**Version:** 2.16
-**Last Updated:** March 24, 2026
+**Version:** 2.17
+**Last Updated:** March 25, 2026
 **Current Stage:** Stage 2 COMPLETE | Stage 3 IN PROGRESS (Payments & Registration Flow)
 
 ---
@@ -233,7 +233,7 @@ Transform youth sports registration from a painful, complicated process into a s
 
 **Production Configuration:**
 - **Workflow URL:** `https://healthrocket.app.n8n.cloud/webhook/kai-conversation`
-- **Workflow ID:** `WN1T9cPLJjgg4urm`
+- **Workflow ID:** `K45jpp5o2D1cqjLu`
 - **Architecture:** AI Agent node with Code Tools (Dynamic)
 - **Test Results:** 14/14 tests passed (100% accuracy)
 
@@ -551,7 +551,7 @@ Research required to inform Kairo's tiered pricing model.
 - **Model:** Google Gemini 3 Flash (`models/gemini-3-flash-preview`)
 - **Temperature:** 0.2
 - **Webhook URL:** `https://healthrocket.app.n8n.cloud/webhook/kai-conversation`
-- **Workflow ID:** `WN1T9cPLJjgg4urm`
+- **Workflow ID:** `K45jpp5o2D1cqjLu`
 - **Architecture:** AI Agent with Code Tools (Dynamic)
 
 **Code Tools Implemented:**
@@ -836,15 +836,15 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Age in years and months — half-year precision for young children (e.g., 3.5 years) (NBC Priority 2)
 
 **Class Visibility & Presentation:**
-- [ ] Hidden/unlisted classes — ability to hide a class from registration page and email a direct registration link (NBC Priority 1)
+- [x] Hidden/unlisted classes — `is_hidden` on sessions; public `/sessions` filters hidden classes; direct `?session={id}` link still loads hidden session with "Private" badge (NBC Priority 1)
 - [ ] "Notify me" for classes not yet open — pre-registration interest capture for future classes (NBC Priority 3)
-- [ ] Suggested classes during checkout — "Registering for Winter? Here's the Spring class at same location" (NBC Priority 1)
+- [x] Suggested classes during checkout — "Registering for another time?" card on step 0 shows up to 3 other available sessions with spots/day/location info and direct navigation (NBC Priority 1)
 - [ ] Direct-to-consumer product upsells — suggested products (jerseys, gear) at checkout (NBC Priority 2)
 - [ ] Total number of sessions visible — show "8 sessions" on customer-facing class listing (NBC Enhancement)
 - [ ] External registration link-out — allow org to link to an external site for specific program enrollment (NBC Priority 1)
 
 **Registration Flow:**
-- [ ] Marketing opt-in checkboxes — separate email and SMS opt-in during registration (NBC Enhancement)
+- [x] Marketing opt-in checkboxes — email opt-in (default on) and SMS opt-in (default off) in step 1 with CAN-SPAM/TCPA disclosure; saved to `families.email_opt_in` / `sms_opt_in` (NBC Enhancement)
 - [ ] SMS verification during checkout — checkbox for customer to initiate phone verification (NBC Priority 2)
 - [ ] Custom class questions per class/location — configurable intake questions (allergies, shirt size, medical) (NBC Priority 2)
 - [ ] Custom fields on classes — org-defined fields for reporting/filtering (Region, County, pre-scheduled makeup) (NBC Enhancement)
@@ -3008,7 +3008,7 @@ import { supabase } from './lib/supabase'
 
   1. **N8N Workflow Deployed:**
      - Production URL: `https://healthrocket.app.n8n.cloud/webhook/kai-conversation`
-     - Workflow ID: `WN1T9cPLJjgg4urm`
+     - Workflow ID: `K45jpp5o2D1cqjLu`
      - Model: Google Gemini 3 Flash (`models/gemini-3-flash-preview`)
      - Temperature: 0.2
      - Architecture: AI Agent with Code Tools (Dynamic)

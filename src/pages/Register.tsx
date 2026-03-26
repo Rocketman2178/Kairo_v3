@@ -27,6 +27,9 @@ import {
   Shield,
   Star,
   Users,
+  Mail,
+  MessageSquare,
+  Sparkles,
 } from 'lucide-react';
 
 interface PendingRegistration {
@@ -60,6 +63,19 @@ interface FormData {
   emergencyContactPhone: string;
   medicalNotes: string;
   agreedToTerms: boolean;
+  emailOptIn: boolean;
+  smsOptIn: boolean;
+}
+
+interface SuggestedSession {
+  id: string;
+  day_of_week: number;
+  start_time: string;
+  start_date: string;
+  capacity: number;
+  enrolled_count: number;
+  programs: { name: string; price_cents: number } | null;
+  locations: { name: string } | null;
 }
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -128,7 +144,10 @@ export default function Register() {
     emergencyContactPhone: '',
     medicalNotes: '',
     agreedToTerms: false,
+    emailOptIn: true,
+    smsOptIn: false,
   });
+  const [suggestedSessions, setSuggestedSessions] = useState<SuggestedSession[]>([]);
 
   // Load saved payment methods when we reach step 2 and email is set for a returning family
   const { methods: savedCards, loading: savedCardsLoading } = useSavedPaymentMethods({
@@ -179,6 +198,41 @@ export default function Register() {
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, [registration?.expiresAt]);
+
+  // Fetch suggested sessions once registration is loaded (same program, different day/time)
+  useEffect(() => {
+    if (!registration) return;
+
+    async function fetchSuggested() {
+      try {
+        const { data } = await supabase
+          .from('sessions')
+          .select(`
+            id,
+            day_of_week,
+            start_time,
+            start_date,
+            capacity,
+            enrolled_count,
+            programs ( name, price_cents ),
+            locations ( name )
+          `)
+          .in('status', ['active', 'full'])
+          .eq('is_hidden', false)
+          .neq('id', registration!.session.id)
+          .order('start_date')
+          .limit(3);
+
+        if (data && data.length > 0) {
+          setSuggestedSessions(data as unknown as SuggestedSession[]);
+        }
+      } catch {
+        // Suggestions are non-critical; fail silently
+      }
+    }
+
+    void fetchSuggested();
+  }, [registration]);
 
   async function loadPendingRegistration() {
     try {
@@ -421,6 +475,8 @@ export default function Register() {
             primary_contact_name: `${formData.parentFirstName} ${formData.parentLastName}`,
             email: formData.email,
             phone: formData.phone,
+            email_opt_in: formData.emailOptIn,
+            sms_opt_in: formData.smsOptIn,
           })
           .select()
           .single();
@@ -471,6 +527,8 @@ export default function Register() {
               primary_contact_name: `${formData.parentFirstName} ${formData.parentLastName}`,
               email: formData.email,
               phone: formData.phone,
+              email_opt_in: formData.emailOptIn,
+              sms_opt_in: formData.smsOptIn,
             })
             .select()
             .single();
@@ -695,6 +753,56 @@ export default function Register() {
                 Continue
                 <ArrowRight className="h-4 w-4" />
               </button>
+
+              {/* Suggested sessions — other available classes to consider */}
+              {suggestedSessions.length > 0 && (
+                <div className="mt-6 pt-5 border-t border-gray-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="h-4 w-4 text-amber-500" />
+                    <h3 className="text-sm font-semibold text-gray-700">
+                      Registering for another time?
+                    </h3>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-3">
+                    Other classes are also available — continue with the current one or explore these options:
+                  </p>
+                  <div className="space-y-2">
+                    {suggestedSessions.map(s => {
+                      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                      const [h, m] = s.start_time.split(':');
+                      const hour = parseInt(h);
+                      const timeStr = `${hour === 0 ? 12 : hour > 12 ? hour - 12 : hour}:${m} ${hour >= 12 ? 'PM' : 'AM'}`;
+                      const spotsLeft = Math.max(0, s.capacity - s.enrolled_count);
+                      const isFull = spotsLeft <= 0;
+                      return (
+                        <a
+                          key={s.id}
+                          href={`/?session=${s.id}`}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-blue-50 hover:border-blue-200 border border-transparent transition-all group"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-800 group-hover:text-blue-700 truncate">
+                              {s.programs?.name ?? 'Class'}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                              {dayNames[s.day_of_week]}s · {timeStr}
+                              {s.locations?.name ? ` · ${s.locations.name}` : ''}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                            {isFull ? (
+                              <span className="text-xs text-red-500 font-medium">Full</span>
+                            ) : (
+                              <span className="text-xs text-green-600 font-medium">{spotsLeft} left</span>
+                            )}
+                            <ArrowRight className="h-3.5 w-3.5 text-gray-400 group-hover:text-blue-500" />
+                          </div>
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}
@@ -868,6 +976,47 @@ export default function Register() {
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Marketing opt-ins */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-gray-900">Communication Preferences</h3>
+                <label className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-blue-50 transition-colors">
+                  <input
+                    type="checkbox"
+                    name="emailOptIn"
+                    checked={formData.emailOptIn}
+                    onChange={handleInputChange}
+                    className="mt-0.5 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <div className="flex items-start gap-2 min-w-0">
+                    <Mail className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">Email updates</p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Class reminders, schedule changes, and seasonal program announcements.
+                      </p>
+                    </div>
+                  </div>
+                </label>
+                <label className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-blue-50 transition-colors">
+                  <input
+                    type="checkbox"
+                    name="smsOptIn"
+                    checked={formData.smsOptIn}
+                    onChange={handleInputChange}
+                    className="mt-0.5 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <div className="flex items-start gap-2 min-w-0">
+                    <MessageSquare className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">Text message (SMS) alerts</p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Urgent notifications and last-minute class updates via SMS. Msg &amp; data rates may apply.
+                      </p>
+                    </div>
+                  </div>
+                </label>
               </div>
 
               <label className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer">
