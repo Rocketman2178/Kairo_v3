@@ -1167,7 +1167,7 @@ curl -X POST https://healthrocket.app.n8n.cloud/webhook/kai-conversation \
 ---
 
 **Webhook URL:** `https://healthrocket.app.n8n.cloud/webhook/kai-conversation`
-**Workflow ID:** `WN1T9cPLJjgg4urm`
+**Workflow ID:** `K45jpp5o2D1cqjLu`
 **AI Model:** Google Gemini 3 Flash (`models/gemini-3-flash-preview`)
 **Temperature:** 0.2
 **Architecture:** AI Agent with Code Tools (Dynamic)

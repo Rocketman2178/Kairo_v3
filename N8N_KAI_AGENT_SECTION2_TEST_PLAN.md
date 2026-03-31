@@ -11,7 +11,7 @@ Comprehensive test plan for validating the N8N Kairo Intelligence Agent (Section
 - **Status:** Production Workflow
 - **Test Organization:** Soccer Shots Demo (ID: `00000000-0000-0000-0000-000000000001`)
 - **N8N Webhook URL:** `https://healthrocket.app.n8n.cloud/webhook/kai-conversation`
-- **Workflow ID:** `WN1T9cPLJjgg4urm`
+- **Workflow ID:** `K45jpp5o2D1cqjLu`
 - **Baseline Tests:** 14 existing tests (all must pass)
 - **New Test Cases:** 60+ edge cases and extended scenarios
 - **Expected Total Pass Rate:** 100%

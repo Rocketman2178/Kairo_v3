@@ -3,7 +3,7 @@
     "version": "1.0",
     "description": "100 test scenarios for Kairo Intelligence Agent (Kai)",
     "supabaseProject": "tatunnfxwfsyoiqoaenb",
-    "n8nWorkflowId": "WN1T9cPLJjgg4urm",
+    "n8nWorkflowId": "K45jpp5o2D1cqjLu",
     "organizationId": "00000000-0000-0000-0000-000000000001",
     "webhookPath": "kai-conversation",
     "createdAt": "2026-02-16"

@@ -19,7 +19,7 @@ Both functions call Gemini API server-side, keeping your API key secure.
 
 1. Supabase CLI installed
 2. Logged into your Supabase project
-3. Gemini API key (already have: `AIzaSyB_2g061bsMyFNMpIaiB2R6FrmfUik2MqQ`)
+3. Gemini API key (already have: `AIzaSyDT7dXgrfSHa5kVnnhoZO20Y2MOHGq2dLU`)
 
 ---
 
@@ -64,7 +64,7 @@ supabase link --project-ref tatunnfxwfsyoiqoaenb
 The Edge Functions need access to your Gemini API key. Set it as a secret:
 
 ```bash
-supabase secrets set GEMINI_API_KEY=AIzaSyB_2g061bsMyFNMpIaiB2R6FrmfUik2MqQ
+supabase secrets set GEMINI_API_KEY=AIzaSyDT7dXgrfSHa5kVnnhoZO20Y2MOHGq2dLU
 ```
 
 **Note:** These secrets are stored securely in Supabase and never exposed to the frontend.
@@ -285,7 +285,7 @@ Create `.env.local` file in `supabase/functions/`:
 
 ```bash
 # supabase/functions/.env.local
-GEMINI_API_KEY=AIzaSyB_2g061bsMyFNMpIaiB2R6FrmfUik2MqQ
+GEMINI_API_KEY=AIzaSyDT7dXgrfSHa5kVnnhoZO20Y2MOHGq2dLU
 ```
 
 **Important:** Add `.env.local` to `.gitignore` to avoid committing secrets!
