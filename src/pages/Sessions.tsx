@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import {
@@ -18,6 +18,9 @@ import {
   ArrowLeft,
   LayoutGrid,
   EyeOff,
+  Bell,
+  CheckCircle2,
+  Hash,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -45,6 +48,7 @@ interface SessionRow {
     id: string;
     name: string;
     address: string | null;
+    zip_code: string | null;
   } | null;
 }
 
@@ -53,9 +57,11 @@ interface FilterState {
   day: string;
   ageMin: string;
   ageMax: string;
+  zip: string;
 }
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const ORG_ID = '00000000-0000-0000-0000-000000000001';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -92,15 +98,241 @@ function spotsColor(enrolled: number, capacity: number): string {
   return 'text-green-400 bg-green-950/30 border-green-800/50';
 }
 
+/** Compute total class meetings from duration_weeks or start/end date + day_of_week */
+function computeClassCount(session: SessionRow): number | null {
+  // Prefer duration_weeks from the program
+  if (session.programs?.duration_weeks) {
+    return session.programs.duration_weeks;
+  }
+  // Fall back to counting occurrences of day_of_week between start_date and end_date
+  if (session.start_date && session.end_date && session.day_of_week !== null) {
+    const start = new Date(session.start_date);
+    const end = new Date(session.end_date);
+    let count = 0;
+    const cursor = new Date(start);
+    // Advance to the first occurrence of the target day of week
+    while (cursor.getUTCDay() !== session.day_of_week) {
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+    while (cursor <= end) {
+      count++;
+      cursor.setUTCDate(cursor.getUTCDate() + 7);
+    }
+    return count > 0 ? count : null;
+  }
+  return null;
+}
+
+/**
+ * Determine zip proximity label.
+ * Returns 'exact' for matching zip, 'nearby' for same first-3-digit prefix,
+ * or null for no match.
+ */
+function zipProximityLabel(sessionZip: string | null | undefined, filterZip: string): 'exact' | 'nearby' | null {
+  if (!sessionZip || !filterZip) return null;
+  const sZip = sessionZip.replace(/\s/g, '').toUpperCase();
+  const fZip = filterZip.replace(/\s/g, '').toUpperCase();
+  if (sZip === fZip) return 'exact';
+  // Same first 3 chars = same metro area (works for US 5-digit and CA postal codes)
+  if (sZip.slice(0, 3) === fZip.slice(0, 3)) return 'nearby';
+  return null;
+}
+
+// ─── NotifyMeModal ────────────────────────────────────────────────────────────
+
+interface NotifyMeModalProps {
+  session: SessionRow;
+  onClose: () => void;
+}
+
+function NotifyMeModal({ session, onClose }: NotifyMeModalProps) {
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+
+  // Close on Escape key
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  // Focus email input on open
+  useEffect(() => {
+    emailRef.current?.focus();
+  }, []);
+
+  const prog = session.programs;
+  const loc = session.locations;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      const { error: dbErr } = await supabase
+        .from('session_interest')
+        .insert({
+          session_id: session.id,
+          organization_id: prog?.organization_id ?? ORG_ID,
+          email: trimmedEmail,
+          name: name.trim() || null,
+          notify_on: 'spot_opens',
+        });
+      // Unique constraint violation means they already registered interest — treat as success
+      if (dbErr && !dbErr.message.includes('unique')) {
+        throw dbErr;
+      }
+      setSubmitted(true);
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="notify-modal-title"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="w-full max-w-md bg-[#1a2332] border border-gray-700 rounded-2xl overflow-hidden shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+          <div className="flex items-center gap-2">
+            <Bell className="w-5 h-5 text-[#6366f1]" />
+            <h2 id="notify-modal-title" className="text-base font-semibold text-white">
+              Notify Me
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-5">
+          {submitted ? (
+            /* Success state */
+            <div className="text-center py-4">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center">
+                <CheckCircle2 className="w-7 h-7 text-green-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-1">You're on the list!</h3>
+              <p className="text-sm text-gray-400 mb-5">
+                We'll email you at <span className="text-white font-medium">{email.trim().toLowerCase()}</span> as
+                soon as a spot opens up.
+              </p>
+              <button
+                onClick={onClose}
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#06b6d4] text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+              >
+                Done
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Class info */}
+              <div className="bg-[#0f1419] rounded-xl p-3 mb-4">
+                <p className="text-sm font-semibold text-white mb-0.5">
+                  {prog?.name ?? 'This class'}
+                </p>
+                <p className="text-xs text-gray-400">
+                  {DAY_NAMES[session.day_of_week]}s at {formatTime(session.start_time)}
+                  {loc ? ` · ${loc.name}` : ''}
+                </p>
+                <p className="text-xs text-red-400 mt-1 font-medium">Class is currently full</p>
+              </div>
+
+              <p className="text-sm text-gray-300 mb-4">
+                Enter your email and we'll notify you the moment a spot opens up.
+              </p>
+
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <div>
+                  <label htmlFor="notify-name" className="block text-xs text-gray-500 mb-1">
+                    First Name <span className="text-gray-600">(optional)</span>
+                  </label>
+                  <input
+                    id="notify-name"
+                    type="text"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder="e.g. Sarah"
+                    className="w-full bg-[#0f1419] border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#6366f1]/60 focus:ring-1 focus:ring-[#6366f1]/30"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="notify-email" className="block text-xs text-gray-500 mb-1">
+                    Email Address <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    id="notify-email"
+                    ref={emailRef}
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    required
+                    className="w-full bg-[#0f1419] border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#6366f1]/60 focus:ring-1 focus:ring-[#6366f1]/30"
+                  />
+                </div>
+
+                {error && (
+                  <p className="text-xs text-red-400">{error}</p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={submitting || !email.trim()}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#06b6d4] text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {submitting ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
+                  ) : (
+                    <><Bell className="w-4 h-4" /> Notify Me When a Spot Opens</>
+                  )}
+                </button>
+
+                <p className="text-center text-xs text-gray-600">
+                  You can also <button type="button" onClick={onClose} className="text-[#06b6d4] hover:underline">join the waitlist</button> to secure your position.
+                </p>
+              </form>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── SessionBrowseCard ────────────────────────────────────────────────────────
 
 interface SessionBrowseCardProps {
   session: SessionRow;
   onCopyLink: (sessionId: string) => void;
   copiedId: string | null;
+  filterZip: string;
+  onNotifyMe: (session: SessionRow) => void;
 }
 
-function SessionBrowseCard({ session, onCopyLink, copiedId }: SessionBrowseCardProps) {
+function SessionBrowseCard({ session, onCopyLink, copiedId, filterZip, onNotifyMe }: SessionBrowseCardProps) {
   const navigate = useNavigate();
   const prog = session.programs;
   const loc = session.locations;
@@ -115,9 +347,10 @@ function SessionBrowseCard({ session, onCopyLink, copiedId }: SessionBrowseCardP
     fillRate >= 50 ? 'bg-yellow-500' : 'bg-green-500';
 
   const ageLabel = formatAgeLabel(prog?.age_range ?? null);
+  const classCount = computeClassCount(session);
+  const proximity = filterZip ? zipProximityLabel(loc?.zip_code, filterZip) : null;
 
   function handleRegister() {
-    // Navigate to home chat; the pre-filled suggestion starts the conversation for this session
     navigate(`/?session=${session.id}`);
   }
 
@@ -141,7 +374,7 @@ function SessionBrowseCard({ session, onCopyLink, copiedId }: SessionBrowseCardP
                 Private
               </span>
             )}
-            {isFillingFast && (
+            {isFillingFast && !isFull && (
               <span className="flex items-center gap-1 px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full font-semibold animate-pulse">
                 <Zap className="w-3 h-3" />
                 Filling Fast
@@ -150,6 +383,18 @@ function SessionBrowseCard({ session, onCopyLink, copiedId }: SessionBrowseCardP
             {isFull && (
               <span className="px-2 py-0.5 bg-red-950/40 text-red-400 text-xs rounded-full border border-red-800/50">
                 Full
+              </span>
+            )}
+            {proximity === 'exact' && (
+              <span className="flex items-center gap-1 px-2 py-0.5 bg-green-950/40 text-green-400 text-xs rounded-full border border-green-800/50 whitespace-nowrap">
+                <MapPin className="w-3 h-3" />
+                In your area
+              </span>
+            )}
+            {proximity === 'nearby' && (
+              <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-950/40 text-blue-400 text-xs rounded-full border border-blue-800/50 whitespace-nowrap">
+                <MapPin className="w-3 h-3" />
+                Nearby
               </span>
             )}
           </div>
@@ -161,9 +406,14 @@ function SessionBrowseCard({ session, onCopyLink, copiedId }: SessionBrowseCardP
           <div className="text-lg font-bold bg-gradient-to-r from-[#6366f1] to-[#06b6d4] bg-clip-text text-transparent">
             {prog ? formatPrice(prog.price_cents) : '—'}
           </div>
-          {prog?.duration_weeks && (
-            <div className="text-xs text-gray-500">{prog.duration_weeks} weeks</div>
-          )}
+          <div className="flex items-center justify-end gap-1.5 mt-0.5">
+            {classCount !== null && (
+              <span className="flex items-center gap-1 text-xs text-gray-500">
+                <Hash className="w-3 h-3" />
+                {classCount} classes
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -180,6 +430,9 @@ function SessionBrowseCard({ session, onCopyLink, copiedId }: SessionBrowseCardP
               {loc.name}
               {loc.address && (
                 <span className="text-gray-500 ml-1 text-xs">· {loc.address}</span>
+              )}
+              {loc.zip_code && (
+                <span className="text-gray-600 ml-1 text-xs">{loc.zip_code}</span>
               )}
             </span>
           </div>
@@ -225,12 +478,22 @@ function SessionBrowseCard({ session, onCopyLink, copiedId }: SessionBrowseCardP
             )}
           </button>
           {isFull ? (
-            <button
-              onClick={handleRegister}
-              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-[#f59e0b] to-[#f97316] text-white hover:opacity-90 transition-opacity"
-            >
-              Join Waitlist
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => onNotifyMe(session)}
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-[#6366f1]/20 border border-[#6366f1]/40 text-[#a5b4fc] hover:bg-[#6366f1]/30 transition-colors"
+                title="Notify me when a spot opens"
+              >
+                <Bell className="w-3.5 h-3.5" />
+                Notify Me
+              </button>
+              <button
+                onClick={handleRegister}
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-[#f59e0b] to-[#f97316] text-white hover:opacity-90 transition-opacity"
+              >
+                Waitlist
+              </button>
+            </div>
           ) : (
             <button
               onClick={handleRegister}
@@ -247,8 +510,6 @@ function SessionBrowseCard({ session, onCopyLink, copiedId }: SessionBrowseCardP
 
 // ─── Sessions Page ─────────────────────────────────────────────────────────────
 
-const ORG_ID = '00000000-0000-0000-0000-000000000001';
-
 export function Sessions() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [sessions, setSessions] = useState<SessionRow[]>([]);
@@ -256,6 +517,7 @@ export function Sessions() {
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [notifySession, setNotifySession] = useState<SessionRow | null>(null);
 
   // Derive filter state from URL params
   const filters: FilterState = {
@@ -263,6 +525,7 @@ export function Sessions() {
     day: searchParams.get('day') ?? '',
     ageMin: searchParams.get('ageMin') ?? '',
     ageMax: searchParams.get('ageMax') ?? '',
+    zip: searchParams.get('zip') ?? '',
   };
 
   function setFilter(key: keyof FilterState, value: string) {
@@ -281,7 +544,7 @@ export function Sessions() {
     setSearchParams({}, { replace: true });
   }
 
-  const activeFilterCount = [filters.query, filters.day, filters.ageMin, filters.ageMax]
+  const activeFilterCount = [filters.query, filters.day, filters.ageMin, filters.ageMax, filters.zip]
     .filter(Boolean).length;
 
   // Load sessions from Supabase
@@ -292,8 +555,6 @@ export function Sessions() {
       setLoading(true);
       setError(null);
       try {
-        // Fetch all non-hidden active/full sessions, PLUS the specific
-        // hidden session if a direct ?session= link was provided
         const directSessionId = new URLSearchParams(window.location.search).get('session');
 
         const baseQuery = supabase
@@ -320,7 +581,8 @@ export function Sessions() {
             locations (
               id,
               name,
-              address
+              address,
+              zip_code
             )
           `)
           .in('status', ['active', 'full'])
@@ -328,12 +590,9 @@ export function Sessions() {
           .order('day_of_week')
           .order('start_time');
 
-        // Always exclude hidden sessions from the general listing;
-        // the direct-linked hidden session is fetched separately below
         const { data, error: err } = await baseQuery.eq('is_hidden', false);
 
-        // If there's a direct session link and that session isn't already loaded,
-        // fetch it individually so direct links to private classes work
+        // Fetch the directly-linked hidden session if provided
         let extraSession: SessionRow | null = null;
         if (directSessionId) {
           const { data: directData } = await supabase
@@ -360,7 +619,8 @@ export function Sessions() {
               locations (
                 id,
                 name,
-                address
+                address,
+                zip_code
               )
             `)
             .eq('id', directSessionId)
@@ -381,7 +641,7 @@ export function Sessions() {
         const allSessions = [...((data as unknown as SessionRow[]) ?? [])];
         if (extraSession) allSessions.push(extraSession);
         setSessions(allSessions);
-      } catch (e) {
+      } catch {
         if (!cancelled) setError('Failed to load sessions. Please try again.');
       } finally {
         if (!cancelled) setLoading(false);
@@ -392,9 +652,9 @@ export function Sessions() {
     return () => { cancelled = true; };
   }, []);
 
-  // Client-side filtering
+  // Client-side filtering + zip-proximity sorting
   const filtered = useMemo(() => {
-    return sessions.filter(s => {
+    const results = sessions.filter(s => {
       const prog = s.programs;
       const loc = s.locations;
 
@@ -406,6 +666,7 @@ export function Sessions() {
           prog?.description ?? '',
           loc?.name ?? '',
           loc?.address ?? '',
+          loc?.zip_code ?? '',
           DAY_NAMES[s.day_of_week],
         ].join(' ').toLowerCase();
         if (!searchable.includes(q)) return false;
@@ -428,11 +689,38 @@ export function Sessions() {
         }
       }
 
+      // Zip filter: include sessions where location zip matches or is nearby;
+      // if no location has a zip, still include (don't exclude unknown)
+      if (filters.zip) {
+        const locZip = s.locations?.zip_code;
+        if (locZip) {
+          const prox = zipProximityLabel(locZip, filters.zip);
+          if (!prox) return false;
+        }
+        // Sessions with no zip data pass through (rather than being hidden)
+      }
+
       return true;
     });
+
+    // If a zip filter is active, sort: exact → nearby → rest, within each day group
+    if (filters.zip) {
+      results.sort((a, b) => {
+        const proxA = zipProximityLabel(a.locations?.zip_code, filters.zip);
+        const proxB = zipProximityLabel(b.locations?.zip_code, filters.zip);
+        const score = (p: 'exact' | 'nearby' | null) => (p === 'exact' ? 0 : p === 'nearby' ? 1 : 2);
+        const diff = score(proxA) - score(proxB);
+        if (diff !== 0) return diff;
+        // Secondary: day of week then time
+        if (a.day_of_week !== b.day_of_week) return a.day_of_week - b.day_of_week;
+        return a.start_time.localeCompare(b.start_time);
+      });
+    }
+
+    return results;
   }, [sessions, filters]);
 
-  // Group by day for display
+  // Group by day for display (only when not zip-sorted, to avoid reshuffling)
   const grouped = useMemo(() => {
     const map = new Map<string, SessionRow[]>();
     for (const s of filtered) {
@@ -443,15 +731,24 @@ export function Sessions() {
     return map;
   }, [filtered]);
 
-  function handleCopyLink(sessionId: string) {
+  const handleCopyLink = useCallback((sessionId: string) => {
     const url = `${window.location.origin}/sessions?session=${sessionId}`;
     void navigator.clipboard.writeText(url);
     setCopiedId(sessionId);
     setTimeout(() => setCopiedId(null), 2000);
-  }
+  }, []);
+
+  const handleNotifyMe = useCallback((session: SessionRow) => {
+    setNotifySession(session);
+  }, []);
 
   // Highlight a specific session from ?session= param (direct link)
   const highlightedSessionId = searchParams.get('session');
+
+  // Detect if the zip looks like a Canadian postal code to label the field appropriately
+  const zipLabel = filters.zip && /^[A-Za-z]/.test(filters.zip.trim())
+    ? 'Postal Code'
+    : 'Zip / Postal Code';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f1419] via-[#1a2332] to-[#0f1419]">
@@ -537,7 +834,36 @@ export function Sessions() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {/* Zip / Postal Code */}
+              <div className="col-span-2 sm:col-span-1">
+                <label className="block text-xs text-gray-500 mb-1">Zip / Postal Code</label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-600 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="e.g. 92618"
+                    value={filters.zip}
+                    onChange={e => setFilter('zip', e.target.value)}
+                    maxLength={10}
+                    className="w-full pl-8 bg-[#0f1419] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#6366f1]/60"
+                  />
+                  {filters.zip && (
+                    <button
+                      onClick={() => setFilter('zip', '')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+                {filters.zip && (
+                  <p className="text-xs text-gray-600 mt-1">
+                    Showing classes near <span className="text-gray-400">{filters.zip}</span>
+                  </p>
+                )}
+              </div>
+
               {/* Day of week */}
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Day of Week</label>
@@ -624,6 +950,11 @@ export function Sessions() {
           <div className="text-center py-16">
             <Search className="w-10 h-10 text-gray-700 mx-auto mb-3" />
             <p className="text-gray-400 text-sm mb-2">No classes match your filters</p>
+            {filters.zip && (
+              <p className="text-xs text-gray-600 mb-3">
+                No classes found near <span className="text-gray-400">{filters.zip}</span>. Try a nearby zip code or clear the location filter.
+              </p>
+            )}
             <button
               onClick={clearAllFilters}
               className="text-xs text-[#06b6d4] hover:underline"
@@ -633,6 +964,19 @@ export function Sessions() {
           </div>
         ) : (
           <div className="space-y-6">
+            {/* Zip proximity banner */}
+            {filters.zip && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-[#1a2332] border border-gray-700 rounded-xl text-xs text-gray-400">
+                <MapPin className="w-3.5 h-3.5 text-[#06b6d4] flex-shrink-0" />
+                <span>
+                  Showing classes near <span className="text-white font-medium">{zipLabel === 'Postal Code' ? filters.zip.toUpperCase() : filters.zip}</span> · sorted by proximity
+                </span>
+                <button onClick={() => setFilter('zip', '')} className="ml-auto text-gray-600 hover:text-gray-400">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
             {[...grouped.entries()].map(([day, daySessions]) => (
               <section key={day}>
                 <div className="flex items-center gap-2 mb-3">
@@ -655,6 +999,8 @@ export function Sessions() {
                         session={s}
                         onCopyLink={handleCopyLink}
                         copiedId={copiedId}
+                        filterZip={filters.zip}
+                        onNotifyMe={handleNotifyMe}
                       />
                     </div>
                   ))}
@@ -680,6 +1026,14 @@ export function Sessions() {
           </div>
         )}
       </div>
+
+      {/* Notify Me Modal */}
+      {notifySession && (
+        <NotifyMeModal
+          session={notifySession}
+          onClose={() => setNotifySession(null)}
+        />
+      )}
     </div>
   );
 }

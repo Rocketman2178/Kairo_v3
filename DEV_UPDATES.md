@@ -5,6 +5,61 @@ Format: `## [Month Year] - Title | Category | Description`
 
 ---
 
+## [April 1, 2026] - Zip/Postal Code Filter, Notify Me Interest Capture & Session Class Count | Core Feature | High
+
+**Category:** Core Feature
+**Impact:** High — Advances Stage 3.6.1 (zip code filter NBC Priority 1, notify me NBC Priority 3, class count NBC Enhancement)
+
+**Description:**
+Three session discovery and UX improvements implemented. Zip/Postal Code Filter adds a `zip_code` column to the locations table (all 20 demo locations seeded), a new Zip/Postal Code input in the Sessions page filter panel, and client-side proximity sorting that ranks "In your area" (exact match) above "Nearby" (same 3-digit prefix) above distant classes — with a proximity banner and URL-persisted `?zip=` parameter. Canadian postal codes are supported via the "Zip / Postal Code" label and the same prefix-matching approach. The Notify Me feature adds a `session_interest` table (public INSERT, service_role managed) and a modal that captures a parent's name and email for full classes — a duplicate-safe INSERT stores the request and shows a confirmation state, giving orgs a lead list for when spots open. Session Class Count adds a `# X classes` badge to every session card, computed from `duration_weeks` (primary) or derived by counting weekly occurrences between `start_date` and `end_date` (fallback), so families understand the commitment before registering.
+
+### Feature 1: Zip / Postal Code Proximity Filter (Stage 3.6.1 — NBC Priority 1)
+- New `supabase/migrations/20260401000001_add_zip_code_and_session_interest.sql`
+  - `locations.zip_code` (text, nullable) — stores US zip or Canadian postal code
+  - All 20 demo locations seeded with correct zip codes from existing addresses
+  - `idx_locations_zip_code` partial index
+- `Sessions.tsx` — `zip_code` added to `LocationRow` type and Supabase select query
+- `FilterState` extended with `zip` field; URL param `?zip=`
+- Filter panel: new "Zip / Postal Code" input with `MapPin` icon and inline clear button
+- `zipProximityLabel()` helper: returns `'exact'` (same zip), `'nearby'` (same 3-char prefix), or `null`
+- Client-side filter: sessions at unmatched locations excluded; sessions with no zip pass through
+- Sort: when `?zip=` is active, results sorted exact → nearby within each day group
+- `SessionBrowseCard`: "In your area" (green) and "Nearby" (blue) proximity badges on cards
+- Proximity banner displayed above results when zip filter is active with clear button
+- No-results copy updated to explain zip filter and suggest widening the search
+
+### Feature 2: "Notify Me" Interest Capture for Full Classes (Stage 3.6.1 — NBC Priority 3)
+- `session_interest` table in same migration — `session_id`, `organization_id`, `email`, `name`, `notify_on`, `notified_at`, `created_at`
+- Unique index on `(session_id, lower(email))` prevents duplicate interest entries
+- RLS: `public` INSERT only; `service_role` full access for notification dispatch
+- New `NotifyMeModal` component in `Sessions.tsx`
+  - Displays class name, day/time, and location + "Class is currently full" indicator
+  - Optional name field + required email with inline validation
+  - On submit: upsert to `session_interest`; unique constraint violations treated as success (idempotent)
+  - Success state: confirmation with enrolled email displayed
+  - Accessible: `role="dialog"`, Escape to dismiss, auto-focus email input, backdrop click to close
+- `SessionBrowseCard`: full sessions now show both a "Notify Me" button (indigo) and "Waitlist" button (amber) side by side
+- Waitlist button label shortened to "Waitlist" (was "Join Waitlist") to fit alongside Notify Me
+
+### Feature 3: Session Class Count Display (Stage 3.6.1 — NBC Enhancement)
+- `computeClassCount()` helper in `Sessions.tsx`
+  - Primary: returns `programs.duration_weeks` directly
+  - Fallback: counts weekly occurrences of `session.day_of_week` between `start_date` and `end_date`
+- `SessionBrowseCard`: `# X classes` badge rendered below price using `Hash` Lucide icon
+- Shows on all cards where a count can be computed; hidden if neither source is available
+
+**Files Changed:**
+- `supabase/migrations/20260401000001_add_zip_code_and_session_interest.sql` — **NEW** — `locations.zip_code`; `session_interest` table with RLS
+- `src/pages/Sessions.tsx` — `zip_code` in LocationRow; `zip` in FilterState; zip filter input; proximity sorting; proximity badges; NotifyMeModal component; Notify Me button on full sessions; `computeClassCount()` helper; class count badge; `useRef`/`useCallback` imports added
+- `src/types/database.ts` — `zip_code` added to `locations` Row/Insert/Update; `session_interest` table types added
+
+**DB Migration Applied:** `add_zip_code_and_session_interest` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓
+**zip_code populated for all 20 demo locations via follow-up SQL.**
+**No new Edge Functions deployed.**
+**No n8n workflow changes.**
+
+---
+
 ## [March 25, 2026] - Hidden/Unlisted Classes, Suggested Classes During Checkout & Marketing Opt-Ins | Core Feature | High
 
 **Category:** Core Feature

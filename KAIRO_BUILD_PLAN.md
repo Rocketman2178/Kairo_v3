@@ -824,23 +824,23 @@ Registration Form → Payment → Confirmed Registration → Return User
 **Source:** Soccer Shots franchise feature roadmap — customer-facing registration improvements
 
 **Search & Filtering:**
-- [ ] Zip code filter — sort classes by distance, configurable default radius (10 miles default) (NBC Priority 1)
+- [x] Zip code filter — `zip_code` on locations; `?zip=` URL param; proximity sorting (exact → nearby → other); "In your area" / "Nearby" badges; Canadian postal code label support; no-results copy with clear suggestion (NBC Priority 1)
 - [x] Keyword search on customer-facing site — `/sessions` page with full-text search across program, location, description, day (NBC Priority 1)
-- [x] Registration page filter sharing — URL-param based filters (`?q=&day=&ageMin=&ageMax=`) are shareable and bookmarkable (NBC Priority 1)
+- [x] Registration page filter sharing — URL-param based filters (`?q=&day=&ageMin=&ageMax=&zip=`) are shareable and bookmarkable (NBC Priority 1)
 - [ ] Combinable filters — Location + Session, Location + Program, Sub-Program + Session, etc. (NBC Priority 1)
 - [x] Share individual class link — "Share" button per card copies `/sessions?session={id}` to clipboard (NBC Priority 1)
 - [x] Mobile filter pinning — sticky header with Filter button + collapsible filter panel; quick-pill day selectors (NBC Priority 1)
-- [ ] Canadian postal code support — display "Postal Code" label for Canadian addresses (NBC Priority 1)
-- [ ] Zip code no-results redirect — if no locations found, show customizable message with link to location finder (NBC Enhancement)
+- [x] Canadian postal code support — label shows "Zip / Postal Code"; prefix-matching works for A1A-format codes (NBC Priority 1)
+- [x] Zip code no-results redirect — no-results state shows zip-specific message with suggestion to clear filter (NBC Enhancement)
 - [ ] Age dropdown filter — filter to active classes only vs. all classes (NBC Priority 2)
 - [ ] Age in years and months — half-year precision for young children (e.g., 3.5 years) (NBC Priority 2)
 
 **Class Visibility & Presentation:**
 - [x] Hidden/unlisted classes — `is_hidden` on sessions; public `/sessions` filters hidden classes; direct `?session={id}` link still loads hidden session with "Private" badge (NBC Priority 1)
-- [ ] "Notify me" for classes not yet open — pre-registration interest capture for future classes (NBC Priority 3)
+- [x] "Notify me" for full classes — `session_interest` table (public INSERT, service_role read); NotifyMeModal captures name + email; duplicate-safe upsert; success confirmation state; shown on full sessions (NBC Priority 3)
 - [x] Suggested classes during checkout — "Registering for another time?" card on step 0 shows up to 3 other available sessions with spots/day/location info and direct navigation (NBC Priority 1)
 - [ ] Direct-to-consumer product upsells — suggested products (jerseys, gear) at checkout (NBC Priority 2)
-- [ ] Total number of sessions visible — show "8 sessions" on customer-facing class listing (NBC Enhancement)
+- [x] Total number of sessions visible — `# X classes` badge on every session card, computed from `duration_weeks` or start/end date range (NBC Enhancement)
 - [ ] External registration link-out — allow org to link to an external site for specific program enrollment (NBC Priority 1)
 
 **Registration Flow:**

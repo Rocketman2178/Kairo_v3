@@ -47,6 +47,7 @@ export interface Database {
           organization_id: string
           name: string
           address: string | null
+          zip_code: string | null
           geo_coordinates: unknown | null
           time_windows: Json
           capacity: number | null
@@ -59,6 +60,7 @@ export interface Database {
           organization_id: string
           name: string
           address?: string | null
+          zip_code?: string | null
           geo_coordinates?: unknown | null
           time_windows?: Json
           capacity?: number | null
@@ -71,12 +73,45 @@ export interface Database {
           organization_id?: string
           name?: string
           address?: string | null
+          zip_code?: string | null
           geo_coordinates?: unknown | null
           time_windows?: Json
           capacity?: number | null
           amenities?: Json
           created_at?: string
           updated_at?: string
+        }
+      }
+      session_interest: {
+        Row: {
+          id: string
+          session_id: string
+          organization_id: string
+          email: string
+          name: string | null
+          notify_on: string
+          notified_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          session_id: string
+          organization_id: string
+          email: string
+          name?: string | null
+          notify_on?: string
+          notified_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          session_id?: string
+          organization_id?: string
+          email?: string
+          name?: string | null
+          notify_on?: string
+          notified_at?: string | null
+          created_at?: string
         }
       }
       programs: {
