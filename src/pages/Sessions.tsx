@@ -58,10 +58,21 @@ interface FilterState {
   ageMin: string;
   ageMax: string;
   zip: string;
+  location: string;
+  program: string;
 }
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const ORG_ID = '00000000-0000-0000-0000-000000000001';
+
+// Half-year precision age options (1, 1.5, 2, 2.5, … 18)
+const AGE_OPTIONS: { value: string; label: string }[] = [];
+for (let age = 1; age <= 18; age += 0.5) {
+  const label = age % 1 === 0
+    ? `${age} yr${age !== 1 ? 's' : ''}`
+    : `${Math.floor(age)} yrs 6 mo`;
+  AGE_OPTIONS.push({ value: String(age), label });
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -526,6 +537,8 @@ export function Sessions() {
     ageMin: searchParams.get('ageMin') ?? '',
     ageMax: searchParams.get('ageMax') ?? '',
     zip: searchParams.get('zip') ?? '',
+    location: searchParams.get('location') ?? '',
+    program: searchParams.get('program') ?? '',
   };
 
   function setFilter(key: keyof FilterState, value: string) {
@@ -544,7 +557,7 @@ export function Sessions() {
     setSearchParams({}, { replace: true });
   }
 
-  const activeFilterCount = [filters.query, filters.day, filters.ageMin, filters.ageMax, filters.zip]
+  const activeFilterCount = [filters.query, filters.day, filters.ageMin, filters.ageMax, filters.zip, filters.location, filters.program]
     .filter(Boolean).length;
 
   // Load sessions from Supabase
@@ -678,12 +691,12 @@ export function Sessions() {
         if (dayIdx !== -1 && s.day_of_week !== dayIdx) return false;
       }
 
-      // Age filter
+      // Age filter — supports half-year precision (parseFloat)
       if (filters.ageMin || filters.ageMax) {
         const parsed = parseAgeRange(prog?.age_range ?? null);
         if (parsed) {
-          const ageMin = filters.ageMin ? parseInt(filters.ageMin) : null;
-          const ageMax = filters.ageMax ? parseInt(filters.ageMax) : null;
+          const ageMin = filters.ageMin ? parseFloat(filters.ageMin) : null;
+          const ageMax = filters.ageMax ? parseFloat(filters.ageMax) : null;
           if (ageMin !== null && parsed.max < ageMin) return false;
           if (ageMax !== null && parsed.min > ageMax) return false;
         }
@@ -699,6 +712,12 @@ export function Sessions() {
         }
         // Sessions with no zip data pass through (rather than being hidden)
       }
+
+      // Location filter (exact match on location name)
+      if (filters.location && loc?.name !== filters.location) return false;
+
+      // Program type filter (exact match on program name)
+      if (filters.program && prog?.name !== filters.program) return false;
 
       return true;
     });
@@ -730,6 +749,27 @@ export function Sessions() {
     }
     return map;
   }, [filtered]);
+
+  // Unique location names and program names derived from ALL loaded sessions (not filtered)
+  const uniqueLocations = useMemo(() => {
+    const seen = new Set<string>();
+    const names: string[] = [];
+    for (const s of sessions) {
+      const name = s.locations?.name;
+      if (name && !seen.has(name)) { seen.add(name); names.push(name); }
+    }
+    return names.sort();
+  }, [sessions]);
+
+  const uniquePrograms = useMemo(() => {
+    const seen = new Set<string>();
+    const names: string[] = [];
+    for (const s of sessions) {
+      const name = s.programs?.name;
+      if (name && !seen.has(name)) { seen.add(name); names.push(name); }
+    }
+    return names.sort();
+  }, [sessions]);
 
   const handleCopyLink = useCallback((sessionId: string) => {
     const url = `${window.location.origin}/sessions?session=${sessionId}`;
@@ -834,9 +874,45 @@ export function Sessions() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {/* Location */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Location</label>
+                <div className="relative">
+                  <select
+                    value={filters.location}
+                    onChange={e => setFilter('location', e.target.value)}
+                    className="w-full appearance-none bg-[#0f1419] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#6366f1]/60"
+                  >
+                    <option value="">Any location</option>
+                    {uniqueLocations.map(l => (
+                      <option key={l} value={l}>{l}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Sport / Program */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Sport / Program</label>
+                <div className="relative">
+                  <select
+                    value={filters.program}
+                    onChange={e => setFilter('program', e.target.value)}
+                    className="w-full appearance-none bg-[#0f1419] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#6366f1]/60"
+                  >
+                    <option value="">Any program</option>
+                    {uniquePrograms.map(p => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                </div>
+              </div>
+
               {/* Zip / Postal Code */}
-              <div className="col-span-2 sm:col-span-1">
+              <div>
                 <label className="block text-xs text-gray-500 mb-1">Zip / Postal Code</label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-600 pointer-events-none" />
@@ -863,7 +939,9 @@ export function Sessions() {
                   </p>
                 )}
               </div>
+            </div>
 
+            <div className="grid grid-cols-3 gap-3">
               {/* Day of week */}
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Day of Week</label>
@@ -882,32 +960,40 @@ export function Sessions() {
                 </div>
               </div>
 
-              {/* Min age */}
+              {/* Min age — half-year precision */}
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Min Age</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="18"
-                  placeholder="e.g. 4"
-                  value={filters.ageMin}
-                  onChange={e => setFilter('ageMin', e.target.value)}
-                  className="w-full bg-[#0f1419] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#6366f1]/60"
-                />
+                <div className="relative">
+                  <select
+                    value={filters.ageMin}
+                    onChange={e => setFilter('ageMin', e.target.value)}
+                    className="w-full appearance-none bg-[#0f1419] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#6366f1]/60"
+                  >
+                    <option value="">Any</option>
+                    {AGE_OPTIONS.map(a => (
+                      <option key={a.value} value={a.value}>{a.label}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                </div>
               </div>
 
-              {/* Max age */}
+              {/* Max age — half-year precision */}
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Max Age</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="18"
-                  placeholder="e.g. 10"
-                  value={filters.ageMax}
-                  onChange={e => setFilter('ageMax', e.target.value)}
-                  className="w-full bg-[#0f1419] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#6366f1]/60"
-                />
+                <div className="relative">
+                  <select
+                    value={filters.ageMax}
+                    onChange={e => setFilter('ageMax', e.target.value)}
+                    className="w-full appearance-none bg-[#0f1419] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#6366f1]/60"
+                  >
+                    <option value="">Any</option>
+                    {AGE_OPTIONS.map(a => (
+                      <option key={a.value} value={a.value}>{a.label}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                </div>
               </div>
             </div>
 

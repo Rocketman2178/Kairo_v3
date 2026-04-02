@@ -23,6 +23,8 @@ import {
   Ticket,
   Timer,
   Info,
+  ListOrdered,
+  BellRing,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -88,6 +90,23 @@ interface TokenSummary {
   usedCount: number;
   expiredCount: number;
   activeTokens: MakeupToken[];
+}
+
+interface WaitlistRecord {
+  id: string;
+  position: number | null;
+  status: string;
+  createdAt: string;
+  notifiedAt: string | null;
+  childFirstName: string;
+  childLastName: string | null;
+  session: {
+    dayOfWeek: number | null;
+    startTime: string;
+    startDate: string;
+    programName: string;
+    locationName: string | null;
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -447,6 +466,190 @@ function ContactEditor({ family, onUpdated }: ContactEditorProps) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Waitlist Panel
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface WaitlistPanelProps {
+  familyId: string;
+}
+
+function WaitlistPanel({ familyId }: WaitlistPanelProps) {
+  const [entries, setEntries] = useState<WaitlistRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data, error: dbErr } = await supabase
+          .from('waitlist')
+          .select(`
+            id,
+            position,
+            status,
+            created_at,
+            notified_at,
+            children (
+              first_name,
+              last_name
+            ),
+            sessions!inner (
+              day_of_week,
+              start_time,
+              start_date,
+              programs!inner (
+                name
+              ),
+              locations (
+                name
+              )
+            )
+          `)
+          .eq('family_id', familyId)
+          .in('status', ['pending', 'notified'])
+          .order('created_at', { ascending: false });
+
+        if (cancelled) return;
+        if (dbErr) throw dbErr;
+
+        const mapped: WaitlistRecord[] = (data ?? []).map((row) => {
+          const child = row.children as unknown as { first_name: string; last_name: string | null } | null;
+          const sess = row.sessions as unknown as {
+            day_of_week: number | null;
+            start_time: string;
+            start_date: string;
+            programs: { name: string };
+            locations: { name: string } | null;
+          };
+          return {
+            id: row.id,
+            position: row.position,
+            status: row.status,
+            createdAt: row.created_at,
+            notifiedAt: row.notified_at,
+            childFirstName: child?.first_name ?? 'Child',
+            childLastName: child?.last_name ?? null,
+            session: {
+              dayOfWeek: sess.day_of_week,
+              startTime: sess.start_time,
+              startDate: sess.start_date,
+              programName: sess.programs.name,
+              locationName: sess.locations?.name ?? null,
+            },
+          };
+        });
+
+        setEntries(mapped);
+      } catch {
+        if (!cancelled) setError('Failed to load waitlist entries.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void load();
+    return () => { cancelled = true; };
+  }, [familyId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-10 gap-2 text-slate-400">
+        <Loader2 className="w-5 h-5 animate-spin" />
+        <span className="text-sm">Loading waitlist…</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
+        <p className="text-sm text-red-600">{error}</p>
+      </div>
+    );
+  }
+
+  if (entries.length === 0) {
+    return (
+      <div className="text-center py-10 text-slate-400">
+        <ListOrdered className="w-10 h-10 mx-auto mb-3 opacity-30" />
+        <p className="text-sm font-medium text-slate-600">No active waitlist entries</p>
+        <p className="text-xs text-slate-400 mt-1">
+          When a class is full, you can join the waitlist and we'll notify you when a spot opens.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {entries.map((entry) => {
+        const dayName = entry.session.dayOfWeek !== null ? DAY_NAMES_FULL[entry.session.dayOfWeek] : '';
+        const time = formatTime(entry.session.startTime);
+        const isNotified = entry.status === 'notified';
+
+        return (
+          <div
+            key={entry.id}
+            className={`bg-white rounded-xl border p-4 ${isNotified ? 'border-amber-300 bg-amber-50' : 'border-slate-200'}`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  {isNotified ? (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-100 border border-amber-200 rounded-full px-2 py-0.5">
+                      <BellRing className="w-3 h-3" />
+                      Spot Available
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-100 border border-slate-200 rounded-full px-2 py-0.5">
+                      <ListOrdered className="w-3 h-3" />
+                      {entry.position !== null ? `#${entry.position} in line` : 'Waitlisted'}
+                    </span>
+                  )}
+                </div>
+                <p className="font-semibold text-slate-900 text-sm truncate">
+                  {entry.session.programName}
+                </p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {entry.childFirstName}{entry.childLastName ? ` ${entry.childLastName}` : ''}
+                  {' · '}{dayName} at {time}
+                </p>
+                {entry.session.locationName && (
+                  <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
+                    <MapPin className="w-3 h-3 flex-shrink-0" />
+                    {entry.session.locationName}
+                  </p>
+                )}
+              </div>
+              <div className="text-right flex-shrink-0">
+                <p className="text-xs text-slate-400">Added</p>
+                <p className="text-xs font-medium text-slate-600">
+                  {new Date(entry.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </p>
+              </div>
+            </div>
+            {isNotified && entry.notifiedAt && (
+              <div className="mt-3 pt-3 border-t border-amber-200">
+                <p className="text-xs text-amber-700">
+                  A spot opened up on{' '}
+                  {new Date(entry.notifiedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.
+                  {' '}Contact the organization to confirm your enrollment.
+                </p>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Makeup Tokens Panel
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -664,7 +867,7 @@ function PortalDashboard({ family, onSignOut }: PortalDashboardProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [familyProfile, setFamilyProfile] = useState(family);
-  const [tab, setTab] = useState<'upcoming' | 'history' | 'tokens'>('upcoming');
+  const [tab, setTab] = useState<'upcoming' | 'history' | 'waitlist' | 'tokens'>('upcoming');
 
   const loadRegistrations = useCallback(async () => {
     setLoading(true);
@@ -851,6 +1054,15 @@ function PortalDashboard({ family, onSignOut }: PortalDashboardProps) {
               History ({history.length})
             </button>
             <button
+              onClick={() => setTab('waitlist')}
+              className={`flex-1 flex items-center justify-center gap-1 text-sm font-medium py-2 rounded-lg transition-colors min-h-[40px] ${
+                tab === 'waitlist' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+              }`}
+            >
+              <ListOrdered className="w-3.5 h-3.5" />
+              Waitlist
+            </button>
+            <button
               onClick={() => setTab('tokens')}
               className={`flex-1 flex items-center justify-center gap-1 text-sm font-medium py-2 rounded-lg transition-colors min-h-[40px] ${
                 tab === 'tokens' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
@@ -861,7 +1073,9 @@ function PortalDashboard({ family, onSignOut }: PortalDashboardProps) {
             </button>
           </div>
 
-          {tab === 'tokens' ? (
+          {tab === 'waitlist' ? (
+            <WaitlistPanel familyId={family.id} />
+          ) : tab === 'tokens' ? (
             <MakeupTokensPanel familyId={family.id} />
           ) : loading ? (
             <div className="flex flex-col items-center justify-center py-12 text-slate-400 gap-3">

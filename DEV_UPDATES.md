@@ -5,6 +5,49 @@ Format: `## [Month Year] - Title | Category | Description`
 
 ---
 
+## [April 1, 2026] - Location/Program Combinable Filters, Age Half-Precision & Waitlist Portal Tab | Core Feature | High
+
+**Category:** Core Feature
+**Impact:** High — Advances Stage 3.6.1 (combinable filters NBC Priority 1, age precision NBC Priority 2) and Stage 3.9 (waitlist visible from member view NBC Priority 2)
+
+**Description:**
+Three registration discovery and parent portal improvements implemented. Location + Program Type Combinable Filters adds two new dropdown filters to the Sessions page browse experience — a Location dropdown (unique location names derived from loaded sessions) and a Sport/Program dropdown (unique program names) — both combining via AND logic with the existing keyword, day-of-week, and zip filters; URL params `?location=` and `?program=` make filtered views shareable. Age in Years & Months replaces the free-text age Min/Max inputs with select dropdowns offering half-year precision (1, 1.5, 2, 2.5, … 18 yrs) using human-readable labels ("3 yrs 6 mo"), with the filter logic updated to `parseFloat` so fractional ages work correctly. Waitlist Portal Tab adds a fourth "Waitlist" tab to the Parent Portal dashboard that queries active (pending + notified) waitlist entries for the family and displays each entry's class name, child name, position in queue, day/time, location, and date added; entries with `status='notified'` show an amber "Spot Available" callout with the notification date and instructions to confirm enrollment.
+
+### Feature 1: Location + Program Type Combinable Filters (Stage 3.6.1 — NBC Priority 1)
+- `FilterState` extended with `location` and `program` fields; URL params `?location=` and `?program=`
+- `uniqueLocations` and `uniquePrograms` useMemo hooks derive sorted option lists from all loaded sessions
+- Filter panel: two new dropdowns (Location, Sport/Program) in the first filter row (3-column grid)
+- Filter logic: `if (filters.location && loc?.name !== filters.location) return false` + same for program
+- `activeFilterCount` updated to include `location` and `program`
+- First filter row reorganized: Location | Sport/Program | Zip (3-column); second row: Day | Min Age | Max Age (3-column)
+
+### Feature 2: Age in Years & Months with Half-Year Precision (Stage 3.6.1 — NBC Priority 2)
+- `AGE_OPTIONS` constant: generates `{ value, label }` pairs from 1 to 18 in 0.5-year steps
+  - Whole years: "1 yr", "2 yrs", …, "18 yrs"
+  - Half years: "1 yrs 6 mo", "2 yrs 6 mo", etc.
+- Min Age and Max Age inputs replaced with `<select>` dropdowns using `AGE_OPTIONS`
+- Age filter logic updated: `parseInt` → `parseFloat` so "3.5" correctly includes classes for ages 3–5
+- Label accuracy: "3.5" in URL renders as "3 yrs 6 mo" in the dropdown
+
+### Feature 3: Waitlist Tab on Parent Portal (Stage 3.9 — NBC Priority 2)
+- New `WaitlistRecord` interface: id, position, status, createdAt, notifiedAt, childFirstName, childLastName, session (dayOfWeek, startTime, startDate, programName, locationName)
+- New `WaitlistPanel` component: queries `waitlist` table with `children` + `sessions!inner(programs, locations)` join, filtered to `family_id` + `status IN ('pending', 'notified')`, ordered by created_at desc
+- Each entry card shows: status badge (position in line vs. "Spot Available"), program name, child name + day/time, location with MapPin icon, date added
+- `status='notified'` entries: amber border/background, BellRing icon badge, notification date footer
+- Tab bar in `PortalDashboard` updated: Current | History | Waitlist | Tokens (4 tabs)
+- `tab` state type widened: `'upcoming' | 'history' | 'waitlist' | 'tokens'`
+- New icons imported: `ListOrdered`, `BellRing` from lucide-react
+
+**Files Changed:**
+- `src/pages/Sessions.tsx` — FilterState extended with `location`/`program`; `AGE_OPTIONS` constant; `uniqueLocations`/`uniquePrograms` useMemos; filter panel redesigned (2 grids: 3-col each); filter logic for location + program; age filter uses `parseFloat`
+- `src/pages/ParentPortal.tsx` — `WaitlistRecord` interface; `WaitlistPanel` component; `WaitlistPanelProps`; `ListOrdered`/`BellRing` icons; tab type widened; Waitlist tab button + render in PortalDashboard
+
+**No DB migrations required (client-side filter logic + queries against existing schema).**
+**No new Edge Functions deployed.**
+**No n8n workflow changes.**
+
+---
+
 ## [April 1, 2026] - Zip/Postal Code Filter, Notify Me Interest Capture & Session Class Count | Core Feature | High
 
 **Category:** Core Feature

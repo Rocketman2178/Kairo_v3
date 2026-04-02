@@ -827,13 +827,13 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [x] Zip code filter — `zip_code` on locations; `?zip=` URL param; proximity sorting (exact → nearby → other); "In your area" / "Nearby" badges; Canadian postal code label support; no-results copy with clear suggestion (NBC Priority 1)
 - [x] Keyword search on customer-facing site — `/sessions` page with full-text search across program, location, description, day (NBC Priority 1)
 - [x] Registration page filter sharing — URL-param based filters (`?q=&day=&ageMin=&ageMax=&zip=`) are shareable and bookmarkable (NBC Priority 1)
-- [ ] Combinable filters — Location + Session, Location + Program, Sub-Program + Session, etc. (NBC Priority 1)
+- [x] Combinable filters — Location + Session, Location + Program, Sub-Program + Session (NBC Priority 1) — Location dropdown + Sport/Program dropdown added to filter panel; AND-combined with keyword/day/zip filters; URL params `?location=` and `?program=`
 - [x] Share individual class link — "Share" button per card copies `/sessions?session={id}` to clipboard (NBC Priority 1)
 - [x] Mobile filter pinning — sticky header with Filter button + collapsible filter panel; quick-pill day selectors (NBC Priority 1)
 - [x] Canadian postal code support — label shows "Zip / Postal Code"; prefix-matching works for A1A-format codes (NBC Priority 1)
 - [x] Zip code no-results redirect — no-results state shows zip-specific message with suggestion to clear filter (NBC Enhancement)
-- [ ] Age dropdown filter — filter to active classes only vs. all classes (NBC Priority 2)
-- [ ] Age in years and months — half-year precision for young children (e.g., 3.5 years) (NBC Priority 2)
+- [x] Age dropdown filter — Min Age / Max Age replaced with select dropdowns (NBC Priority 2)
+- [x] Age in years and months — half-year precision: 1, 1.5, 2, 2.5 … 18 yrs; labels show "3 yrs 6 mo"; filter uses parseFloat (NBC Priority 2)
 
 **Class Visibility & Presentation:**
 - [x] Hidden/unlisted classes — `is_hidden` on sessions; public `/sessions` filters hidden classes; direct `?session={id}` link still loads hidden session with "Private" badge (NBC Priority 1)
@@ -855,7 +855,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Waitlist-to-registration continuity — preserve all registration data (merchandise orders, etc.) when converting from waitlist (NBC Priority 1)
 - [ ] Don't delete declined waitlist registrations — make inactive instead of deleting; preserve history (NBC Priority 2)
 - [ ] Waitlist slot available email improvements — clearer email with decline button when spot opens (NBC Enhancement)
-- [ ] Waitlist visible from member view — show waitlist status on both account and member views (NBC Priority 2)
+- [x] Waitlist visible from member view — Waitlist tab added to Parent Portal; shows position, class, child, day/time, location, date added; notified entries show amber "Spot Available" callout (NBC Priority 2)
 
 #### 3.7 Makeup Class Token System (NEW - Swim School Deep Dive)
 **Swim School Insight:** Critical operational feature. Parents cancel in advance → receive a makeup token → token is level-locked, expires after configurable period, can only book into classes with open spots.
