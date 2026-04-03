@@ -1,7 +1,7 @@
 # Kairo Platform - Strategic Build Plan
 
 **Version:** 2.17
-**Last Updated:** March 25, 2026
+**Last Updated:** April 3, 2026
 **Current Stage:** Stage 2 COMPLETE | Stage 3 IN PROGRESS (Payments & Registration Flow)
 
 ---
@@ -841,18 +841,18 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [x] Suggested classes during checkout — "Registering for another time?" card on step 0 shows up to 3 other available sessions with spots/day/location info and direct navigation (NBC Priority 1)
 - [ ] Direct-to-consumer product upsells — suggested products (jerseys, gear) at checkout (NBC Priority 2)
 - [x] Total number of sessions visible — `# X classes` badge on every session card, computed from `duration_weeks` or start/end date range (NBC Enhancement)
-- [ ] External registration link-out — allow org to link to an external site for specific program enrollment (NBC Priority 1)
+- [x] External registration link-out — `external_registration_url` on sessions; Sessions page shows "Register Externally →" button (ExternalLink icon, `_blank`) when set; Notify Me hidden for external full classes (NBC Priority 1)
 
 **Registration Flow:**
 - [x] Marketing opt-in checkboxes — email opt-in (default on) and SMS opt-in (default off) in step 1 with CAN-SPAM/TCPA disclosure; saved to `families.email_opt_in` / `sms_opt_in` (NBC Enhancement)
 - [ ] SMS verification during checkout — checkbox for customer to initiate phone verification (NBC Priority 2)
-- [ ] Custom class questions per class/location — configurable intake questions (allergies, shirt size, medical) (NBC Priority 2)
+- [x] Custom class questions per class/location — `sessions.custom_questions` JSONB (select/text/textarea/checkbox); `registrations.custom_answers` JSONB stores answers; Register.tsx step 1 renders dynamic question section with required validation; demo seeded with shirt-size + allergy questions (NBC Priority 2)
 - [ ] Custom fields on classes — org-defined fields for reporting/filtering (Region, County, pre-scheduled makeup) (NBC Enhancement)
 - [ ] Account age lockout improvement — better error messaging instead of 24-hour lockout; 2-3 attempts before lock (NBC Priority 3)
 
 **Waitlist Enhancements:**
 - [ ] Waitlist confirmation email clarity — distinct subject "Waitlist Confirmation" (not "Order Confirmation"); clear next steps (NBC Priority 1)
-- [ ] Waitlist-to-registration continuity — preserve all registration data (merchandise orders, etc.) when converting from waitlist (NBC Priority 1)
+- [x] Waitlist-to-registration continuity — `waitlist.registration_data` JSONB stores form data for pre-population when spot opens; notified entries in Parent Portal now show "Claim Your Spot" amber CTA linking to `/?session={id}` to start Kai conversation (NBC Priority 1)
 - [ ] Don't delete declined waitlist registrations — make inactive instead of deleting; preserve history (NBC Priority 2)
 - [ ] Waitlist slot available email improvements — clearer email with decline button when spot opens (NBC Enhancement)
 - [x] Waitlist visible from member view — Waitlist tab added to Parent Portal; shows position, class, child, day/time, location, date added; notified entries show amber "Spot Available" callout (NBC Priority 2)

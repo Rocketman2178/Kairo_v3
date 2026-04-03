@@ -101,6 +101,7 @@ interface WaitlistRecord {
   childFirstName: string;
   childLastName: string | null;
   session: {
+    id: string;
     dayOfWeek: number | null;
     startTime: string;
     startDate: string;
@@ -498,6 +499,7 @@ function WaitlistPanel({ familyId }: WaitlistPanelProps) {
               last_name
             ),
             sessions!inner (
+              id,
               day_of_week,
               start_time,
               start_date,
@@ -519,6 +521,7 @@ function WaitlistPanel({ familyId }: WaitlistPanelProps) {
         const mapped: WaitlistRecord[] = (data ?? []).map((row) => {
           const child = row.children as unknown as { first_name: string; last_name: string | null } | null;
           const sess = row.sessions as unknown as {
+            id: string;
             day_of_week: number | null;
             start_time: string;
             start_date: string;
@@ -534,6 +537,7 @@ function WaitlistPanel({ familyId }: WaitlistPanelProps) {
             childFirstName: child?.first_name ?? 'Child',
             childLastName: child?.last_name ?? null,
             session: {
+              id: sess.id,
               dayOfWeek: sess.day_of_week,
               startTime: sess.start_time,
               startDate: sess.start_date,
@@ -634,12 +638,20 @@ function WaitlistPanel({ familyId }: WaitlistPanelProps) {
               </div>
             </div>
             {isNotified && entry.notifiedAt && (
-              <div className="mt-3 pt-3 border-t border-amber-200">
+              <div className="mt-3 pt-3 border-t border-amber-200 space-y-2">
                 <p className="text-xs text-amber-700">
                   A spot opened up on{' '}
                   {new Date(entry.notifiedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.
-                  {' '}Contact the organization to confirm your enrollment.
+                  {' '}Act quickly — spots are held for a limited time.
                 </p>
+                <a
+                  href={`/?session=${entry.session.id}`}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 px-3 py-2 rounded-lg transition-colors min-h-[36px]"
+                >
+                  <BellRing className="w-3.5 h-3.5" />
+                  Claim Your Spot
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </a>
               </div>
             )}
           </div>

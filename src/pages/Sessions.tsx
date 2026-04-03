@@ -21,6 +21,7 @@ import {
   Bell,
   CheckCircle2,
   Hash,
+  ExternalLink,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -35,6 +36,7 @@ interface SessionRow {
   enrolled_count: number;
   status: string;
   is_hidden: boolean;
+  external_registration_url: string | null;
   programs: {
     id: string;
     name: string;
@@ -361,8 +363,14 @@ function SessionBrowseCard({ session, onCopyLink, copiedId, filterZip, onNotifyM
   const classCount = computeClassCount(session);
   const proximity = filterZip ? zipProximityLabel(loc?.zip_code, filterZip) : null;
 
+  const isExternal = Boolean(session.external_registration_url);
+
   function handleRegister() {
-    navigate(`/?session=${session.id}`);
+    if (isExternal) {
+      window.open(session.external_registration_url!, '_blank', 'noopener,noreferrer');
+    } else {
+      navigate(`/?session=${session.id}`);
+    }
   }
 
   return (
@@ -490,27 +498,33 @@ function SessionBrowseCard({ session, onCopyLink, copiedId, filterZip, onNotifyM
           </button>
           {isFull ? (
             <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => onNotifyMe(session)}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-[#6366f1]/20 border border-[#6366f1]/40 text-[#a5b4fc] hover:bg-[#6366f1]/30 transition-colors"
-                title="Notify me when a spot opens"
-              >
-                <Bell className="w-3.5 h-3.5" />
-                Notify Me
-              </button>
+              {!isExternal && (
+                <button
+                  onClick={() => onNotifyMe(session)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-[#6366f1]/20 border border-[#6366f1]/40 text-[#a5b4fc] hover:bg-[#6366f1]/30 transition-colors"
+                  title="Notify me when a spot opens"
+                >
+                  <Bell className="w-3.5 h-3.5" />
+                  Notify Me
+                </button>
+              )}
               <button
                 onClick={handleRegister}
-                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-[#f59e0b] to-[#f97316] text-white hover:opacity-90 transition-opacity"
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-[#f59e0b] to-[#f97316] text-white hover:opacity-90 transition-opacity"
               >
-                Waitlist
+                {isExternal ? (
+                  <><ExternalLink className="w-3 h-3" /> Register Externally</>
+                ) : 'Waitlist'}
               </button>
             </div>
           ) : (
             <button
               onClick={handleRegister}
-              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-[#6366f1] to-[#06b6d4] text-white hover:opacity-90 transition-opacity"
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-[#6366f1] to-[#06b6d4] text-white hover:opacity-90 transition-opacity"
             >
-              Register Now
+              {isExternal ? (
+                <><ExternalLink className="w-3 h-3" /> Register Externally</>
+              ) : 'Register Now'}
             </button>
           )}
         </div>
@@ -582,6 +596,7 @@ export function Sessions() {
             enrolled_count,
             status,
             is_hidden,
+            external_registration_url,
             programs!inner (
               id,
               name,

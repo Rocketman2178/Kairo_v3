@@ -5,6 +5,66 @@ Format: `## [Month Year] - Title | Category | Description`
 
 ---
 
+## [April 3, 2026] - Custom Class Questions, External Registration Link-Out & Waitlist Claim Your Spot | Core Feature | High
+
+**Category:** Core Feature
+**Impact:** High — Advances Stage 3.6.1 (custom class questions NBC Priority 2, external registration link-out NBC Priority 1) and Stage 3.9 (waitlist-to-registration continuity NBC Priority 1)
+
+**Description:**
+Three registration and parent portal improvements implemented. Custom Class Questions adds a `custom_questions` JSONB column to sessions and `custom_answers` JSONB to registrations — organizations define per-session intake questions (text, select, textarea, checkbox) with required/optional flags; Register.tsx step 1 loads the session's questions after the pending registration is fetched, renders them under a "{Program} Questions" section with appropriate inputs, validates required answers before advancing to payment, and saves answers via UPDATE after `confirm_registration` succeeds. Demo Soccer Shots sessions seeded with "Youth Shirt Size" (required select) and "Allergies or Medical Notes" (optional textarea). External Registration Link-Out adds `external_registration_url` (text, nullable) to sessions — when set, the Sessions page "Register Now" button becomes "Register Externally →" (ExternalLink icon, opens in new tab, `noopener,noreferrer`); waitlist entries on full externally-linked sessions also link out instead of showing Notify Me; the `isExternal` flag is computed in `SessionBrowseCard`. Waitlist Claim Your Spot adds a `registration_data` JSONB column to the waitlist table for future data continuity (when a spot opens, form data can pre-populate the registration form), and updates the `notified` waitlist entries in the Parent Portal — the existing "Contact the organization" text is replaced with a "Claim Your Spot" amber button linking to `/?session={session_id}` to start a fresh Kai conversation for that specific class; the WaitlistRecord type and query now include `sessions.id`.
+
+### Feature 1: Custom Class Questions (Stage 3.6.1 — NBC Priority 2)
+- `supabase/migrations/20260403000001_add_custom_questions_external_url_waitlist_data.sql`
+  - `sessions.custom_questions` JSONB, default `[]` — array of `{id, label, type, required, options?, placeholder?}` objects
+  - `registrations.custom_answers` JSONB, default `{}` — key/value answers matching question IDs
+  - Demo seed: 2 questions (shirt_size select, allergy_notes textarea) applied to Soccer Shots sessions via `ILIKE '%Soccer%'`
+- `Register.tsx`:
+  - `CustomQuestion` interface: `{id, label, type, required, options?, placeholder?}`
+  - `customQuestions: CustomQuestion[]` state + `customAnswers: Record<string, string>` state
+  - `useEffect` fetches `sessions.custom_questions` after `registration` loads (by session ID)
+  - `handleCustomAnswerChange(questionId, value)` handler updates `customAnswers` map
+  - `validateStep2()` extended: loops `customQuestions`, errors on any `required` question with no answer
+  - Step 1 renders a "{Program} Questions" section (only when `customQuestions.length > 0`) with:
+    - `select` → `<select>` with option list
+    - `textarea` → `<textarea>`
+    - `checkbox` → `<input type="checkbox">`
+    - default → `<input type="text">`
+  - `handleDemoPayment` saves `custom_answers` via `supabase.from('registrations').update({ custom_answers })` after successful `confirm_registration`
+
+### Feature 2: External Registration Link-Out (Stage 3.6.1 — NBC Priority 1)
+- `supabase/migrations/20260403000001_...` — `sessions.external_registration_url` TEXT, nullable
+- `Sessions.tsx`:
+  - `external_registration_url: string | null` added to `SessionRow` interface
+  - Both Supabase queries (main + direct-session fallback) select `external_registration_url`
+  - `ExternalLink` icon added to lucide-react imports
+  - `isExternal` computed: `Boolean(session.external_registration_url)`
+  - `handleRegister()` updated: external → `window.open(url, '_blank', 'noopener,noreferrer')`; internal → `navigate('/?session=...')`
+  - Register Now button shows `ExternalLink` icon + "Register Externally" label when `isExternal`
+  - Full sessions: Notify Me button hidden when `isExternal`; Waitlist button → "Register Externally" when `isExternal`
+
+### Feature 3: Waitlist Claim Your Spot + Data Continuity (Stage 3.9 — NBC Priority 1)
+- `supabase/migrations/20260403000001_...` — `waitlist.registration_data` JSONB, default `{}`
+- `ParentPortal.tsx`:
+  - `WaitlistRecord.session` extended with `id: string`
+  - `WaitlistPanel` query: `sessions!inner` now selects `id` in addition to existing fields
+  - Mapper updated: `session.id = sess.id`
+  - Notified waitlist entry callout updated:
+    - "Contact the organization" text replaced with "Act quickly — spots are held for a limited time."
+    - New `<a href="/?session={entry.session.id}">` "Claim Your Spot" amber button with `BellRing` + `ChevronRight` icons
+
+**Files Changed:**
+- `supabase/migrations/20260403000001_add_custom_questions_external_url_waitlist_data.sql` — **NEW**
+- `src/types/database.ts` — `sessions` Row/Insert/Update: `custom_questions`, `external_registration_url`; `registrations` Row/Insert/Update: `custom_answers`; `waitlist` Row/Insert/Update: `registration_data`
+- `src/pages/Register.tsx` — `CustomQuestion` interface; `customQuestions`/`customAnswers` state; fetch useEffect; `handleCustomAnswerChange`; custom questions section in step 1; required-question validation; `custom_answers` UPDATE after confirm
+- `src/pages/Sessions.tsx` — `external_registration_url` in `SessionRow`; added to both queries; `ExternalLink` import; `isExternal` flag; updated `handleRegister`; updated CTA buttons
+- `src/pages/ParentPortal.tsx` — `WaitlistRecord.session.id`; query includes `sessions.id`; mapper includes `sess.id`; "Claim Your Spot" CTA on notified entries
+
+**DB Migration Applied:** `add_custom_questions_external_url_waitlist_data` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓
+**No new Edge Functions deployed.**
+**No n8n workflow changes.**
+
+---
+
 ## [April 1, 2026] - Location/Program Combinable Filters, Age Half-Precision & Waitlist Portal Tab | Core Feature | High
 
 **Category:** Core Feature

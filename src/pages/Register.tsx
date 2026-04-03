@@ -78,6 +78,15 @@ interface SuggestedSession {
   locations: { name: string } | null;
 }
 
+interface CustomQuestion {
+  id: string;
+  label: string;
+  type: 'text' | 'select' | 'checkbox' | 'textarea';
+  required: boolean;
+  options?: string[];
+  placeholder?: string;
+}
+
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 function formatTime(time24: string): string {
@@ -148,6 +157,8 @@ export default function Register() {
     smsOptIn: false,
   });
   const [suggestedSessions, setSuggestedSessions] = useState<SuggestedSession[]>([]);
+  const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([]);
+  const [customAnswers, setCustomAnswers] = useState<Record<string, string>>({});
 
   // Load saved payment methods when we reach step 2 and email is set for a returning family
   const { methods: savedCards, loading: savedCardsLoading } = useSavedPaymentMethods({
@@ -232,6 +243,29 @@ export default function Register() {
     }
 
     void fetchSuggested();
+  }, [registration]);
+
+  // Fetch custom questions for the session once the pending registration is known
+  useEffect(() => {
+    if (!registration) return;
+
+    async function fetchCustomQuestions() {
+      try {
+        const { data } = await supabase
+          .from('sessions')
+          .select('custom_questions')
+          .eq('id', registration!.session.id)
+          .single();
+
+        if (data?.custom_questions && Array.isArray(data.custom_questions)) {
+          setCustomQuestions(data.custom_questions as CustomQuestion[]);
+        }
+      } catch {
+        // Non-critical; fail silently
+      }
+    }
+
+    void fetchCustomQuestions();
   }, [registration]);
 
   async function loadPendingRegistration() {
@@ -426,6 +460,11 @@ export default function Register() {
     }
   }, [token, formData.email, familyId, existingFamilyId, childId, markRecovered]);
 
+  function handleCustomAnswerChange(questionId: string, value: string) {
+    setCustomAnswers((prev) => ({ ...prev, [questionId]: value }));
+    if (error) setError(null);
+  }
+
   function validateStep2(): boolean {
     if (!formData.parentFirstName.trim() || !formData.parentLastName.trim()) {
       setError('Please enter your first and last name.');
@@ -446,6 +485,13 @@ export default function Register() {
     if (!formData.agreedToTerms) {
       setError('Please agree to the terms and conditions.');
       return false;
+    }
+    // Validate required custom questions
+    for (const q of customQuestions) {
+      if (q.required && !customAnswers[q.id]?.trim()) {
+        setError(`Please answer the required question: "${q.label}"`);
+        return false;
+      }
     }
     setError(null);
     return true;
@@ -572,6 +618,14 @@ export default function Register() {
         setError(confirmData.message);
         setSubmitting(false);
         return;
+      }
+
+      // Persist custom question answers to the confirmed registration record
+      if (Object.keys(customAnswers).length > 0 && confirmData.registration_id) {
+        await supabase
+          .from('registrations')
+          .update({ custom_answers: customAnswers })
+          .eq('id', confirmData.registration_id);
       }
 
       markRecovered();
@@ -977,6 +1031,65 @@ export default function Register() {
                   </div>
                 </div>
               </div>
+
+              {/* Custom class questions (org-defined intake questions for this session) */}
+              {customQuestions.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">
+                    {registration?.session.programName} Questions
+                  </h3>
+                  <div className="space-y-4">
+                    {customQuestions.map((q) => (
+                      <div key={q.id}>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {q.label}
+                          {q.required && <span className="text-red-500 ml-1">*</span>}
+                        </label>
+                        {q.type === 'select' && q.options ? (
+                          <select
+                            value={customAnswers[q.id] ?? ''}
+                            onChange={(e) => handleCustomAnswerChange(q.id, e.target.value)}
+                            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
+                          >
+                            <option value="">Select an option…</option>
+                            {q.options.map((opt) => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        ) : q.type === 'textarea' ? (
+                          <textarea
+                            value={customAnswers[q.id] ?? ''}
+                            onChange={(e) => handleCustomAnswerChange(q.id, e.target.value)}
+                            rows={2}
+                            placeholder={q.placeholder ?? ''}
+                            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                          />
+                        ) : q.type === 'checkbox' ? (
+                          <label className="flex items-center gap-3 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={customAnswers[q.id] === 'true'}
+                              onChange={(e) =>
+                                handleCustomAnswerChange(q.id, e.target.checked ? 'true' : 'false')
+                              }
+                              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-700">{q.placeholder ?? 'Yes'}</span>
+                          </label>
+                        ) : (
+                          <input
+                            type="text"
+                            value={customAnswers[q.id] ?? ''}
+                            onChange={(e) => handleCustomAnswerChange(q.id, e.target.value)}
+                            placeholder={q.placeholder ?? ''}
+                            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Marketing opt-ins */}
               <div className="space-y-2">

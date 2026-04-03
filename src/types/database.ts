@@ -207,6 +207,8 @@ export interface Database {
           enrolled_count: number
           waitlist_count: number
           status: string
+          custom_questions: Json
+          external_registration_url: string | null
           created_at: string
           updated_at: string
         }
@@ -223,6 +225,8 @@ export interface Database {
           enrolled_count?: number
           waitlist_count?: number
           status?: string
+          custom_questions?: Json
+          external_registration_url?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -239,6 +243,8 @@ export interface Database {
           enrolled_count?: number
           waitlist_count?: number
           status?: string
+          custom_questions?: Json
+          external_registration_url?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -328,6 +334,7 @@ export interface Database {
           amount_cents: number | null
           enrolled_at: string | null
           registration_channel: string | null
+          custom_answers: Json
           created_at: string
           updated_at: string
         }
@@ -342,6 +349,7 @@ export interface Database {
           amount_cents?: number | null
           enrolled_at?: string | null
           registration_channel?: string | null
+          custom_answers?: Json
           created_at?: string
           updated_at?: string
         }
@@ -356,6 +364,7 @@ export interface Database {
           amount_cents?: number | null
           enrolled_at?: string | null
           registration_channel?: string | null
+          custom_answers?: Json
           created_at?: string
           updated_at?: string
         }
@@ -401,6 +410,7 @@ export interface Database {
           position: number | null
           alternatives_shown: Json
           status: string
+          registration_data: Json
           created_at: string
           notified_at: string | null
         }
@@ -412,6 +422,7 @@ export interface Database {
           position?: number | null
           alternatives_shown?: Json
           status?: string
+          registration_data?: Json
           created_at?: string
           notified_at?: string | null
         }
@@ -423,6 +434,7 @@ export interface Database {
           position?: number | null
           alternatives_shown?: Json
           status?: string
+          registration_data?: Json
           created_at?: string
           notified_at?: string | null
         }
