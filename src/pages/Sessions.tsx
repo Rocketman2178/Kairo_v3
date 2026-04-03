@@ -202,8 +202,8 @@ function NotifyMeModal({ session, onClose }: NotifyMeModalProps) {
           name: name.trim() || null,
           notify_on: 'spot_opens',
         });
-      // Unique constraint violation means they already registered interest — treat as success
-      if (dbErr && !dbErr.message.includes('unique')) {
+      // Unique constraint violation (23505) means they already registered interest — treat as success
+      if (dbErr && dbErr.code !== '23505') {
         throw dbErr;
       }
       setSubmitted(true);
