@@ -8,10 +8,13 @@ import {
   Home,
   Share2,
   PlusCircle,
+  CreditCard,
+  AlertCircle,
 } from 'lucide-react';
 import { downloadICS } from '../../utils/calendarExport';
 import { BiometricSetupPrompt } from './BiometricAuthPrompt';
 import { BiometricSettings } from './BiometricSettings';
+import { calculatePaymentPlans, type PlanType } from '../../utils/paymentPlans';
 
 interface RegistrationConfirmationProps {
   childName: string;
@@ -24,6 +27,10 @@ interface RegistrationConfirmationProps {
   locationAddress: string;
   amountCents: number;
   isDemo: boolean;
+  /** Payment plan chosen at checkout. When not 'full', a billing schedule notice is shown. */
+  paymentPlanType?: PlanType;
+  /** Season length in weeks — used to compute installment schedule. Defaults to 9. */
+  sessionWeeks?: number;
   /** Parent email — used for biometric setup. If provided, biometric opt-in is shown. */
   parentEmail?: string;
   /** Parent name — used for biometric setup display name. */
@@ -54,6 +61,8 @@ export default function RegistrationConfirmation({
   locationAddress,
   amountCents,
   isDemo,
+  paymentPlanType = 'full',
+  sessionWeeks = 9,
   parentEmail,
   parentName,
   onGoHome,
@@ -87,6 +96,16 @@ export default function RegistrationConfirmation({
   }
 
   const confirmationNumber = `KAI-${Date.now().toString(36).toUpperCase().slice(-6)}`;
+
+  // Billing schedule — only computed when an installment plan was selected
+  const isInstallmentPlan = paymentPlanType !== 'full';
+  const billingSchedule = isInstallmentPlan
+    ? (() => {
+        const sessionStart = startDate ? new Date(startDate + 'T00:00:00') : undefined;
+        const plans = calculatePaymentPlans(amountCents, sessionWeeks, sessionStart);
+        return plans.find((p) => p.id === paymentPlanType)?.billingSchedule ?? [];
+      })()
+    : [];
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -146,13 +165,49 @@ export default function RegistrationConfirmation({
               </div>
               {amountCents > 0 && (
                 <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Amount Paid</span>
+                  <span className="text-sm text-gray-500">
+                    {isInstallmentPlan ? 'First Payment' : 'Amount Paid'}
+                  </span>
                   <span className="font-semibold text-gray-900">
                     ${(amountCents / 100).toFixed(2)}
                   </span>
                 </div>
               )}
             </div>
+
+            {/* Recurring payment notice — shown when an installment plan was selected */}
+            {isInstallmentPlan && billingSchedule.length > 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <div className="flex items-start gap-2 mb-3">
+                  <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-medium text-amber-900 text-sm">Recurring charges will apply</h3>
+                    <p className="text-xs text-amber-700 mt-0.5">
+                      Your remaining payments will be charged automatically on the dates below.
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {billingSchedule.map((installment, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-amber-100"
+                    >
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />
+                        <span className="text-xs text-gray-700">{installment.label}</span>
+                      </div>
+                      <span className="text-xs font-semibold text-gray-900">
+                        ${(installment.amountCents / 100).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-amber-600 mt-2">
+                  You'll receive an email reminder before each charge.
+                </p>
+              </div>
+            )}
 
             <div className="bg-blue-50 rounded-xl p-4">
               <h3 className="font-medium text-gray-900 text-sm mb-2">Before Your First Session</h3>

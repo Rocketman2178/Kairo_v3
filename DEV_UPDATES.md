@@ -5,6 +5,72 @@ Format: `## [Month Year] - Title | Category | Description`
 
 ---
 
+## [April 4, 2026] - Declined Waitlist History, Recurring Payment Billing Schedule & Pre-Checkout Session Details | Core Feature | High
+
+**Category:** Core Feature
+**Impact:** High — Advances Stage 3.6.1 (don't delete declined waitlist registrations NBC Priority 2), Stage 3.1.0 (recurring payment display clarity NBC Priority 2), and Stage 3.0 (confirmation screen detail overhaul NBC Priority 2)
+
+**Description:**
+Three registration and parent portal improvements. Declined Waitlist History preserves waitlist records when families turn down a spot notification — a `declined_at` timestamp is added and status transitions to `'declined'` (never deleted); the Parent Portal Waitlist tab now shows declined entries in a separate grayed-out "Declined" section with a `XCircle` "Spot Declined" badge and the date the spot was turned down. Also normalizes legacy `'active'` → `'pending'` and `'promoted'` → `'notified'` status values so the DB constraint matches frontend expectations; updates `add_to_waitlist_with_position` RPC to insert `'pending'` with a duplicate-family guard. Recurring Payment Billing Schedule adds a prominent amber "Recurring charges will apply" notice to the `RegistrationConfirmation` screen whenever an installment plan was selected — the notice shows each upcoming charge date and amount drawn from the `calculatePaymentPlans()` billing schedule; the first payment label changes from "Amount Paid" to "First Payment" for clarity; `paymentPlan` state is now properly used in `Register.tsx` (was discarded via `, setPaymentPlan`) and passed as `paymentPlanType` + `sessionWeeks` to `RegistrationConfirmation`. Pre-Checkout Session Details enhances step 0 of the registration flow — start date, end date, and class count are displayed in a new blue info row below the session grid; per-class cost is shown in the Program tile ("$X/class"); the `get_pending_registration` RPC now returns `end_date` and `duration_weeks` from the programs table; `PendingRegistration.session` type extended with `endDate` and `durationWeeks`; hardcoded `sessionWeeks={9}` in `PaymentForm` and `RegistrationConfirmation` replaced with actual `durationWeeks` from the registration data.
+
+### Feature 1: Declined Waitlist History (Stage 3.6.1 — NBC Priority 2)
+- `supabase/migrations/20260404000001_add_waitlist_declined_status.sql`
+  - Drops old `valid_waitlist_status` CHECK constraint (`'active', 'promoted', 'cancelled'`)
+  - Normalizes: `'active'` → `'pending'`, `'promoted'` → `'notified'` in existing rows
+  - New constraint: `status IN ('pending', 'notified', 'enrolled', 'cancelled', 'declined')`
+  - `waitlist.declined_at TIMESTAMPTZ` — populated when spot is declined
+  - Replaces `add_to_waitlist_with_position()`: inserts `'pending'`, adds duplicate-family guard, uses fully-qualified table names, `SET search_path = ''`
+- `src/pages/ParentPortal.tsx`:
+  - `WaitlistRecord` extended with `declinedAt: string | null`
+  - Query now fetches `declined_at` and includes `'declined'` in `.in('status', [...])`
+  - `WaitlistPanel` splits entries into `activeEntries` and `declinedEntries`
+  - `WaitlistEntryCard` inner component handles all three states (pending, notified, declined)
+  - Declined entries: gray bg/border, `XCircle` "Spot Declined" badge, `declinedAt` date footer
+  - Empty active list now shows inline empty state rather than full-page empty
+- `src/types/database.ts`: `waitlist` Row/Insert/Update all extended with `declined_at`
+
+### Feature 2: Recurring Payment Billing Schedule on Confirmation (Stage 3.1.0 — NBC Priority 2)
+- `src/pages/Register.tsx`:
+  - `const [, setPaymentPlan]` → `const [paymentPlan, setPaymentPlan]` (was discarding state)
+  - `paymentPlanType={paymentPlan}` and `sessionWeeks={registration?.session.durationWeeks ?? 9}` now passed to `RegistrationConfirmation`
+  - `sessionWeeks` on `PaymentForm` also uses actual `durationWeeks`
+- `src/components/registration/RegistrationConfirmation.tsx`:
+  - New props: `paymentPlanType?: PlanType`, `sessionWeeks?: number` (defaults: `'full'`, `9`)
+  - Imports `calculatePaymentPlans` from `../../utils/paymentPlans`
+  - Imports `CreditCard`, `AlertCircle` from lucide-react
+  - `isInstallmentPlan` flag; `billingSchedule` computed from `calculatePaymentPlans()` when plan ≠ `'full'`
+  - "Amount Paid" label changes to "First Payment" for installment plans
+  - Amber "Recurring charges will apply" callout with per-installment charge cards shown when `isInstallmentPlan && billingSchedule.length > 0`
+
+### Feature 3: Pre-Checkout Session Detail Enhancement (Stage 3.0 — NBC Priority 2)
+- `supabase/migrations/20260404000002_enhance_pending_registration_details.sql`
+  - Replaces `get_pending_registration()` to also select `s.end_date` and `p.duration_weeks`
+  - JSON response now includes `end_date` and `duration_weeks` in the `session` object
+  - Uses fully-qualified table names, `SET search_path = ''`
+- `src/pages/Register.tsx`:
+  - `PendingRegistration.session` extended: `endDate: string`, `durationWeeks: number | null`
+  - `loadPendingRegistration` maps `data.session.end_date` and `data.session.duration_weeks`
+  - Step 0 Program tile: per-class cost label `($X/class)` shown when `durationWeeks > 0`
+  - New blue season details row below the 2×2 grid: start date → end date + class count
+  - Start/end dates formatted as "Apr 15, 2026"; class count shown as "X classes total"
+
+**Files Changed:**
+- `supabase/migrations/20260404000001_add_waitlist_declined_status.sql` — **NEW**
+- `supabase/migrations/20260404000002_enhance_pending_registration_details.sql` — **NEW**
+- `src/types/database.ts` — `waitlist` Row/Insert/Update: `declined_at`
+- `src/pages/ParentPortal.tsx` — `WaitlistRecord.declinedAt`; `XCircle` icon import; `declined_at` in query; `WaitlistEntryCard` component; active/declined split; updated empty state
+- `src/pages/Register.tsx` — `paymentPlan` state active; `PendingRegistration.session.endDate + durationWeeks`; `loadPendingRegistration` mapper updated; step 0 per-class cost + season details row; `paymentPlanType`/`sessionWeeks` passed to `RegistrationConfirmation`; `sessionWeeks` on `PaymentForm` uses real `durationWeeks`
+- `src/components/registration/RegistrationConfirmation.tsx` — `paymentPlanType`/`sessionWeeks` props; `calculatePaymentPlans` import; `CreditCard`/`AlertCircle` imports; billing schedule notice; "First Payment" label
+
+**DB Migrations Applied:**
+- `add_waitlist_declined_status` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓
+- `enhance_pending_registration_details` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓
+
+**No new Edge Functions deployed.**
+**No n8n workflow changes.**
+
+---
+
 ## [April 3, 2026] - Custom Class Questions, External Registration Link-Out & Waitlist Claim Your Spot | Core Feature | High
 
 **Category:** Core Feature

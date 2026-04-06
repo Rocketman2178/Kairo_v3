@@ -1,7 +1,7 @@
 # Kairo Platform - Strategic Build Plan
 
 **Version:** 2.17
-**Last Updated:** April 3, 2026
+**Last Updated:** April 4, 2026
 **Current Stage:** Stage 2 COMPLETE | Stage 3 IN PROGRESS (Payments & Registration Flow)
 
 ---
@@ -710,7 +710,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Create registration form component (pre-filled from chat)
 - [ ] Payment integration in registration form
 - [ ] Login redirects to last page visited (not backend dashboard) — NBC Priority 1
-- [ ] Confirmation screen detail overhaul — show full class details, dates, pricing breakdown before checkout — NBC Priority 2
+- [x] Confirmation screen detail overhaul — show full class details, dates, pricing breakdown before checkout — NBC Priority 2 — step 0 now shows start date, end date, class count, per-class cost; `get_pending_registration` returns `end_date` + `duration_weeks`
 
 **N8N Workflow Updates:**
 - [ ] Update webhook to accept temp IDs
@@ -732,7 +732,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Transfer funds between classes — move collected payments when child transfers (NBC Priority 1)
 - [ ] Override proration on transfers — admin toggle to bypass auto-proration (NBC Priority 1)
 - [ ] Adjust transfer of funds for recurring/installment plans — allow transfer of last payment regardless of calendar month (NBC Priority 1)
-- [ ] Recurring payment display clarity — if not paying in full, show that recurring payments exist at checkout + confirmation email (NBC Priority 2)
+- [x] Recurring payment display clarity — if not paying in full, show that recurring payments exist at checkout + confirmation email (NBC Priority 2) — amber billing schedule notice on RegistrationConfirmation; "First Payment" label; paymentPlan state now propagated from Register.tsx
 - [ ] Proration display in price details — show "prorated" label when applicable (NBC Priority 3)
 
 **Admin Payment Operations:**
@@ -853,7 +853,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 **Waitlist Enhancements:**
 - [ ] Waitlist confirmation email clarity — distinct subject "Waitlist Confirmation" (not "Order Confirmation"); clear next steps (NBC Priority 1)
 - [x] Waitlist-to-registration continuity — `waitlist.registration_data` JSONB stores form data for pre-population when spot opens; notified entries in Parent Portal now show "Claim Your Spot" amber CTA linking to `/?session={id}` to start Kai conversation (NBC Priority 1)
-- [ ] Don't delete declined waitlist registrations — make inactive instead of deleting; preserve history (NBC Priority 2)
+- [x] Don't delete declined waitlist registrations — make inactive instead of deleting; preserve history (NBC Priority 2) — `declined_at` column + `'declined'` status; WaitlistPanel shows declined section; `add_to_waitlist_with_position` updated; status values normalized (active→pending, promoted→notified)
 - [ ] Waitlist slot available email improvements — clearer email with decline button when spot opens (NBC Enhancement)
 - [x] Waitlist visible from member view — Waitlist tab added to Parent Portal; shows position, class, child, day/time, location, date added; notified entries show amber "Spot Available" callout (NBC Priority 2)
 

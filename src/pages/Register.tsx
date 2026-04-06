@@ -44,6 +44,8 @@ interface PendingRegistration {
     startTime: string;
     endTime: string;
     startDate: string;
+    endDate: string;
+    durationWeeks: number | null;
     locationName: string;
     locationAddress: string;
     capacity: number;
@@ -124,7 +126,7 @@ export default function Register() {
   const [childId, setChildId] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [isDemo, setIsDemo] = useState(!isStripeConfigured());
-  const [, setPaymentPlan] = useState<PlanType>('full');
+  const [paymentPlan, setPaymentPlan] = useState<PlanType>('full');
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [hasOtherRegistrations, setHasOtherRegistrations] = useState(false);
   const [isReturningFamily, setIsReturningFamily] = useState(false);
@@ -294,6 +296,8 @@ export default function Register() {
           startTime: data.session.start_time,
           endTime: data.session.end_time || '',
           startDate: data.session.start_date || '',
+          endDate: data.session.end_date || '',
+          durationWeeks: data.session.duration_weeks ?? null,
           locationName: data.session.location_name || 'TBD',
           locationAddress: data.session.location_address || '',
           capacity: data.session.capacity,
@@ -696,6 +700,8 @@ export default function Register() {
         locationAddress={registration?.session.locationAddress || ''}
         amountCents={registration?.amountCents || 0}
         isDemo={isDemo}
+        paymentPlanType={paymentPlan}
+        sessionWeeks={registration?.session.durationWeeks ?? 9}
         parentEmail={formData.email || undefined}
         parentName={
           formData.parentFirstName
@@ -786,10 +792,53 @@ export default function Register() {
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">
                       {formatPrice(registration?.amountCents || 0)}
+                      {registration?.session.durationWeeks && registration.session.durationWeeks > 0 && (
+                        <span className="ml-1 text-gray-400">
+                          ({formatPrice(Math.round((registration.amountCents) / registration.session.durationWeeks))}/class)
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>
               </div>
+
+              {/* Season dates + class count */}
+              {(registration?.session.startDate || registration?.session.endDate || registration?.session.durationWeeks) && (
+                <div className="bg-blue-50 rounded-xl px-4 py-3 flex flex-wrap gap-x-4 gap-y-1.5">
+                  {registration?.session.startDate && (
+                    <div className="flex items-center gap-1.5 text-sm text-blue-800">
+                      <Calendar className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                      <span>
+                        Starts{' '}
+                        <span className="font-medium">
+                          {new Date(registration.session.startDate + 'T00:00:00').toLocaleDateString('en-US', {
+                            month: 'short', day: 'numeric', year: 'numeric',
+                          })}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  {registration?.session.endDate && (
+                    <div className="flex items-center gap-1.5 text-sm text-blue-800">
+                      <span className="text-blue-400">→</span>
+                      <span>
+                        Ends{' '}
+                        <span className="font-medium">
+                          {new Date(registration.session.endDate + 'T00:00:00').toLocaleDateString('en-US', {
+                            month: 'short', day: 'numeric', year: 'numeric',
+                          })}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  {registration?.session.durationWeeks && registration.session.durationWeeks > 0 && (
+                    <div className="flex items-center gap-1.5 text-sm text-blue-800">
+                      <span className="font-medium">{registration.session.durationWeeks}</span>
+                      <span>classes total</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-4 py-2.5 rounded-xl">
                 <Shield className="h-4 w-4" />
@@ -1206,7 +1255,7 @@ export default function Register() {
                   amountCents={registration?.amountCents || 0}
                   programName={registration?.session.programName || ''}
                   sessionStartDate={registration?.session.startDate}
-                  sessionWeeks={9}
+                  sessionWeeks={registration?.session.durationWeeks ?? 9}
                   hasOtherRegistrations={hasOtherRegistrations}
                   isReturningFamily={isReturningFamily}
                   clientSecret={clientSecret}

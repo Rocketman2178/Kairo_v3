@@ -413,6 +413,7 @@ export interface Database {
           registration_data: Json
           created_at: string
           notified_at: string | null
+          declined_at: string | null
         }
         Insert: {
           id?: string
@@ -425,6 +426,7 @@ export interface Database {
           registration_data?: Json
           created_at?: string
           notified_at?: string | null
+          declined_at?: string | null
         }
         Update: {
           id?: string
@@ -437,6 +439,7 @@ export interface Database {
           registration_data?: Json
           created_at?: string
           notified_at?: string | null
+          declined_at?: string | null
         }
       }
       payments: {
