@@ -5,6 +5,71 @@ Format: `## [Month Year] - Title | Category | Description`
 
 ---
 
+## [April 6, 2026] - Installment Start Date Control, Children Profiles Portal & Mid-Season Proration | Core Feature | High
+
+**Category:** Core Feature
+**Impact:** High — Advances Stage 3.1.0 (payment plan start/end date control NBC Priority 1), Stage 3.9 (parent portal children management), and Stage 3.1.0 (proration display NBC Priority 3)
+
+**Description:**
+Three registration and parent portal improvements. Installment Start Date Control adds a per-organization `installment_start_mode` setting ('registration' | 'class_start') that controls when installment billing schedules begin. When set to 'class_start' and the session is in the future, the divided-payments schedule labels the first installment "At class start — [date]" instead of "Due today", subsequent payments spread forward from class start, the monthly subscription schedule also anchors to class start, and `PaymentPlanSelector` shows an indigo info callout: "Installment billing begins on [class start date]." The org's setting is now returned by `get_pending_registration()` and propagated from `Register.tsx` → `PaymentForm` → `PaymentPlanSelector`. Children Profiles Panel adds a fifth "Children" tab to the Parent Portal dashboard — a `ChildrenPanel` component fetches all children linked to the family and renders individual `ChildCard` components with inline edit (name, last name, skill level) and an `AddChildForm` (first name, last name, DOB, skill level) for adding new children. The tab bar was reorganized into two rows to accommodate five tabs. Mid-Season Proration Indicator adds a `computeProration()` helper to `PaymentSummary.tsx` that detects when a session has already started (start_date < today), calculates remaining weeks, and shows a "Prorated — X of Y weeks remaining" indigo line item with the original price struck through. `Register.tsx` step 0 also shows an amber "Mid-season enrollment" warning banner when the class is in progress, stating how many weeks remain.
+
+### Feature 1: Installment Start Date Control (Stage 3.1.0 — NBC Priority 1)
+- `supabase/migrations/20260406000001_add_installment_start_mode_and_proration.sql`
+  - `organizations.installment_start_mode` TEXT NOT NULL DEFAULT 'registration' CHECK IN ('registration', 'class_start')
+  - Replaces `get_pending_registration()` to also return `organization.installment_start_mode`
+- `src/utils/paymentPlans.ts`:
+  - New `InstallmentStartMode` type exported
+  - `buildDividedSchedule()` gains optional `scheduleStartDate` param; when set, first payment labeled "At class start — [date]"; subsequent 2-week intervals anchored to `scheduleStartDate`
+  - `calculatePaymentPlans()` gains `installmentStartMode` param; computes `scheduleStartDate` when mode is 'class_start' and session is in the future; updates divided + subscription descriptions/schedules; `scheduleStartDate` used for subscription monthly anchoring
+- `src/components/registration/PaymentPlanSelector.tsx`:
+  - New `installmentStartMode` prop + `Info` icon import
+  - `showClassStartNotice` flag; indigo callout shown when class_start mode is active and session is future
+  - Passes `installmentStartMode` to `calculatePaymentPlans()`
+- `src/components/registration/PaymentForm.tsx`:
+  - New `installmentStartMode` prop (type `InstallmentStartMode`) forwarded to `PaymentPlanSelector`
+- `src/pages/Register.tsx`:
+  - `PendingRegistration.organization` sub-type added with `installmentStartMode`
+  - `loadPendingRegistration` mapper reads `data.organization.installment_start_mode`
+  - `PaymentForm` receives `installmentStartMode={registration?.organization.installmentStartMode ?? 'registration'}`
+- `src/types/database.ts`: `organizations` Row/Insert/Update extended with `installment_start_mode`
+
+### Feature 2: Children Profiles Panel in Parent Portal (Stage 3.9)
+- `src/pages/ParentPortal.tsx`:
+  - New `ChildProfile` interface (`id`, `firstName`, `lastName`, `dateOfBirth`, `skillLevel`)
+  - New `ChildCard` component — displays child name, computed age, DOB badge, skill level badge; inline edit mode for name + skill level with save/cancel
+  - New `AddChildForm` component — form for first name, last name, DOB (required), skill level; inserts to `children` table
+  - New `ChildrenPanel` component — loads children by `family_id`, renders `ChildCard` list + `AddChildForm` toggle
+  - `PortalDashboard.tab` type extended to include `'children'`
+  - Tab bar reorganized to 2-row layout (row 1: Current / History / Waitlist; row 2: Tokens / Children)
+  - Children tab renders `<ChildrenPanel familyId={family.id} />`
+
+### Feature 3: Mid-Season Proration Indicator (Stage 3.1.0 — NBC Priority 3)
+- `src/components/registration/PaymentSummary.tsx`:
+  - New `computeProration(startDateStr, totalWeeks, totalPriceCents)` function — calculates `remainingWeeks` and `proratedCents` when session start < today
+  - New `CalendarClock` icon import
+  - `proration` computed at render time; when non-null: original price shows with line-through; "Prorated — X of Y weeks remaining" indigo line item shown with prorated amount
+- `src/pages/Register.tsx`:
+  - `Info` icon added to lucide-react imports
+  - Step 0: inline IIFE computes `weeksElapsed` and `remaining`; renders amber "Mid-season enrollment" banner with remaining week count when session is in progress
+
+**Files Changed:**
+- `supabase/migrations/20260406000001_add_installment_start_mode_and_proration.sql` — **NEW**
+- `src/utils/paymentPlans.ts` — `InstallmentStartMode` type; `buildDividedSchedule` `scheduleStartDate` param; `calculatePaymentPlans` `installmentStartMode` param
+- `src/components/registration/PaymentPlanSelector.tsx` — `installmentStartMode` prop; class-start notice callout
+- `src/components/registration/PaymentForm.tsx` — `installmentStartMode` prop forwarded
+- `src/components/registration/PaymentSummary.tsx` — `computeProration()`; prorated line item; `CalendarClock` icon
+- `src/pages/Register.tsx` — `PendingRegistration.organization`; mapper update; `Info` icon; mid-season banner; `installmentStartMode` passed to `PaymentForm`
+- `src/pages/ParentPortal.tsx` — `ChildProfile`, `ChildCard`, `AddChildForm`, `ChildrenPanel`; 'children' tab; 2-row tab bar
+- `src/types/database.ts` — `organizations.installment_start_mode`
+
+**DB Migration Applied:**
+- `add_installment_start_mode_and_proration` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓
+
+**No new Edge Functions deployed.**
+**No n8n workflow changes.**
+
+---
+
 ## [April 4, 2026] - Declined Waitlist History, Recurring Payment Billing Schedule & Pre-Checkout Session Details | Core Feature | High
 
 **Category:** Core Feature

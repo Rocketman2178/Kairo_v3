@@ -1,4 +1,4 @@
-import { Tag, Percent, Gift, BookOpen, Info } from 'lucide-react';
+import { Tag, Percent, Gift, BookOpen, Info, CalendarClock } from 'lucide-react';
 import type { DiscountResult } from '../../utils/discountCalculator';
 import type { PlanType, PaymentFeeConfig } from '../../utils/paymentPlans';
 import { calculatePaymentPlans } from '../../utils/paymentPlans';
@@ -11,6 +11,29 @@ interface PaymentSummaryProps {
   sessionWeeks?: number;
   sessionStartDate?: string;
   feeConfig?: PaymentFeeConfig;
+}
+
+/**
+ * When a session has already started, compute how many full weeks remain
+ * (including the current week) and the prorated price for those weeks.
+ */
+function computeProration(
+  startDateStr: string,
+  totalWeeks: number,
+  totalPriceCents: number
+): { remainingWeeks: number; proratedCents: number } | null {
+  const start = new Date(startDateStr + 'T00:00:00');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (start >= today) return null; // session not yet started
+
+  const msElapsed = today.getTime() - start.getTime();
+  const weeksElapsed = Math.floor(msElapsed / (7 * 24 * 60 * 60 * 1000));
+  const remainingWeeks = Math.max(0, totalWeeks - weeksElapsed);
+  if (remainingWeeks <= 0 || remainingWeeks >= totalWeeks) return null;
+
+  const proratedCents = Math.round(totalPriceCents * (remainingWeeks / totalWeeks));
+  return { remainingWeeks, proratedCents };
 }
 
 function formatCents(cents: number): string {
@@ -32,6 +55,12 @@ export default function PaymentSummary({
 }: PaymentSummaryProps) {
   const hasDiscount = discount && discount.discountPercent > 0;
   const afterDiscount = hasDiscount ? discount.finalPrice : originalAmountCents;
+
+  // Mid-season proration: compute if session already started
+  const proration =
+    sessionStartDate && sessionWeeks > 0
+      ? computeProration(sessionStartDate, sessionWeeks, afterDiscount)
+      : null;
 
   const startDate = sessionStartDate ? new Date(sessionStartDate) : undefined;
   const plans = calculatePaymentPlans(afterDiscount, sessionWeeks, startDate, feeConfig);
@@ -66,8 +95,21 @@ export default function PaymentSummary({
         {/* Program base price */}
         <div className="flex justify-between items-center">
           <span className="text-gray-600">{programName}</span>
-          <span className="text-gray-900">{formatCents(originalAmountCents)}</span>
+          <span className={`text-gray-900 ${proration ? 'line-through text-gray-400 text-sm' : ''}`}>
+            {formatCents(originalAmountCents)}
+          </span>
         </div>
+
+        {/* Mid-season proration line */}
+        {proration && (
+          <div className="flex justify-between items-center text-indigo-700">
+            <span className="flex items-center gap-1.5 text-sm">
+              <CalendarClock className="h-3.5 w-3.5 text-indigo-500" />
+              Prorated — {proration.remainingWeeks} of {sessionWeeks} weeks remaining
+            </span>
+            <span className="text-sm font-medium">{formatCents(proration.proratedCents)}</span>
+          </div>
+        )}
 
         {/* Discount line */}
         {hasDiscount && (

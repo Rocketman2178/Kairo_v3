@@ -727,13 +727,13 @@ Registration Form → Payment → Confirmed Registration → Return User
 **Source:** Soccer Shots franchise feature roadmap (115 features analyzed March 2026)
 
 **Payment Plan Controls:**
-- [ ] Payment plan start/end date control — set installment start to "class start" or specific date (NBC Priority 1)
+- [x] Payment plan start/end date control — set installment start to "class start" or specific date (NBC Priority 1) — `installment_start_mode` on organizations ('registration'|'class_start'); `get_pending_registration()` returns org config; `buildDividedSchedule` and subscription schedule anchor to class start when configured; `PaymentPlanSelector` shows indigo info callout when class_start mode active
 - [ ] Maximum proration amount cap — configurable per class (NBC Priority 1)
 - [ ] Transfer funds between classes — move collected payments when child transfers (NBC Priority 1)
 - [ ] Override proration on transfers — admin toggle to bypass auto-proration (NBC Priority 1)
 - [ ] Adjust transfer of funds for recurring/installment plans — allow transfer of last payment regardless of calendar month (NBC Priority 1)
 - [x] Recurring payment display clarity — if not paying in full, show that recurring payments exist at checkout + confirmation email (NBC Priority 2) — amber billing schedule notice on RegistrationConfirmation; "First Payment" label; paymentPlan state now propagated from Register.tsx
-- [ ] Proration display in price details — show "prorated" label when applicable (NBC Priority 3)
+- [x] Proration display in price details — show "prorated" label when applicable (NBC Priority 3) — `computeProration()` in `PaymentSummary`; prorated line item with original price struck through; amber mid-season banner in Register.tsx step 0
 
 **Admin Payment Operations:**
 - [ ] Pay Later (admin-initiated) — admin registers child, parent receives link to log in and pay (NBC Priority 3)
@@ -916,7 +916,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [x] Update family contact information — inline edit for name and phone in portal
 
 **Account Management:**
-- [ ] View all past classes (not just current) on account view (NBC Priority 2)
+- [x] View all past classes (not just current) on account view (NBC Priority 2) — History tab in Parent Portal shows all non-upcoming registrations; Children tab added with `ChildrenPanel` for viewing/editing child profiles and adding new children (name, DOB, skill level)
 - [ ] Search accounts by email + multiple strings with AND logic (NBC Priority 2)
 - [ ] New registration search — search by email, display email, show child birthdate (NBC Priority 2)
 

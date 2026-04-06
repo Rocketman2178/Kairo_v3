@@ -923,6 +923,403 @@ function MakeupTokensPanel({ familyId }: MakeupTokensPanelProps) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Children Panel
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface ChildProfile {
+  id: string;
+  firstName: string;
+  lastName: string | null;
+  dateOfBirth: string;
+  skillLevel: string | null;
+}
+
+interface ChildrenPanelProps {
+  familyId: string;
+}
+
+function ChildCard({
+  child,
+  onUpdated,
+}: {
+  child: ChildProfile;
+  onUpdated: (updated: ChildProfile) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [firstName, setFirstName] = useState(child.firstName);
+  const [lastName, setLastName] = useState(child.lastName ?? '');
+  const [skillLevel, setSkillLevel] = useState(child.skillLevel ?? '');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const ageYears = (() => {
+    if (!child.dateOfBirth) return null;
+    const dob = new Date(child.dateOfBirth + 'T00:00:00');
+    const now = new Date();
+    let age = now.getFullYear() - dob.getFullYear();
+    const monthDiff = now.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < dob.getDate())) age--;
+    return age;
+  })();
+
+  async function handleSave() {
+    if (!firstName.trim()) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const { error } = await supabase
+        .from('children')
+        .update({
+          first_name: firstName.trim(),
+          last_name: lastName.trim() || null,
+          skill_level: skillLevel.trim() || null,
+        })
+        .eq('id', child.id);
+      if (error) throw error;
+      onUpdated({
+        ...child,
+        firstName: firstName.trim(),
+        lastName: lastName.trim() || null,
+        skillLevel: skillLevel.trim() || null,
+      });
+      setEditing(false);
+    } catch {
+      setSaveError('Could not save changes. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handleCancel() {
+    setFirstName(child.firstName);
+    setLastName(child.lastName ?? '');
+    setSkillLevel(child.skillLevel ?? '');
+    setSaveError(null);
+    setEditing(false);
+  }
+
+  const displayName = child.lastName
+    ? `${child.firstName} ${child.lastName}`
+    : child.firstName;
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
+      {!editing ? (
+        <>
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                <Baby className="w-5 h-5 text-indigo-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900">{displayName}</p>
+                {ageYears !== null && (
+                  <p className="text-xs text-slate-500">Age {ageYears}</p>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => setEditing(true)}
+              className="flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-700 font-medium py-1.5 px-2.5 rounded-lg hover:bg-indigo-50 transition-colors min-h-[36px]"
+            >
+              <Edit2 className="w-3.5 h-3.5" />
+              Edit
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1 text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">
+              <Calendar className="w-3 h-3" />
+              {new Date(child.dateOfBirth + 'T00:00:00').toLocaleDateString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric',
+              })}
+            </span>
+            {child.skillLevel && (
+              <span className="inline-flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-medium">
+                <Star className="w-3 h-3" />
+                {child.skillLevel}
+              </span>
+            )}
+          </div>
+        </>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-sm font-semibold text-slate-700">Edit Child Profile</p>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">First name</label>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Last name</label>
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Optional"
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">
+              Skill level <span className="text-slate-400 font-normal">(optional)</span>
+            </label>
+            <input
+              type="text"
+              value={skillLevel}
+              onChange={(e) => setSkillLevel(e.target.value)}
+              placeholder="e.g., Beginner, Level 2, Goldfish"
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+            <p className="text-xs text-slate-400 mt-1">Used by your organization to match you with the right class</p>
+          </div>
+          {saveError && <p className="text-xs text-red-600">{saveError}</p>}
+          <div className="flex gap-2">
+            <button
+              onClick={handleSave}
+              disabled={saving || !firstName.trim()}
+              className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white rounded-lg transition-colors min-h-[40px]"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Save
+            </button>
+            <button
+              onClick={handleCancel}
+              className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors min-h-[40px]"
+            >
+              <X className="w-4 h-4" />
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AddChildForm({
+  familyId,
+  onAdded,
+  onCancel,
+}: {
+  familyId: string;
+  onAdded: (child: ChildProfile) => void;
+  onCancel: () => void;
+}) {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [skillLevel, setSkillLevel] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  async function handleAdd() {
+    if (!firstName.trim() || !dateOfBirth) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const { data, error } = await supabase
+        .from('children')
+        .insert({
+          family_id: familyId,
+          first_name: firstName.trim(),
+          last_name: lastName.trim() || null,
+          date_of_birth: dateOfBirth,
+          skill_level: skillLevel.trim() || null,
+        })
+        .select('id, first_name, last_name, date_of_birth, skill_level')
+        .single();
+      if (error) throw error;
+      onAdded({
+        id: data.id,
+        firstName: data.first_name,
+        lastName: data.last_name,
+        dateOfBirth: data.date_of_birth,
+        skillLevel: data.skill_level,
+      });
+    } catch {
+      setSaveError('Could not add child. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 space-y-3">
+      <p className="text-sm font-semibold text-indigo-800">Add a Child</p>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1">First name <span className="text-red-500">*</span></label>
+          <input
+            type="text"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1">Last name</label>
+          <input
+            type="text"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            placeholder="Optional"
+            className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-slate-600 mb-1">Date of birth <span className="text-red-500">*</span></label>
+        <input
+          type="date"
+          value={dateOfBirth}
+          onChange={(e) => setDateOfBirth(e.target.value)}
+          max={new Date().toISOString().split('T')[0]}
+          className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+        />
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-slate-600 mb-1">
+          Skill level <span className="text-slate-400 font-normal">(optional)</span>
+        </label>
+        <input
+          type="text"
+          value={skillLevel}
+          onChange={(e) => setSkillLevel(e.target.value)}
+          placeholder="e.g., Beginner, Level 2"
+          className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+        />
+      </div>
+      {saveError && <p className="text-xs text-red-600">{saveError}</p>}
+      <div className="flex gap-2">
+        <button
+          onClick={handleAdd}
+          disabled={saving || !firstName.trim() || !dateOfBirth}
+          className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white rounded-lg transition-colors min-h-[40px]"
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+          Add Child
+        </button>
+        <button
+          onClick={onCancel}
+          className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg transition-colors min-h-[40px]"
+        >
+          <X className="w-4 h-4" />
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ChildrenPanel({ familyId }: ChildrenPanelProps) {
+  const [children, setChildren] = useState<ChildProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data, error: dbErr } = await supabase
+          .from('children')
+          .select('id, first_name, last_name, date_of_birth, skill_level')
+          .eq('family_id', familyId)
+          .order('first_name');
+
+        if (cancelled) return;
+        if (dbErr) throw dbErr;
+
+        setChildren(
+          (data ?? []).map((c) => ({
+            id: c.id,
+            firstName: c.first_name,
+            lastName: c.last_name,
+            dateOfBirth: c.date_of_birth,
+            skillLevel: c.skill_level,
+          }))
+        );
+      } catch {
+        if (!cancelled) setError('Could not load children profiles.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void load();
+    return () => { cancelled = true; };
+  }, [familyId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-10 gap-2 text-slate-400">
+        <Loader2 className="w-5 h-5 animate-spin" />
+        <span className="text-sm">Loading profiles…</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
+        <p className="text-sm text-red-600">{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {children.map((child) => (
+        <ChildCard
+          key={child.id}
+          child={child}
+          onUpdated={(updated) =>
+            setChildren((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
+          }
+        />
+      ))}
+
+      {children.length === 0 && !showAddForm && (
+        <div className="text-center py-8 text-slate-400">
+          <Baby className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p className="text-sm font-medium text-slate-600">No children on file</p>
+          <p className="text-xs text-slate-400 mt-1">Add a child to manage their profile and skill level</p>
+        </div>
+      )}
+
+      {showAddForm ? (
+        <AddChildForm
+          familyId={familyId}
+          onAdded={(child) => {
+            setChildren((prev) => [...prev, child]);
+            setShowAddForm(false);
+          }}
+          onCancel={() => setShowAddForm(false)}
+        />
+      ) : (
+        <button
+          onClick={() => setShowAddForm(true)}
+          className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-300 rounded-2xl text-sm text-slate-500 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50 transition-colors min-h-[48px]"
+        >
+          <User className="w-4 h-4" />
+          Add another child
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Portal Dashboard
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -936,7 +1333,7 @@ function PortalDashboard({ family, onSignOut }: PortalDashboardProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [familyProfile, setFamilyProfile] = useState(family);
-  const [tab, setTab] = useState<'upcoming' | 'history' | 'waitlist' | 'tokens'>('upcoming');
+  const [tab, setTab] = useState<'upcoming' | 'history' | 'waitlist' | 'tokens' | 'children'>('upcoming');
 
   const loadRegistrations = useCallback(async () => {
     setLoading(true);
@@ -1104,48 +1501,63 @@ function PortalDashboard({ family, onSignOut }: PortalDashboardProps) {
 
         {/* Registrations */}
         <div>
-          {/* Tab bar */}
-          <div className="flex gap-1 bg-slate-200 rounded-xl p-1 mb-4">
-            <button
-              onClick={() => setTab('upcoming')}
-              className={`flex-1 text-sm font-medium py-2 rounded-lg transition-colors min-h-[40px] ${
-                tab === 'upcoming' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
-              }`}
-            >
-              Current ({upcoming.length})
-            </button>
-            <button
-              onClick={() => setTab('history')}
-              className={`flex-1 text-sm font-medium py-2 rounded-lg transition-colors min-h-[40px] ${
-                tab === 'history' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
-              }`}
-            >
-              History ({history.length})
-            </button>
-            <button
-              onClick={() => setTab('waitlist')}
-              className={`flex-1 flex items-center justify-center gap-1 text-sm font-medium py-2 rounded-lg transition-colors min-h-[40px] ${
-                tab === 'waitlist' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
-              }`}
-            >
-              <ListOrdered className="w-3.5 h-3.5" />
-              Waitlist
-            </button>
-            <button
-              onClick={() => setTab('tokens')}
-              className={`flex-1 flex items-center justify-center gap-1 text-sm font-medium py-2 rounded-lg transition-colors min-h-[40px] ${
-                tab === 'tokens' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
-              }`}
-            >
-              <Ticket className="w-3.5 h-3.5" />
-              Tokens
-            </button>
+          {/* Tab bar — 2-row layout to accommodate all 5 tabs */}
+          <div className="space-y-1 mb-4">
+            <div className="flex gap-1 bg-slate-200 rounded-xl p-1">
+              <button
+                onClick={() => setTab('upcoming')}
+                className={`flex-1 text-xs font-medium py-2 rounded-lg transition-colors min-h-[40px] ${
+                  tab === 'upcoming' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+                }`}
+              >
+                Current ({upcoming.length})
+              </button>
+              <button
+                onClick={() => setTab('history')}
+                className={`flex-1 text-xs font-medium py-2 rounded-lg transition-colors min-h-[40px] ${
+                  tab === 'history' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+                }`}
+              >
+                History ({history.length})
+              </button>
+              <button
+                onClick={() => setTab('waitlist')}
+                className={`flex-1 flex items-center justify-center gap-1 text-xs font-medium py-2 rounded-lg transition-colors min-h-[40px] ${
+                  tab === 'waitlist' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+                }`}
+              >
+                <ListOrdered className="w-3 h-3" />
+                Waitlist
+              </button>
+            </div>
+            <div className="flex gap-1 bg-slate-200 rounded-xl p-1">
+              <button
+                onClick={() => setTab('tokens')}
+                className={`flex-1 flex items-center justify-center gap-1 text-xs font-medium py-2 rounded-lg transition-colors min-h-[40px] ${
+                  tab === 'tokens' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+                }`}
+              >
+                <Ticket className="w-3 h-3" />
+                Tokens
+              </button>
+              <button
+                onClick={() => setTab('children')}
+                className={`flex-1 flex items-center justify-center gap-1 text-xs font-medium py-2 rounded-lg transition-colors min-h-[40px] ${
+                  tab === 'children' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+                }`}
+              >
+                <Baby className="w-3 h-3" />
+                Children
+              </button>
+            </div>
           </div>
 
           {tab === 'waitlist' ? (
             <WaitlistPanel familyId={family.id} />
           ) : tab === 'tokens' ? (
             <MakeupTokensPanel familyId={family.id} />
+          ) : tab === 'children' ? (
+            <ChildrenPanel familyId={family.id} />
           ) : loading ? (
             <div className="flex flex-col items-center justify-center py-12 text-slate-400 gap-3">
               <Loader2 className="w-8 h-8 animate-spin" />

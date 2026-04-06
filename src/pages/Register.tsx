@@ -30,6 +30,7 @@ import {
   Mail,
   MessageSquare,
   Sparkles,
+  Info,
 } from 'lucide-react';
 
 interface PendingRegistration {
@@ -50,6 +51,11 @@ interface PendingRegistration {
     locationAddress: string;
     capacity: number;
     enrolledCount: number;
+  };
+  organization: {
+    id: string;
+    name: string;
+    installmentStartMode: 'registration' | 'class_start';
   };
   amountCents: number;
   expiresAt: string;
@@ -302,6 +308,11 @@ export default function Register() {
           locationAddress: data.session.location_address || '',
           capacity: data.session.capacity,
           enrolledCount: data.session.enrolled_count,
+        },
+        organization: {
+          id: data.organization?.id ?? '',
+          name: data.organization?.name ?? '',
+          installmentStartMode: (data.organization?.installment_start_mode === 'class_start' ? 'class_start' : 'registration'),
         },
         amountCents: data.amount_cents,
         expiresAt: data.expires_at,
@@ -840,6 +851,34 @@ export default function Register() {
                 </div>
               )}
 
+              {/* Mid-season enrollment notice */}
+              {registration?.session.startDate &&
+                registration?.session.durationWeeks &&
+                registration.session.durationWeeks > 0 &&
+                (() => {
+                  const start = new Date(registration.session.startDate + 'T00:00:00');
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  if (start >= today) return null;
+                  const weeksElapsed = Math.floor(
+                    (today.getTime() - start.getTime()) / (7 * 24 * 60 * 60 * 1000)
+                  );
+                  const remaining = Math.max(0, registration.session.durationWeeks - weeksElapsed);
+                  if (remaining <= 0) return null;
+                  return (
+                    <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+                      <Info className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                      <span>
+                        <span className="font-semibold">Mid-season enrollment</span> — this class is already in progress.
+                        You'll join with{' '}
+                        <span className="font-semibold">{remaining} week{remaining !== 1 ? 's' : ''} remaining</span>.
+                        Your price will be prorated accordingly.
+                      </span>
+                    </div>
+                  );
+                })()
+              }
+
               <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-4 py-2.5 rounded-xl">
                 <Shield className="h-4 w-4" />
                 <span>
@@ -1272,6 +1311,7 @@ export default function Register() {
                   onQuickPay={handleQuickPay}
                   quickPayProcessing={quickPayProcessing}
                   quickPayMethodId={quickPayMethodId}
+                  installmentStartMode={registration?.organization.installmentStartMode ?? 'registration'}
                 />
               )}
             </div>

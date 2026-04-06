@@ -17,6 +17,7 @@ export interface Database {
           settings: Json
           branding: Json
           ai_agent_name: string
+          installment_start_mode: 'registration' | 'class_start'
           created_at: string
           updated_at: string
         }
@@ -27,6 +28,7 @@ export interface Database {
           settings?: Json
           branding?: Json
           ai_agent_name?: string
+          installment_start_mode?: 'registration' | 'class_start'
           created_at?: string
           updated_at?: string
         }
@@ -37,6 +39,7 @@ export interface Database {
           settings?: Json
           branding?: Json
           ai_agent_name?: string
+          installment_start_mode?: 'registration' | 'class_start'
           created_at?: string
           updated_at?: string
         }

@@ -1,5 +1,5 @@
-import { Check, Star, CalendarDays, SplitSquareHorizontal, Repeat } from 'lucide-react';
-import { calculatePaymentPlans, type PaymentPlan, type PlanType, type PaymentFeeConfig } from '../../utils/paymentPlans';
+import { Check, Star, CalendarDays, SplitSquareHorizontal, Repeat, Info } from 'lucide-react';
+import { calculatePaymentPlans, type PaymentPlan, type PlanType, type PaymentFeeConfig, type InstallmentStartMode } from '../../utils/paymentPlans';
 
 interface PaymentPlanSelectorProps {
   amountCents: number;
@@ -8,6 +8,8 @@ interface PaymentPlanSelectorProps {
   selectedPlan: PlanType;
   onSelectPlan: (plan: PlanType) => void;
   feeConfig?: PaymentFeeConfig;
+  /** Controls when installment billing begins. 'registration' = today, 'class_start' = first class date */
+  installmentStartMode?: InstallmentStartMode;
 }
 
 const PLAN_ICONS: Record<PlanType, typeof Star> = {
@@ -28,9 +30,16 @@ export default function PaymentPlanSelector({
   selectedPlan,
   onSelectPlan,
   feeConfig,
+  installmentStartMode = 'registration',
 }: PaymentPlanSelectorProps) {
   const startDate = sessionStartDate ? new Date(sessionStartDate) : undefined;
-  const plans = calculatePaymentPlans(amountCents, sessionWeeks, startDate, feeConfig);
+  const plans = calculatePaymentPlans(amountCents, sessionWeeks, startDate, feeConfig, 3, installmentStartMode);
+
+  // Show billing-start notice for installment plans when class_start mode is active and session is in the future
+  const showClassStartNotice =
+    installmentStartMode === 'class_start' &&
+    startDate !== undefined &&
+    startDate > new Date();
 
   return (
     <div className="space-y-3">
@@ -40,6 +49,19 @@ export default function PaymentPlanSelector({
           Most families pay in full
         </span>
       </div>
+
+      {showClassStartNotice && (
+        <div className="flex items-start gap-2 p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-xs text-indigo-700">
+          <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-indigo-500" />
+          <span>
+            Installment billing begins on{' '}
+            <span className="font-semibold">
+              {startDate!.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            </span>{' '}
+            (class start date). Pay in full to charge today.
+          </span>
+        </div>
+      )}
 
       <div className="grid gap-3">
         {plans.map((plan: PaymentPlan) => {

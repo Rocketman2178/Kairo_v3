@@ -49,21 +49,32 @@ const DEFAULT_FEE_CONFIG: PaymentFeeConfig = {
   payInFullFeeWaived: true,
 };
 
+export type InstallmentStartMode = 'registration' | 'class_start';
+
 /**
  * Calculate billing schedule for Divided Payments plan.
- * Payments are spread evenly across the season. The final payment is always
- * due on or before the first class date.
+ * Payments are spread evenly across the season.
  *
- * Example: 9-week season, 3 payments → Day 0, Week 4, Week 8
+ * When `scheduleStartDate` is provided (class_start mode) and is in the future,
+ * the first payment is labeled "At class start" and all subsequent payments
+ * are spread forward from that date at 2-week intervals.
+ *
+ * Example (registration mode): 9-week season, 3 payments → Day 0, +2wk, +4wk
+ * Example (class_start mode):  3 payments → Class start, +2wk, +4wk
  */
 function buildDividedSchedule(
   totalCents: number,
   installments: number,
-  sessionStartDate?: Date
+  sessionStartDate?: Date,
+  scheduleStartDate?: Date
 ): PaymentInstallment[] {
   const perInstallment = Math.round(totalCents / installments);
   // Adjust last installment to account for rounding
   const lastInstallment = totalCents - perInstallment * (installments - 1);
+
+  // Base date for the schedule: scheduleStartDate if provided (class_start mode), else today
+  const baseDate = scheduleStartDate ?? new Date();
+  const isClassStartMode = scheduleStartDate !== undefined;
 
   const schedule: PaymentInstallment[] = [];
 
@@ -74,18 +85,19 @@ function buildDividedSchedule(
     let dueDate: string;
 
     if (i === 0) {
-      label = 'Due today';
-      dueDate = new Date().toISOString();
-    } else if (sessionStartDate) {
-      // Spread remaining payments evenly before the start date
-      // We want the last payment a week before class starts
-      const intervalDays = Math.floor((14 * i)); // roughly 2-week intervals
-      const due = new Date(new Date().getTime() + intervalDays * 24 * 60 * 60 * 1000);
+      if (isClassStartMode) {
+        const dateStr = baseDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        label = `At class start — ${dateStr}`;
+        dueDate = baseDate.toISOString();
+      } else {
+        label = 'Due today';
+        dueDate = new Date().toISOString();
+      }
+    } else {
+      const intervalDays = 14 * i; // 2-week intervals from base date
+      const due = new Date(baseDate.getTime() + intervalDays * 24 * 60 * 60 * 1000);
       dueDate = due.toISOString();
       label = `Payment ${i + 1} — ${due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
-    } else {
-      label = `Payment ${i + 1}`;
-      dueDate = '';
     }
 
     schedule.push({ dueDate, amountCents: amount, label });
@@ -107,7 +119,8 @@ export function calculatePaymentPlans(
   sessionWeeks: number = 9,
   sessionStartDate?: Date,
   feeConfig: PaymentFeeConfig = DEFAULT_FEE_CONFIG,
-  dividedInstallmentCount: number = 3
+  dividedInstallmentCount: number = 3,
+  installmentStartMode: InstallmentStartMode = 'registration'
 ): PaymentPlan[] {
   const totalPrice = totalPriceCents;
 
@@ -122,10 +135,16 @@ export function calculatePaymentPlans(
   // Processing fee applies to installment plans only
   const processingFeeMultiplier = 1 + feeConfig.processingFeePercent / 100;
 
+  // Determine base date for installment scheduling
+  // When class_start mode and session is in the future, billing starts at session start date
+  const isFutureSession = sessionStartDate !== undefined && sessionStartDate > new Date();
+  const scheduleStartDate =
+    installmentStartMode === 'class_start' && isFutureSession ? sessionStartDate : undefined;
+
   // ── Plan 2: Divided Payments ─────────────────────────────────────────────────
   const dividedTotalCents = Math.round(totalPrice * processingFeeMultiplier);
   const dividedPerInstallmentCents = Math.round(dividedTotalCents / dividedInstallmentCount);
-  const dividedSchedule = buildDividedSchedule(dividedTotalCents, dividedInstallmentCount, sessionStartDate);
+  const dividedSchedule = buildDividedSchedule(dividedTotalCents, dividedInstallmentCount, sessionStartDate, scheduleStartDate);
 
   // ── Plan 3: Subscription Model (Monthly) ─────────────────────────────────────
   const monthlyInstallments = Math.max(2, Math.ceil(sessionWeeks / 4));
@@ -209,7 +228,9 @@ export function calculatePaymentPlans(
       total: dividedTotalCents + regFee,
       fee: regFee + (dividedTotalCents - totalPrice),
       feeLabel: processingFeeLabel,
-      description: `${dividedInstallmentCount} equal payments every 2 weeks`,
+      description: scheduleStartDate
+        ? `${dividedInstallmentCount} payments starting at class start`
+        : `${dividedInstallmentCount} equal payments every 2 weeks`,
       billingSchedule: dividedSchedule.map((s, i) => ({
         ...s,
         amountCents: s.amountCents + (i === 0 ? regFee : 0),
@@ -234,10 +255,15 @@ export function calculatePaymentPlans(
         const baseAmount = isLast
           ? subscriptionTotalCents - subscriptionPerMonthCents * (monthlyInstallments - 1)
           : subscriptionPerMonthCents;
+        const monthBase = scheduleStartDate ?? new Date();
+        const monthDue = new Date(monthBase.getTime() + i * 30 * 24 * 60 * 60 * 1000);
+        const firstLabel = scheduleStartDate
+          ? `Month 1 — ${scheduleStartDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+          : 'Month 1 — due today';
         return {
-          dueDate: '',
+          dueDate: monthDue.toISOString(),
           amountCents: i === 0 ? baseAmount + regFee : baseAmount,
-          label: i === 0 ? 'Month 1 — due today' : `Month ${i + 1}`,
+          label: i === 0 ? firstLabel : `Month ${i + 1}`,
         };
       }),
     },

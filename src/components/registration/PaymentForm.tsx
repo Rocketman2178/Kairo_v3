@@ -12,7 +12,7 @@ import PaymentSummary from './PaymentSummary';
 import BiometricAuthPrompt, { BiometricSuccess } from './BiometricAuthPrompt';
 import SavedPaymentMethods from './SavedPaymentMethods';
 import { calculateDiscount } from '../../utils/discountCalculator';
-import type { PlanType, PaymentFeeConfig } from '../../utils/paymentPlans';
+import type { PlanType, PaymentFeeConfig, InstallmentStartMode } from '../../utils/paymentPlans';
 import type { SavedCard } from '../../hooks/useSavedPaymentMethods';
 
 export type PaymentFailureReason =
@@ -49,6 +49,8 @@ interface PaymentFormProps {
   quickPayProcessing?: boolean;
   /** Method ID currently being processed via quick checkout */
   quickPayMethodId?: string | null;
+  /** Controls when installment billing begins: 'registration' (today) or 'class_start' */
+  installmentStartMode?: InstallmentStartMode;
 }
 
 /** Map a Stripe decline code to our PaymentFailureReason enum */
@@ -95,6 +97,7 @@ export default function PaymentForm({
   onQuickPay,
   quickPayProcessing = false,
   quickPayMethodId = null,
+  installmentStartMode = 'registration',
 }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
@@ -242,6 +245,7 @@ export default function PaymentForm({
         selectedPlan={selectedPlan}
         onSelectPlan={handlePlanChange}
         feeConfig={feeConfig}
+        installmentStartMode={installmentStartMode}
       />
 
       <PaymentSummary
