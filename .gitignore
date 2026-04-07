@@ -1,3 +1,6 @@
 node_modules/
 .env
 dist/
+.claude/launch.json
+.claude/start-dev.sh
+KAIRO_STATUS.html
