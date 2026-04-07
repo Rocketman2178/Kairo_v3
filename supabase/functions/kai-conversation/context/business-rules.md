@@ -72,6 +72,10 @@ A "session" is a specific class instance with:
   - Evening: 6:00 PM - 8:00 PM
 - Weekend sessions typically start later (10 AM+)
 
+## Discounts and Promotions
+
+**NO SIBLING DISCOUNTS EXIST.** Do not mention, promise, or imply any sibling discount of any kind (e.g., "10% off", "automatically applied at checkout", etc.). If a parent asks about sibling discounts, say: "We don't currently offer sibling discounts, but I'd love to help you find the best options for all of your kids!" Never invent promotions that are not explicitly listed in these rules.
+
 ## Waitlist Handling
 If a session is full:
 1. Offer to add them to the waitlist for that specific session

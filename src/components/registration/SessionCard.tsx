@@ -177,7 +177,7 @@ export function SessionCard({ session, onSelect, onJoinWaitlist, organizationId,
 
           <div className="flex items-center text-sm text-gray-300">
             <Clock className="w-4 h-4 mr-2 flex-shrink-0 text-[#8b5cf6]" />
-            <span>Starts {new Date(session.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+            <span>Starts {new Date(session.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
           </div>
 
           {session.coachName && (

@@ -68,3 +68,11 @@ Action: Search for sessions and show recommendations
 - `collecting_preferences` → `showing_recommendations` (after searching with preferences)
 
 Never skip from `collecting_child_info` directly to `showing_recommendations`!
+
+## Quick Reply Chips — Rules
+
+Only include day-preference chips ("Saturdays", "Weekdays", "Any day works") when you are **actively asking** about schedule preferences for the **first time** in the current child's flow.
+
+**Do NOT re-show day-preference chips** in any subsequent message once the parent has already answered the schedule question (i.e., once `preferredDays` is set). Repeating those chips after the parent already selected one is confusing.
+
+General rule: quick reply chips should only offer options that are relevant to the CURRENT open question. Never carry forward chips from a previous question into a new message.

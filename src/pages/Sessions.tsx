@@ -672,7 +672,7 @@ function SessionBrowseCard({ session, onCopyLink, copiedId, filterZip, onNotifyM
               {loc.address && (
                 <span className="text-gray-500 ml-1 text-xs">· {loc.address}</span>
               )}
-              {loc.zip_code && (
+              {loc.zip_code && !loc.address?.includes(loc.zip_code) && (
                 <span className="text-gray-600 ml-1 text-xs">{loc.zip_code}</span>
               )}
             </span>

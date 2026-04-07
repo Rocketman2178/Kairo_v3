@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Send, AlertCircle, Star, Sparkles, RotateCcw, Mic, Volume2, VolumeX } from 'lucide-react';
 import { MessageBubble } from './MessageBubble';
 import { useConversation } from '../../hooks/useConversation';
@@ -19,9 +20,11 @@ interface ChatInterfaceProps {
   organizationId: string;
   familyId?: string;
   onComplete?: () => void;
+  initialSessionId?: string;
 }
 
-export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) {
+export function ChatInterface({ organizationId, familyId, initialSessionId }: ChatInterfaceProps) {
+  const navigate = useNavigate();
   const [inputValue, setInputValue] = useState('');
   const [showFallbackForm, setShowFallbackForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -139,11 +142,14 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
     if (!isReady) return;
     if (messages.length === 0) {
       hasAddedInitialMessage.current = true;
-      addAssistantMessageRef.current(greetingRef.current);
+      const greeting = initialSessionId
+        ? "Hi! I see you're interested in registering for a class — great choice! What's your child's name and age so I can get you set up?"
+        : greetingRef.current;
+      addAssistantMessageRef.current(greeting);
     } else {
       hasAddedInitialMessage.current = true;
     }
-  }, [messages.length, isReady]);
+  }, [messages.length, isReady, initialSessionId]);
 
   // ── TTS — speak new Kai messages when TTS is enabled ─────────────────────
   const { isSupported: ttsSupported, isSpeaking, speak: ttsSpeak, stop: ttsStop } = useTtsOutput({ language });
@@ -473,11 +479,14 @@ export function ChatInterface({ organizationId, familyId }: ChatInterfaceProps) 
                     handleSendMessage(reply);
                   }}
                   onSelectSession={(sessionId, programName) => {
-                    const childName = context.childName || 'your child';
+                    const childName = context.childName || '';
+                    const params = new URLSearchParams({ session: sessionId });
+                    if (childName) params.set('child', childName);
+                    if (context.childAge) params.set('age', String(context.childAge));
                     addAssistantMessage(
-                      `I've signed up ${childName} for ${programName}! Would you like to sign up another child?`,
-                      [strings.signUpAnotherChild, strings.noThanks]
+                      `Great choice! Let me take you to checkout to complete the registration for ${programName}.`
                     );
+                    setTimeout(() => navigate(`/register?${params.toString()}`), 800);
                   }}
                   onJoinWaitlist={(sessionId, programName) => {
                     const waitlistMessage = `Join waitlist for ${programName}`;

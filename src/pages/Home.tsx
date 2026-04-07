@@ -1,11 +1,13 @@
 import { ChatInterface } from '../components/registration/ChatInterface';
 import CartRecoveryBanner from '../components/registration/CartRecoveryBanner';
 import { useCartRecovery } from '../hooks/useCartRecovery';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ExternalLink, LayoutGrid } from 'lucide-react';
 
 export function Home() {
   const { cartRecovery, recoveryUrl, dismiss } = useCartRecovery();
+  const [searchParams] = useSearchParams();
+  const initialSessionId = searchParams.get('session') ?? undefined;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f1419] via-[#1a2332] to-[#0f1419]">
@@ -63,7 +65,7 @@ export function Home() {
 
       {/* Main Content — no padding on mobile for full-bleed chat */}
       <div className="sm:container sm:mx-auto sm:px-4 sm:py-8">
-        <ChatInterface organizationId="00000000-0000-0000-0000-000000000001" />
+        <ChatInterface organizationId="00000000-0000-0000-0000-000000000001" initialSessionId={initialSessionId} />
 
         <div className="hidden sm:block text-center mt-8 text-sm text-gray-500 space-y-2">
           <p>Copyright 2026 Kairo Pro & RocketHub Labs</p>

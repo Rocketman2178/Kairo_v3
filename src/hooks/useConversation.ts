@@ -567,7 +567,8 @@ export function useConversation(options: UseConversationOptions) {
   }, [conversationId, organizationId, familyId, tempIds, state]);
 
   const resetConversation = useCallback(async () => {
-    setMessages([]);
+    // Don't clear messages yet — wait until the new conversation is ready to
+    // avoid a blank/white flash between clearing and the new greeting appearing.
     setState('greeting');
     setRegistrationRedirect(null);
     localStorage.removeItem(CONVERSATION_ID_STORAGE_KEY);
@@ -597,6 +598,9 @@ export function useConversation(options: UseConversationOptions) {
       if (error) throw error;
 
       if (data) {
+        // Clear messages and set new conversation ID together so the greeting
+        // effect fires in the same render cycle — no blank state flash.
+        setMessages([]);
         setConversationId(data.id);
         localStorage.setItem(CONVERSATION_ID_STORAGE_KEY, data.id);
         setContext({
@@ -605,6 +609,7 @@ export function useConversation(options: UseConversationOptions) {
         });
       }
     } catch (error) {
+      setMessages([]);
       console.error('Failed to reset conversation:', error);
       onErrorRef.current?.(error as Error);
     }

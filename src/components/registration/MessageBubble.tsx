@@ -13,6 +13,8 @@ interface MessageBubbleProps {
 
 function cleanMarkdownFormatting(content: string): string {
   let cleaned = content;
+  // Convert bullet list items (* item) to bullet points before stripping other asterisks
+  cleaned = cleaned.replace(/^\* (.+)/gm, '• $1');
   cleaned = cleaned.replace(/\*\*([^*]+)\*\*/g, '$1');
   cleaned = cleaned.replace(/\*([^*]+)\*/g, '$1');
   cleaned = cleaned.replace(/__([^_]+)__/g, '$1');

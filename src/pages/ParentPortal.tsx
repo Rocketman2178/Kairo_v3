@@ -953,13 +953,18 @@ interface ChildProfile {
 
 interface ChildrenPanelProps {
   familyId: string;
+  familyEmail: string;
 }
 
 function ChildCard({
   child,
+  familyId,
+  familyEmail,
   onUpdated,
 }: {
   child: ChildProfile;
+  familyId: string;
+  familyEmail: string;
   onUpdated: (updated: ChildProfile) => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -984,20 +989,24 @@ function ChildCard({
     setSaving(true);
     setSaveError(null);
     try {
-      const { error } = await supabase
-        .from('children')
-        .update({
-          first_name: firstName.trim(),
-          last_name: lastName.trim() || null,
-          skill_level: skillLevel.trim() || null,
-        })
-        .eq('id', child.id);
+      const { data, error } = await supabase.functions.invoke('portal-children', {
+        body: {
+          action: 'update',
+          familyId,
+          email: familyEmail,
+          childId: child.id,
+          firstName: firstName.trim(),
+          lastName: lastName.trim() || null,
+          skillLevel: skillLevel.trim() || null,
+        },
+      });
       if (error) throw error;
+      if (!data?.data) throw new Error('No data returned');
       onUpdated({
         ...child,
-        firstName: firstName.trim(),
-        lastName: lastName.trim() || null,
-        skillLevel: skillLevel.trim() || null,
+        firstName: data.data.first_name,
+        lastName: data.data.last_name,
+        skillLevel: data.data.skill_level,
       });
       setEditing(false);
     } catch {
@@ -1121,10 +1130,12 @@ function ChildCard({
 
 function AddChildForm({
   familyId,
+  familyEmail,
   onAdded,
   onCancel,
 }: {
   familyId: string;
+  familyEmail: string;
   onAdded: (child: ChildProfile) => void;
   onCancel: () => void;
 }) {
@@ -1140,24 +1151,25 @@ function AddChildForm({
     setSaving(true);
     setSaveError(null);
     try {
-      const { data, error } = await supabase
-        .from('children')
-        .insert({
-          family_id: familyId,
-          first_name: firstName.trim(),
-          last_name: lastName.trim() || null,
-          date_of_birth: dateOfBirth,
-          skill_level: skillLevel.trim() || null,
-        })
-        .select('id, first_name, last_name, date_of_birth, skill_level')
-        .single();
+      const { data, error } = await supabase.functions.invoke('portal-children', {
+        body: {
+          action: 'add',
+          familyId,
+          email: familyEmail,
+          firstName: firstName.trim(),
+          lastName: lastName.trim() || null,
+          dateOfBirth,
+          skillLevel: skillLevel.trim() || null,
+        },
+      });
       if (error) throw error;
+      if (!data?.data) throw new Error('No data returned');
       onAdded({
-        id: data.id,
-        firstName: data.first_name,
-        lastName: data.last_name,
-        dateOfBirth: data.date_of_birth,
-        skillLevel: data.skill_level,
+        id: data.data.id,
+        firstName: data.data.first_name,
+        lastName: data.data.last_name,
+        dateOfBirth: data.data.date_of_birth,
+        skillLevel: data.data.skill_level,
       });
     } catch {
       setSaveError('Could not add child. Please try again.');
@@ -1234,7 +1246,7 @@ function AddChildForm({
   );
 }
 
-function ChildrenPanel({ familyId }: ChildrenPanelProps) {
+function ChildrenPanel({ familyId, familyEmail }: ChildrenPanelProps) {
   const [children, setChildren] = useState<ChildProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1247,17 +1259,15 @@ function ChildrenPanel({ familyId }: ChildrenPanelProps) {
       setLoading(true);
       setError(null);
       try {
-        const { data, error: dbErr } = await supabase
-          .from('children')
-          .select('id, first_name, last_name, date_of_birth, skill_level')
-          .eq('family_id', familyId)
-          .order('first_name');
+        const { data: result, error: fnErr } = await supabase.functions.invoke('portal-children', {
+          body: { action: 'list', familyId, email: familyEmail },
+        });
 
         if (cancelled) return;
-        if (dbErr) throw dbErr;
+        if (fnErr) throw fnErr;
 
         setChildren(
-          (data ?? []).map((c) => ({
+          (result?.data ?? []).map((c: { id: string; first_name: string; last_name: string | null; date_of_birth: string; skill_level: string | null }) => ({
             id: c.id,
             firstName: c.first_name,
             lastName: c.last_name,
@@ -1274,7 +1284,7 @@ function ChildrenPanel({ familyId }: ChildrenPanelProps) {
 
     void load();
     return () => { cancelled = true; };
-  }, [familyId]);
+  }, [familyId, familyEmail]);
 
   if (loading) {
     return (
@@ -1300,6 +1310,8 @@ function ChildrenPanel({ familyId }: ChildrenPanelProps) {
         <ChildCard
           key={child.id}
           child={child}
+          familyId={familyId}
+          familyEmail={familyEmail}
           onUpdated={(updated) =>
             setChildren((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
           }
@@ -1317,6 +1329,7 @@ function ChildrenPanel({ familyId }: ChildrenPanelProps) {
       {showAddForm ? (
         <AddChildForm
           familyId={familyId}
+          familyEmail={familyEmail}
           onAdded={(child) => {
             setChildren((prev) => [...prev, child]);
             setShowAddForm(false);
@@ -1329,7 +1342,7 @@ function ChildrenPanel({ familyId }: ChildrenPanelProps) {
           className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-300 rounded-2xl text-sm text-slate-500 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50 transition-colors min-h-[48px]"
         >
           <User className="w-4 h-4" />
-          Add another child
+          {children.length === 0 ? 'Add a child' : 'Add another child'}
         </button>
       )}
     </div>
@@ -1574,7 +1587,7 @@ function PortalDashboard({ family, onSignOut }: PortalDashboardProps) {
           ) : tab === 'tokens' ? (
             <MakeupTokensPanel familyId={family.id} />
           ) : tab === 'children' ? (
-            <ChildrenPanel familyId={family.id} />
+            <ChildrenPanel familyId={family.id} familyEmail={family.email} />
           ) : loading ? (
             <div className="flex flex-col items-center justify-center py-12 text-slate-400 gap-3">
               <Loader2 className="w-8 h-8 animate-spin" />
