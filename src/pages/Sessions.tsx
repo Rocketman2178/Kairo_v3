@@ -22,6 +22,7 @@ import {
   CheckCircle2,
   Hash,
   ExternalLink,
+  ListOrdered,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -335,6 +336,226 @@ function NotifyMeModal({ session, onClose }: NotifyMeModalProps) {
   );
 }
 
+// ─── WaitlistJoinModal ────────────────────────────────────────────────────────
+
+interface WaitlistJoinModalProps {
+  session: SessionRow;
+  onClose: () => void;
+}
+
+function WaitlistJoinModal({ session, onClose }: WaitlistJoinModalProps) {
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [position, setPosition] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+
+  const prog = session.programs;
+  const loc = session.locations;
+
+  // Close on Escape
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose(); }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  useEffect(() => { emailRef.current?.focus(); }, []);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      const { data: rpcData, error: rpcErr } = await supabase.rpc(
+        'add_to_waitlist_with_position',
+        {
+          p_session_id:    session.id,
+          p_contact_email: trimmedEmail,
+          p_contact_name:  name.trim() || null,
+        }
+      );
+
+      if (rpcErr) throw rpcErr;
+
+      const result = rpcData as {
+        success: boolean;
+        waitlistId?: string;
+        position?: number;
+        error?: string;
+        message?: string;
+      };
+
+      if (!result.success) {
+        if (result.error === 'already_waitlisted') {
+          setError('This email is already on the waitlist for this class.');
+        } else {
+          setError(result.message || 'Failed to join waitlist. Please try again.');
+        }
+        return;
+      }
+
+      setPosition(result.position ?? null);
+      setSubmitted(true);
+
+      // Fire waitlist confirmation email in background — non-blocking
+      if (result.waitlistId) {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+        fetch(`${supabaseUrl}/functions/v1/trigger-waitlist-confirmation`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${anonKey}`,
+            Apikey: anonKey,
+          },
+          body: JSON.stringify({ waitlistId: result.waitlistId }),
+        }).catch(() => { /* Non-critical — confirmation email send fails silently */ });
+      }
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="waitlist-modal-title"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="w-full max-w-md bg-[#1a2332] border border-gray-700 rounded-2xl overflow-hidden shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+          <div className="flex items-center gap-2">
+            <ListOrdered className="w-5 h-5 text-amber-400" />
+            <h2 id="waitlist-modal-title" className="text-base font-semibold text-white">
+              Join Waitlist
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-5">
+          {submitted ? (
+            /* Success state */
+            <div className="text-center py-4">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-amber-500/20 flex items-center justify-center">
+                <CheckCircle2 className="w-7 h-7 text-amber-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-1">You're on the waitlist!</h3>
+              {position != null && (
+                <p className="text-sm text-amber-300 font-medium mb-1">
+                  You're #{position} in line
+                </p>
+              )}
+              <p className="text-sm text-gray-400 mb-2">
+                We'll email <span className="text-white font-medium">{email.trim().toLowerCase()}</span> when a spot opens.
+              </p>
+              <p className="text-xs text-gray-500 mb-5">
+                A confirmation email is on its way with your waitlist details and next steps.
+              </p>
+              <button
+                onClick={onClose}
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+              >
+                Done
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Class info */}
+              <div className="bg-[#0f1419] rounded-xl p-3 mb-4">
+                <p className="text-sm font-semibold text-white mb-0.5">
+                  {prog?.name ?? 'This class'}
+                </p>
+                <p className="text-xs text-gray-400">
+                  {DAY_NAMES[session.day_of_week]}s at {formatTime(session.start_time)}
+                  {loc ? ` · ${loc.name}` : ''}
+                </p>
+                <p className="text-xs text-red-400 mt-1 font-medium">Class is currently full</p>
+              </div>
+
+              <p className="text-sm text-gray-300 mb-4">
+                Join the waitlist to secure your position. You'll receive a{' '}
+                <span className="text-amber-300 font-medium">Waitlist Confirmation</span> email
+                with your queue number and clear next steps.
+              </p>
+
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <div>
+                  <label htmlFor="waitlist-name" className="block text-xs text-gray-500 mb-1">
+                    Child's First Name <span className="text-gray-600">(optional)</span>
+                  </label>
+                  <input
+                    id="waitlist-name"
+                    type="text"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder="e.g. Emma"
+                    className="w-full bg-[#0f1419] border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/30"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="waitlist-email" className="block text-xs text-gray-500 mb-1">
+                    Email Address <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    id="waitlist-email"
+                    ref={emailRef}
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    required
+                    className="w-full bg-[#0f1419] border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/30"
+                  />
+                </div>
+
+                {error && (
+                  <p className="text-xs text-red-400">{error}</p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={submitting || !email.trim()}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {submitting ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Joining…</>
+                  ) : (
+                    <><ListOrdered className="w-4 h-4" /> Join Waitlist</>
+                  )}
+                </button>
+
+                <p className="text-center text-xs text-gray-600">
+                  We'll notify you immediately when a spot opens — no spam.
+                </p>
+              </form>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── SessionBrowseCard ────────────────────────────────────────────────────────
 
 interface SessionBrowseCardProps {
@@ -343,9 +564,10 @@ interface SessionBrowseCardProps {
   copiedId: string | null;
   filterZip: string;
   onNotifyMe: (session: SessionRow) => void;
+  onJoinWaitlist: (session: SessionRow) => void;
 }
 
-function SessionBrowseCard({ session, onCopyLink, copiedId, filterZip, onNotifyMe }: SessionBrowseCardProps) {
+function SessionBrowseCard({ session, onCopyLink, copiedId, filterZip, onNotifyMe, onJoinWaitlist }: SessionBrowseCardProps) {
   const navigate = useNavigate();
   const prog = session.programs;
   const loc = session.locations;
@@ -508,14 +730,23 @@ function SessionBrowseCard({ session, onCopyLink, copiedId, filterZip, onNotifyM
                   Notify Me
                 </button>
               )}
-              <button
-                onClick={handleRegister}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-[#f59e0b] to-[#f97316] text-white hover:opacity-90 transition-opacity"
-              >
-                {isExternal ? (
-                  <><ExternalLink className="w-3 h-3" /> Register Externally</>
-                ) : 'Waitlist'}
-              </button>
+              {!isExternal ? (
+                <button
+                  onClick={() => onJoinWaitlist(session)}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-[#f59e0b] to-[#f97316] text-white hover:opacity-90 transition-opacity"
+                  title="Join the waitlist and receive a confirmation email"
+                >
+                  <ListOrdered className="w-3 h-3" />
+                  Waitlist
+                </button>
+              ) : (
+                <button
+                  onClick={handleRegister}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-[#f59e0b] to-[#f97316] text-white hover:opacity-90 transition-opacity"
+                >
+                  <ExternalLink className="w-3 h-3" /> Register Externally
+                </button>
+              )}
             </div>
           ) : (
             <button
@@ -543,6 +774,7 @@ export function Sessions() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [notifySession, setNotifySession] = useState<SessionRow | null>(null);
+  const [waitlistSession, setWaitlistSession] = useState<SessionRow | null>(null);
 
   // Derive filter state from URL params
   const filters: FilterState = {
@@ -795,6 +1027,10 @@ export function Sessions() {
 
   const handleNotifyMe = useCallback((session: SessionRow) => {
     setNotifySession(session);
+  }, []);
+
+  const handleJoinWaitlist = useCallback((session: SessionRow) => {
+    setWaitlistSession(session);
   }, []);
 
   // Highlight a specific session from ?session= param (direct link)
@@ -1102,6 +1338,7 @@ export function Sessions() {
                         copiedId={copiedId}
                         filterZip={filters.zip}
                         onNotifyMe={handleNotifyMe}
+                        onJoinWaitlist={handleJoinWaitlist}
                       />
                     </div>
                   ))}
@@ -1133,6 +1370,14 @@ export function Sessions() {
         <NotifyMeModal
           session={notifySession}
           onClose={() => setNotifySession(null)}
+        />
+      )}
+
+      {/* Waitlist Join Modal */}
+      {waitlistSession && (
+        <WaitlistJoinModal
+          session={waitlistSession}
+          onClose={() => setWaitlistSession(null)}
         />
       )}
     </div>

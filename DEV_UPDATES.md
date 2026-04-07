@@ -5,6 +5,81 @@ Format: `## [Month Year] - Title | Category | Description`
 
 ---
 
+## [April 7, 2026] - Portal Return URL, Maximum Proration Cap & Waitlist Confirmation Email | Core Feature | High
+
+**Category:** Core Feature
+**Impact:** High — Advances Stage 3.0 (login redirects to last page NBC Priority 1), Stage 3.1.0 (max proration amount cap NBC Priority 1), and Stage 3.6.1 (waitlist confirmation email clarity NBC Priority 1)
+
+**Description:**
+Three registration and parent portal improvements. Portal Return URL adds `?returnTo=` URL param support to the ParentPortal `EmailGate` — when a deep link routes a user to `/portal?returnTo=/some/path`, after successful email lookup the user is navigated to the intended destination (relative paths only, open-redirect protected). `RegistrationConfirmation` gains a "View My Account →" secondary button (via `Link`) that routes to `/portal?email={email}` when `parentEmail` is known, letting parents access their account immediately after registering without re-entering their email. Maximum Proration Amount Cap adds a `max_proration_cap_cents INTEGER` column to `organizations`, returned by the updated `get_pending_registration()` RPC. `computeProration()` in `PaymentSummary` now accepts `maxCapCents` — when the natural discount exceeds the cap, the prorated price is floored to `total - cap`; a `capped: boolean` flag triggers an amber "Max proration discount: $X" info line below the proration entry. The cap threads from Register.tsx → PaymentForm → PaymentSummary via new `maxProrationCapCents` props. Waitlist Confirmation Email adds a `WaitlistJoinModal` to the Sessions page — full sessions now show a "Waitlist" button that opens a modal capturing child name + email, calls `add_to_waitlist_with_position()` (updated to accept `p_contact_email` / `p_contact_name` for anonymous entries, with duplicate-email guard), shows the queue position on success, and fires `trigger-waitlist-confirmation` edge function in the background. The edge function reads waitlist + session data, posts to n8n with `waitlist_confirmation_email` intent (position, class details, portal URL), and marks `confirmation_sent_at` to prevent duplicates. Waitlist's `child_id` and `family_id` are now nullable to support anonymous entries; new `contact_email`, `contact_name`, and `confirmation_sent_at` columns added.
+
+### Feature 1: Portal Return URL (Stage 3.0 — NBC Priority 1)
+- `src/pages/ParentPortal.tsx`:
+  - `EmailGate` props extended: `returnTo?: string | null`; `useNavigate` added
+  - After successful family lookup, if `returnTo` is set and is a safe relative path (`/` prefix, no `//`), navigates there; otherwise stays on `/portal`
+  - `ParentPortal` reads `?returnTo=` from `useSearchParams`, passes to `EmailGate`
+- `src/components/registration/RegistrationConfirmation.tsx`:
+  - `Link` from `react-router-dom` imported; `UserCircle` icon imported
+  - "View My Account" `Link` added below "Back to Home" button; only shown when `parentEmail` is set; links to `/portal?email={encodeURIComponent(parentEmail)}`
+
+### Feature 2: Maximum Proration Amount Cap (Stage 3.1.0 — NBC Priority 1)
+- `supabase/migrations/20260407000001_add_max_proration_cap.sql`
+  - `organizations.max_proration_cap_cents INTEGER DEFAULT NULL`
+  - Replaces `get_pending_registration()` to return `max_proration_cap_cents` in `organization` object
+- `src/components/registration/PaymentSummary.tsx`:
+  - `maxProrationCapCents?: number | null` prop added to `PaymentSummaryProps`
+  - `computeProration()` accepts `maxCapCents` — computes `discount = total - rawProrated`; if `discount > maxCapCents`, floors to `total - maxCapCents`; returns `capped: boolean`
+  - `Info` icon used for amber cap annotation: "Max proration discount: $X" shown below proration line when `capped && maxProrationCapCents != null`
+- `src/components/registration/PaymentForm.tsx`:
+  - `maxProrationCapCents?: number | null` prop added and forwarded to `PaymentSummary`
+- `src/pages/Register.tsx`:
+  - `PendingRegistration.organization` extended with `maxProrationCapCents: number | null`
+  - `loadPendingRegistration` mapper reads `data.organization?.max_proration_cap_cents ?? null`
+  - `PaymentForm` receives `maxProrationCapCents={registration?.organization.maxProrationCapCents ?? null}`
+- `src/types/database.ts`: `organizations` Row/Insert/Update extended with `max_proration_cap_cents: number | null`
+
+### Feature 3: Waitlist Confirmation Email (Stage 3.6.1 — NBC Priority 1)
+- `supabase/migrations/20260407000002_add_waitlist_confirmation_fields.sql`
+  - `waitlist.child_id` and `family_id` made nullable (anonymous entry support)
+  - `waitlist.contact_email TEXT`, `contact_name TEXT`, `confirmation_sent_at TIMESTAMPTZ` added
+  - RLS policy "Anyone can join public waitlist" — INSERT allowed for anonymous when `family_id IS NULL AND contact_email IS NOT NULL`
+  - `add_to_waitlist_with_position()` updated: new `p_contact_email TEXT DEFAULT NULL`, `p_contact_name TEXT DEFAULT NULL` params; duplicate-email guard for anonymous flow; contact fields stored normalized (`LOWER(TRIM(...))`)
+- `supabase/functions/trigger-waitlist-confirmation/index.ts` — **NEW**
+  - `POST { waitlistId }` → loads waitlist entry + session/program/location + family data
+  - Resolves email from `families.email` (authenticated) or `contact_email` (anonymous)
+  - Skips if `confirmation_sent_at` already set or entry not active
+  - Posts `waitlist_confirmation_email` intent to n8n with position, class details, portal URL
+  - Sets `confirmation_sent_at` after successful n8n call
+- `src/pages/Sessions.tsx`:
+  - `ListOrdered` icon added to imports
+  - `WaitlistJoinModal` component added (parallel to `NotifyMeModal`): amber-themed, captures child name + email, calls `add_to_waitlist_with_position` RPC, shows position on success, fires confirmation edge function in background
+  - `SessionBrowseCard`: new `onJoinWaitlist` prop; "Waitlist" button now opens `WaitlistJoinModal` (non-external full sessions); external full sessions retain "Register Externally" button
+  - `Sessions`: `waitlistSession` state + `handleJoinWaitlist` callback; `WaitlistJoinModal` rendered when `waitlistSession` set
+- `src/types/database.ts`: `waitlist` Row/Insert/Update — `child_id`/`family_id` now `string | null`; added `contact_email`, `contact_name`, `confirmation_sent_at` fields
+
+**Files Changed:**
+- `supabase/migrations/20260407000001_add_max_proration_cap.sql` — **NEW**
+- `supabase/migrations/20260407000002_add_waitlist_confirmation_fields.sql` — **NEW**
+- `supabase/functions/trigger-waitlist-confirmation/index.ts` — **NEW**
+- `src/types/database.ts` — `organizations.max_proration_cap_cents`; `waitlist` nullability + new fields
+- `src/components/registration/PaymentSummary.tsx` — `maxProrationCapCents` prop; `computeProration` cap logic; amber cap annotation
+- `src/components/registration/PaymentForm.tsx` — `maxProrationCapCents` prop forwarded
+- `src/pages/Register.tsx` — `PendingRegistration.organization.maxProrationCapCents`; mapper update; prop passed to PaymentForm
+- `src/components/registration/RegistrationConfirmation.tsx` — `Link` import; `UserCircle` icon; "View My Account" button
+- `src/pages/ParentPortal.tsx` — `EmailGate` `returnTo` prop; `useNavigate` in EmailGate; `returnTo` read from URL params in `ParentPortal`
+- `src/pages/Sessions.tsx` — `ListOrdered` icon; `WaitlistJoinModal`; `onJoinWaitlist` prop on `SessionBrowseCard`; `waitlistSession` state
+
+**DB Migrations Applied:**
+- `add_max_proration_cap` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓
+- `add_waitlist_confirmation_fields` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓
+
+**Edge Functions Deployed:**
+- `trigger-waitlist-confirmation` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓ (verify_jwt=false)
+
+**No n8n workflow changes.**
+
+---
+
 ## [April 6, 2026] - Installment Start Date Control, Children Profiles Portal & Mid-Season Proration | Core Feature | High
 
 **Category:** Core Feature

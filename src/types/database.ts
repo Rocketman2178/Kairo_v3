@@ -18,6 +18,7 @@ export interface Database {
           branding: Json
           ai_agent_name: string
           installment_start_mode: 'registration' | 'class_start'
+          max_proration_cap_cents: number | null
           created_at: string
           updated_at: string
         }
@@ -29,6 +30,7 @@ export interface Database {
           branding?: Json
           ai_agent_name?: string
           installment_start_mode?: 'registration' | 'class_start'
+          max_proration_cap_cents?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -40,6 +42,7 @@ export interface Database {
           branding?: Json
           ai_agent_name?: string
           installment_start_mode?: 'registration' | 'class_start'
+          max_proration_cap_cents?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -408,12 +411,15 @@ export interface Database {
         Row: {
           id: string
           session_id: string
-          child_id: string
-          family_id: string
+          child_id: string | null
+          family_id: string | null
           position: number | null
           alternatives_shown: Json
           status: string
           registration_data: Json
+          contact_email: string | null
+          contact_name: string | null
+          confirmation_sent_at: string | null
           created_at: string
           notified_at: string | null
           declined_at: string | null
@@ -421,12 +427,15 @@ export interface Database {
         Insert: {
           id?: string
           session_id: string
-          child_id: string
-          family_id: string
+          child_id?: string | null
+          family_id?: string | null
           position?: number | null
           alternatives_shown?: Json
           status?: string
           registration_data?: Json
+          contact_email?: string | null
+          contact_name?: string | null
+          confirmation_sent_at?: string | null
           created_at?: string
           notified_at?: string | null
           declined_at?: string | null
@@ -434,12 +443,15 @@ export interface Database {
         Update: {
           id?: string
           session_id?: string
-          child_id?: string
-          family_id?: string
+          child_id?: string | null
+          family_id?: string | null
           position?: number | null
           alternatives_shown?: Json
           status?: string
           registration_data?: Json
+          contact_email?: string | null
+          contact_name?: string | null
+          confirmation_sent_at?: string | null
           created_at?: string
           notified_at?: string | null
           declined_at?: string | null

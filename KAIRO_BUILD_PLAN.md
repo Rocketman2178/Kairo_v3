@@ -709,7 +709,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Handle registration redirect URL from AI response
 - [ ] Create registration form component (pre-filled from chat)
 - [ ] Payment integration in registration form
-- [ ] Login redirects to last page visited (not backend dashboard) — NBC Priority 1
+- [x] Login redirects to last page visited (not backend dashboard) — NBC Priority 1 — `EmailGate` reads `?returnTo=` URL param; after successful lookup navigates to destination (safe relative paths only); `RegistrationConfirmation` adds "View My Account" link to `/portal?email={email}`
 - [x] Confirmation screen detail overhaul — show full class details, dates, pricing breakdown before checkout — NBC Priority 2 — step 0 now shows start date, end date, class count, per-class cost; `get_pending_registration` returns `end_date` + `duration_weeks`
 
 **N8N Workflow Updates:**
@@ -728,7 +728,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 
 **Payment Plan Controls:**
 - [x] Payment plan start/end date control — set installment start to "class start" or specific date (NBC Priority 1) — `installment_start_mode` on organizations ('registration'|'class_start'); `get_pending_registration()` returns org config; `buildDividedSchedule` and subscription schedule anchor to class start when configured; `PaymentPlanSelector` shows indigo info callout when class_start mode active
-- [ ] Maximum proration amount cap — configurable per class (NBC Priority 1)
+- [x] Maximum proration amount cap — configurable per class (NBC Priority 1) — `organizations.max_proration_cap_cents` column; `computeProration()` caps discount; amber "Max proration discount: $X" annotation shown when cap applies; threaded through `get_pending_registration()` RPC → Register.tsx → PaymentForm → PaymentSummary
 - [ ] Transfer funds between classes — move collected payments when child transfers (NBC Priority 1)
 - [ ] Override proration on transfers — admin toggle to bypass auto-proration (NBC Priority 1)
 - [ ] Adjust transfer of funds for recurring/installment plans — allow transfer of last payment regardless of calendar month (NBC Priority 1)
@@ -851,7 +851,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Account age lockout improvement — better error messaging instead of 24-hour lockout; 2-3 attempts before lock (NBC Priority 3)
 
 **Waitlist Enhancements:**
-- [ ] Waitlist confirmation email clarity — distinct subject "Waitlist Confirmation" (not "Order Confirmation"); clear next steps (NBC Priority 1)
+- [x] Waitlist confirmation email clarity — distinct subject "Waitlist Confirmation" (not "Order Confirmation"); clear next steps (NBC Priority 1) — `trigger-waitlist-confirmation` edge function fires n8n with `waitlist_confirmation_email` intent (position, class details, portal URL); `confirmation_sent_at` prevents duplicates; `WaitlistJoinModal` on Sessions page enables direct anonymous waitlist join with position display
 - [x] Waitlist-to-registration continuity — `waitlist.registration_data` JSONB stores form data for pre-population when spot opens; notified entries in Parent Portal now show "Claim Your Spot" amber CTA linking to `/?session={id}` to start Kai conversation (NBC Priority 1)
 - [x] Don't delete declined waitlist registrations — make inactive instead of deleting; preserve history (NBC Priority 2) — `declined_at` column + `'declined'` status; WaitlistPanel shows declined section; `add_to_waitlist_with_position` updated; status values normalized (active→pending, promoted→notified)
 - [ ] Waitlist slot available email improvements — clearer email with decline button when spot opens (NBC Enhancement)

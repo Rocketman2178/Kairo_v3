@@ -11,17 +11,21 @@ interface PaymentSummaryProps {
   sessionWeeks?: number;
   sessionStartDate?: string;
   feeConfig?: PaymentFeeConfig;
+  /** Optional org-level cap on the prorated discount (in cents). NULL = no cap. */
+  maxProrationCapCents?: number | null;
 }
 
 /**
  * When a session has already started, compute how many full weeks remain
  * (including the current week) and the prorated price for those weeks.
+ * If maxCapCents is provided, the discount (savings) is capped at that value.
  */
 function computeProration(
   startDateStr: string,
   totalWeeks: number,
-  totalPriceCents: number
-): { remainingWeeks: number; proratedCents: number } | null {
+  totalPriceCents: number,
+  maxCapCents?: number | null
+): { remainingWeeks: number; proratedCents: number; capped: boolean } | null {
   const start = new Date(startDateStr + 'T00:00:00');
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -32,8 +36,20 @@ function computeProration(
   const remainingWeeks = Math.max(0, totalWeeks - weeksElapsed);
   if (remainingWeeks <= 0 || remainingWeeks >= totalWeeks) return null;
 
-  const proratedCents = Math.round(totalPriceCents * (remainingWeeks / totalWeeks));
-  return { remainingWeeks, proratedCents };
+  const rawProratedCents = Math.round(totalPriceCents * (remainingWeeks / totalWeeks));
+  const discount = totalPriceCents - rawProratedCents;
+
+  let proratedCents: number;
+  let capped = false;
+
+  if (maxCapCents != null && discount > maxCapCents) {
+    proratedCents = totalPriceCents - maxCapCents;
+    capped = true;
+  } else {
+    proratedCents = rawProratedCents;
+  }
+
+  return { remainingWeeks, proratedCents, capped };
 }
 
 function formatCents(cents: number): string {
@@ -52,14 +68,15 @@ export default function PaymentSummary({
   sessionWeeks = 9,
   sessionStartDate,
   feeConfig,
+  maxProrationCapCents,
 }: PaymentSummaryProps) {
   const hasDiscount = discount && discount.discountPercent > 0;
   const afterDiscount = hasDiscount ? discount.finalPrice : originalAmountCents;
 
-  // Mid-season proration: compute if session already started
+  // Mid-season proration: compute if session already started, apply org cap if set
   const proration =
     sessionStartDate && sessionWeeks > 0
-      ? computeProration(sessionStartDate, sessionWeeks, afterDiscount)
+      ? computeProration(sessionStartDate, sessionWeeks, afterDiscount, maxProrationCapCents)
       : null;
 
   const startDate = sessionStartDate ? new Date(sessionStartDate) : undefined;
@@ -102,13 +119,21 @@ export default function PaymentSummary({
 
         {/* Mid-season proration line */}
         {proration && (
-          <div className="flex justify-between items-center text-indigo-700">
-            <span className="flex items-center gap-1.5 text-sm">
-              <CalendarClock className="h-3.5 w-3.5 text-indigo-500" />
-              Prorated — {proration.remainingWeeks} of {sessionWeeks} weeks remaining
-            </span>
-            <span className="text-sm font-medium">{formatCents(proration.proratedCents)}</span>
-          </div>
+          <>
+            <div className="flex justify-between items-center text-indigo-700">
+              <span className="flex items-center gap-1.5 text-sm">
+                <CalendarClock className="h-3.5 w-3.5 text-indigo-500" />
+                Prorated — {proration.remainingWeeks} of {sessionWeeks} weeks remaining
+              </span>
+              <span className="text-sm font-medium">{formatCents(proration.proratedCents)}</span>
+            </div>
+            {proration.capped && maxProrationCapCents != null && (
+              <div className="flex items-center gap-1.5 text-xs text-amber-600 pl-5">
+                <Info className="h-3 w-3 flex-shrink-0" />
+                <span>Max proration discount: {formatCents(maxProrationCapCents)}</span>
+              </div>
+            )}
+          </>
         )}
 
         {/* Discount line */}

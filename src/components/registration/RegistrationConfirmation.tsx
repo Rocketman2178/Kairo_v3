@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   CheckCircle,
   Calendar,
@@ -10,6 +11,7 @@ import {
   PlusCircle,
   CreditCard,
   AlertCircle,
+  UserCircle,
 } from 'lucide-react';
 import { downloadICS } from '../../utils/calendarExport';
 import { BiometricSetupPrompt } from './BiometricAuthPrompt';
@@ -294,6 +296,17 @@ export default function RegistrationConfirmation({
               <Home className="h-4 w-4" />
               Back to Home
             </button>
+
+            {/* View account link — takes parent straight to portal, pre-filled with their email */}
+            {parentEmail && (
+              <Link
+                to={`/portal?email=${encodeURIComponent(parentEmail)}`}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <UserCircle className="h-4 w-4" />
+                View My Account
+              </Link>
+            )}
           </div>
         </div>
       </div>

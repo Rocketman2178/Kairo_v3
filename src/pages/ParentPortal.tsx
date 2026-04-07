@@ -170,9 +170,12 @@ function isUpcoming(session: RegistrationRecord['session']): boolean {
 
 interface EmailGateProps {
   onFound: (family: FamilyProfile) => void;
+  /** If set, navigate here after successful login instead of staying on /portal */
+  returnTo?: string | null;
 }
 
-function EmailGate({ onFound }: EmailGateProps) {
+function EmailGate({ onFound, returnTo }: EmailGateProps) {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -196,12 +199,26 @@ function EmailGate({ onFound }: EmailGateProps) {
         return;
       }
 
-      onFound({
+      const profile: FamilyProfile = {
         id: data.id,
         primaryContactName: data.primary_contact_name,
         email: data.email,
         phone: data.phone,
-      });
+      };
+      onFound(profile);
+
+      // After login, navigate to returnTo URL if provided (e.g., from a deep link)
+      if (returnTo) {
+        // Decode and validate: only allow relative paths to prevent open redirect
+        try {
+          const decoded = decodeURIComponent(returnTo);
+          if (decoded.startsWith('/') && !decoded.startsWith('//')) {
+            navigate(decoded, { replace: true });
+          }
+        } catch {
+          // Invalid returnTo — stay on /portal
+        }
+      }
     } catch (err) {
       setError('Something went wrong. Please try again.');
       console.error('Family lookup error:', err);
@@ -1632,6 +1649,8 @@ export function ParentPortal() {
 
   // Support pre-filling email from URL (e.g., from confirmation email link)
   const emailParam = searchParams.get('email');
+  // returnTo: after successful email lookup, navigate here instead of staying on /portal
+  const returnTo = searchParams.get('returnTo');
 
   // Auto-lookup if email is in URL and we can find the family
   useEffect(() => {
@@ -1655,7 +1674,7 @@ export function ParentPortal() {
   }, [emailParam, family]);
 
   if (!family) {
-    return <EmailGate onFound={setFamily} />;
+    return <EmailGate onFound={setFamily} returnTo={returnTo} />;
   }
 
   return (

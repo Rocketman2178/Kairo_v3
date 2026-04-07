@@ -56,6 +56,7 @@ interface PendingRegistration {
     id: string;
     name: string;
     installmentStartMode: 'registration' | 'class_start';
+    maxProrationCapCents: number | null;
   };
   amountCents: number;
   expiresAt: string;
@@ -313,6 +314,7 @@ export default function Register() {
           id: data.organization?.id ?? '',
           name: data.organization?.name ?? '',
           installmentStartMode: (data.organization?.installment_start_mode === 'class_start' ? 'class_start' : 'registration'),
+          maxProrationCapCents: data.organization?.max_proration_cap_cents ?? null,
         },
         amountCents: data.amount_cents,
         expiresAt: data.expires_at,
@@ -1312,6 +1314,7 @@ export default function Register() {
                   quickPayProcessing={quickPayProcessing}
                   quickPayMethodId={quickPayMethodId}
                   installmentStartMode={registration?.organization.installmentStartMode ?? 'registration'}
+                  maxProrationCapCents={registration?.organization.maxProrationCapCents ?? null}
                 />
               )}
             </div>

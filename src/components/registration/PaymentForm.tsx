@@ -51,6 +51,8 @@ interface PaymentFormProps {
   quickPayMethodId?: string | null;
   /** Controls when installment billing begins: 'registration' (today) or 'class_start' */
   installmentStartMode?: InstallmentStartMode;
+  /** Optional org-level cap on the prorated discount (in cents). NULL = no cap. */
+  maxProrationCapCents?: number | null;
 }
 
 /** Map a Stripe decline code to our PaymentFailureReason enum */
@@ -98,6 +100,7 @@ export default function PaymentForm({
   quickPayProcessing = false,
   quickPayMethodId = null,
   installmentStartMode = 'registration',
+  maxProrationCapCents,
 }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
@@ -256,6 +259,7 @@ export default function PaymentForm({
         sessionWeeks={sessionWeeks}
         sessionStartDate={sessionStartDate}
         feeConfig={feeConfig}
+        maxProrationCapCents={maxProrationCapCents}
       />
 
       {/* Saved payment methods — shown for returning families with saved cards */}
