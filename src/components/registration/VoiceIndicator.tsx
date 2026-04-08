@@ -5,6 +5,8 @@ interface VoiceIndicatorProps {
   isListening: boolean;
   /** Live transcript updated while the user speaks */
   interimTranscript: string;
+  /** Full accumulated text — everything said so far */
+  fullTranscript?: string;
   /** Error message if recognition failed */
   error: string | null;
   /** Called when the user taps the mic button to finish speaking */
@@ -22,10 +24,14 @@ interface VoiceIndicatorProps {
 export function VoiceIndicator({
   isListening,
   interimTranscript,
+  fullTranscript,
   error,
   onStop,
   onCancel,
 }: VoiceIndicatorProps) {
+  // Show the full accumulated text, falling back to interim-only for backward compat
+  const displayText = fullTranscript || interimTranscript;
+
   return (
     <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-900/97 backdrop-blur-sm">
       {/* Animated pulse rings */}
@@ -55,10 +61,13 @@ export function VoiceIndicator({
         {isListening ? 'Listening…' : 'Processing…'}
       </p>
 
-      {/* Live transcript preview */}
-      {interimTranscript ? (
-        <div className="mx-8 px-4 py-2.5 bg-slate-800 rounded-xl max-w-[240px] text-center border border-slate-700/60">
-          <p className="text-sm text-slate-300 italic leading-relaxed">{interimTranscript}</p>
+      {/* Full transcript — shows everything said so far */}
+      {displayText ? (
+        <div className="mx-6 px-4 py-3 bg-slate-800 rounded-xl max-w-[300px] max-h-[150px] overflow-y-auto text-center border border-slate-700/60">
+          <p className="text-sm text-slate-100 leading-relaxed">
+            {displayText}
+            {isListening && <span className="inline-block w-1.5 h-4 bg-emerald-400 ml-0.5 animate-pulse align-middle" />}
+          </p>
         </div>
       ) : (
         !error && isListening && (

@@ -33,6 +33,8 @@ export interface UseVoiceInputReturn {
   isListening: boolean;
   /** Live transcript updated while the user is speaking */
   interimTranscript: string;
+  /** Full accumulated text — everything said so far (finalized + current interim) */
+  fullTranscript: string;
   /** Error message to display, if any */
   error: string | null;
   startListening: () => void;
@@ -58,6 +60,7 @@ export function useVoiceInput(
 ): UseVoiceInputReturn {
   const [isListening, setIsListening] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState('');
+  const [fullTranscript, setFullTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -111,6 +114,7 @@ export function useVoiceInput(
 
     setError(null);
     setInterimTranscript('');
+    setFullTranscript('');
     finalBufferRef.current = '';
 
     const recognition = new SpeechRecog();
@@ -140,6 +144,8 @@ export function useVoiceInput(
         finalBufferRef.current = (finalBufferRef.current + ' ' + finalText).trim();
       }
       setInterimTranscript(interim);
+      // Show everything: finalized text + current interim words
+      setFullTranscript((finalBufferRef.current + (interim ? ' ' + interim : '')).trim());
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
@@ -176,6 +182,7 @@ export function useVoiceInput(
     isSupported,
     isListening,
     interimTranscript,
+    fullTranscript,
     error,
     startListening,
     stopListening,

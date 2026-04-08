@@ -199,6 +199,7 @@ export function ChatInterface({ organizationId, familyId, initialSessionId }: Ch
     isListening,
     interimTranscript,
     error: voiceError,
+    fullTranscript: voiceFullTranscript,
     startListening,
     stopListening,
   } = useVoiceInput(handleVoiceFinal);
@@ -541,6 +542,7 @@ export function ChatInterface({ organizationId, familyId, initialSessionId }: Ch
             <VoiceIndicator
               isListening={isListening}
               interimTranscript={interimTranscript}
+              fullTranscript={voiceFullTranscript}
               error={voiceError}
               onStop={stopListening}
               onCancel={handleVoiceCancel}
