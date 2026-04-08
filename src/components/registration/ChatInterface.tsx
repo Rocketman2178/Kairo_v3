@@ -482,15 +482,30 @@ export function ChatInterface({ organizationId, familyId, initialSessionId }: Ch
                   onQuickReply={(reply) => {
                     handleSendMessage(reply);
                   }}
-                  onSelectSession={(sessionId, programName) => {
+                  onSelectSession={async (sessionId, programName) => {
                     const childName = context.childName || '';
-                    const params = new URLSearchParams({ session: sessionId });
-                    if (childName) params.set('child', childName);
-                    if (context.childAge) params.set('age', String(context.childAge));
                     addAssistantMessage(
-                      `Great choice! Let me take you to checkout to complete the registration for ${programName}.`
+                      `Great choice! Let me set up the registration for ${programName}...`
                     );
-                    setTimeout(() => navigate(`/register?${params.toString()}`), 800);
+                    try {
+                      const { supabase } = await import('../../lib/supabase');
+                      const { data, error: rpcError } = await supabase.rpc('create_pending_registration', {
+                        p_session_id: sessionId,
+                        p_temp_child_id: context.tempChildId || crypto.randomUUID(),
+                        p_temp_family_id: context.tempFamilyId || crypto.randomUUID(),
+                        p_child_name: childName || 'Child',
+                        p_child_age: context.childAge || 0,
+                      });
+                      if (rpcError || data?.error) {
+                        addAssistantMessage(data?.message || rpcError?.message || 'Something went wrong creating the registration. Please try again.');
+                        return;
+                      }
+                      const token = data.registration_token;
+                      navigate(`/register?token=${token}`);
+                    } catch (err) {
+                      console.error('Registration error:', err);
+                      addAssistantMessage('Something went wrong. Please try again or start a new chat.');
+                    }
                   }}
                   onJoinWaitlist={(sessionId, programName) => {
                     const waitlistMessage = `Join waitlist for ${programName}`;
@@ -537,9 +552,9 @@ export function ChatInterface({ organizationId, familyId, initialSessionId }: Ch
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={strings.chatPlaceholder}
+                placeholder={isLoading ? 'Kai is thinking...' : strings.chatPlaceholder}
                 maxLength={500}
-                disabled={isLoading || !isReady || sessionEnded}
+                disabled={!isReady || sessionEnded}
                 className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               />
               {voiceSupported && (
