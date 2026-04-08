@@ -5,6 +5,74 @@ Format: `## [Month Year] - Title | Category | Description`
 
 ---
 
+## [April 8, 2026] - Class Transfer Request Flow, Outstanding Payment CTA & Product Upsells at Checkout | Core Feature | High
+
+**Category:** Core Feature
+**Impact:** High — Advances Stage 3.8 (transfer request flow NBC Priority 1), Stage 3.1.0 (pay later/outstanding payment NBC Priority 3), and Stage 3.0 (direct-to-consumer product upsells NBC Priority 2)
+
+**Description:**
+Three registration and parent portal improvements. Class Transfer Request Flow adds a complete transfer management foundation: a `class_transfers` DB table with full RLS, two RPC functions (`get_available_transfer_sessions()` filtering open sessions in the same org, and `request_class_transfer()` computing billing adjustment between old/new session price and inserting a pending transfer), a "Request Class Transfer" button on every confirmed upcoming `RegistrationCard`, a `TransferRequestModal` (session destination picker, reason dropdown, billing adjustment preview, success state), and a new "Transfers" tab in the Parent Portal showing full transfer history with status badges. Outstanding Payment CTA adds a "Complete Your Payment" amber button to `awaiting_payment` registrations in the Current tab (linking to `/register?token=<token>` or `/register` fallback), plus a "Resend payment link to email" button calling the new `send-payment-link` edge function; `awaiting_payment` registrations now appear in the Current tab (not History); a 5-minute cooldown prevents link spam. The `send-payment-link` edge function fires `payment_link_reminder` to n8n with session + amount data; `payment_link_sent_at` column enforces cooldown. Product Upsells at Checkout adds an org-configurable `checkout_products JSONB` array to organizations and `selected_products JSONB` to registrations; `get_pending_registration()` RPC now returns `checkout_products` under the organization key; Register.tsx step 1 shows an "Add-ons & Gear" section with toggle-able product cards; selected product IDs are persisted to `registrations.selected_products` on confirmation.
+
+### Feature 1: Class Transfer Request Flow (Stage 3.8 — NBC Priority 1)
+- `supabase/migrations/20260408000001_add_class_transfers.sql` — **NEW**
+  - `class_transfers` table: `family_id`, `child_id`, `from_registration_id`, `to_session_id`, `reason`, `status` (pending/approved/completed/cancelled), `billing_adjustment_cents`, `billing_direction` (credit/charge/none), `requested_at`, `processed_at`
+  - RLS: families view own; public INSERT; service_role manages all
+  - `get_available_transfer_sessions(p_registration_id UUID)` — returns open sessions in same org via programs join
+  - `request_class_transfer(p_registration_id, p_to_session_id, p_reason)` — computes price diff, inserts pending transfer, returns JSON with billing details
+- `src/pages/ParentPortal.tsx`:
+  - `TransferSessionOption`, `TransferRecord` interfaces added
+  - `TransferRequestModal` — bottom-sheet modal with session list (day/time/location/spots/price diff), reason select, billing adjustment notice, success state
+  - `TransferHistoryPanel` — shown in new "Transfers" tab with status badges, billing annotation, requested/processed dates
+  - `RegistrationCard`: "Request Class Transfer" indigo text button on confirmed upcoming registrations; `onTransferRequest` callback prop
+  - `PortalDashboard`: `transferTarget` state; `ArrowRightLeft`, `CreditCard`, `Send` icons added; "Transfers" tab in second tab row; `TransferRequestModal` overlay; `setTab('transfers')` after submission
+
+### Feature 2: Outstanding Payment CTA + send-payment-link Edge Function (Stage 3.1.0 — NBC Priority 3)
+- `supabase/migrations/20260408000002_add_checkout_products.sql`:
+  - `registrations.payment_link_sent_at TIMESTAMPTZ` — cooldown column
+- `supabase/functions/send-payment-link/index.ts` — **NEW** (verify_jwt=false)
+  - POST `{registrationId, familyEmail}` → validates email match + awaiting_payment status + 5-min cooldown
+  - Posts `payment_link_reminder` intent to n8n with registration URL, child name, amount, portal URL
+  - Sets `payment_link_sent_at` after successful n8n call
+- `src/pages/ParentPortal.tsx`:
+  - `registration_token` added to DB select query; `registrationToken` field on `RegistrationRecord`
+  - `upcoming` filter now includes `awaiting_payment` status (not just `confirmed`)
+  - `RegistrationCard`: amber "Complete Your Payment" CTA (links to `/register?token=<token>`) + "Resend payment link" button with loading/sent/error states; amber top accent bar for pending-payment cards
+- `src/types/database.ts`: `registrations` Row/Insert/Update extended with `payment_link_sent_at`
+
+### Feature 3: Product Upsells at Checkout (Stage 3.0 — NBC Priority 2)
+- `supabase/migrations/20260408000002_add_checkout_products.sql`:
+  - `organizations.checkout_products JSONB NOT NULL DEFAULT '[]'` — array of `{id, name, description, price_cents, image_url?}`
+  - `registrations.selected_products JSONB NOT NULL DEFAULT '[]'` — stores selected product IDs
+  - `get_pending_registration()` updated to return `organization.checkout_products`
+- `src/pages/Register.tsx`:
+  - `CheckoutProduct` interface added
+  - `PendingRegistration.organization.checkoutProducts: CheckoutProduct[]` added
+  - `selectedProductIds` state + toggle function
+  - Step 1: "Add-ons & Gear" section with `ShoppingBag` icon; per-product toggle cards (`CheckSquare`/`Square` icons); selected count indicator
+  - Confirmation: `selected_products` persisted alongside `custom_answers` after `confirm_registration()`
+  - `loadPendingRegistration` mapper reads `organization.checkout_products`
+- `src/types/database.ts`: `organizations.checkout_products`, `registrations.selected_products` types added; `class_transfers` table type added
+
+**Files Changed:**
+- `supabase/migrations/20260408000001_add_class_transfers.sql` — **NEW**
+- `supabase/migrations/20260408000002_add_checkout_products.sql` — **NEW**
+- `supabase/functions/send-payment-link/index.ts` — **NEW**
+- `src/pages/ParentPortal.tsx` — transfer interfaces/components; outstanding payment CTA; registration_token; awaiting_payment in upcoming; Transfers tab
+- `src/pages/Register.tsx` — `CheckoutProduct` interface; product upsell section; `selectedProductIds` state; persisted to `selected_products`
+- `src/types/database.ts` — `organizations.checkout_products`; `registrations.selected_products` + `payment_link_sent_at`; `class_transfers` table
+
+**DB Migrations Applied:**
+- `add_class_transfers` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓
+- `add_class_transfers_functions` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓
+- `add_checkout_products` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓
+
+**Edge Functions Deployed:**
+- `send-payment-link` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓ (verify_jwt=false)
+
+**No n8n workflow changes.**
+
+---
+
 ## [April 7, 2026] - Portal Return URL, Maximum Proration Cap & Waitlist Confirmation Email | Core Feature | High
 
 **Category:** Core Feature

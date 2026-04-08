@@ -1,7 +1,7 @@
 # Kairo Platform - Strategic Build Plan
 
-**Version:** 2.17
-**Last Updated:** April 4, 2026
+**Version:** 2.18
+**Last Updated:** April 7, 2026
 **Current Stage:** Stage 2 COMPLETE | Stage 3 IN PROGRESS (Payments & Registration Flow)
 
 ---
@@ -736,7 +736,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [x] Proration display in price details — show "prorated" label when applicable (NBC Priority 3) — `computeProration()` in `PaymentSummary`; prorated line item with original price struck through; amber mid-season banner in Register.tsx step 0
 
 **Admin Payment Operations:**
-- [ ] Pay Later (admin-initiated) — admin registers child, parent receives link to log in and pay (NBC Priority 3)
+- [x] Pay Later (parent-initiated) — `awaiting_payment` registrations shown in portal with "Complete Payment" CTA + `send-payment-link` edge function resends registration link via n8n; 5-min cooldown via `payment_link_sent_at` (NBC Priority 3)
 - [ ] Refund + cancel in one step — atomic operation instead of cancel-then-refund (NBC Enhancement)
 - [ ] Overdue charge email from billing screen — one-click "send invoice" button with auto-generated payment link (NBC Priority 2)
 - [ ] Built-in charge creation — ability to choose a class when creating a manual charge on an account (NBC Priority 2)
@@ -839,7 +839,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [x] Hidden/unlisted classes — `is_hidden` on sessions; public `/sessions` filters hidden classes; direct `?session={id}` link still loads hidden session with "Private" badge (NBC Priority 1)
 - [x] "Notify me" for full classes — `session_interest` table (public INSERT, service_role read); NotifyMeModal captures name + email; duplicate-safe upsert; success confirmation state; shown on full sessions (NBC Priority 3)
 - [x] Suggested classes during checkout — "Registering for another time?" card on step 0 shows up to 3 other available sessions with spots/day/location info and direct navigation (NBC Priority 1)
-- [ ] Direct-to-consumer product upsells — suggested products (jerseys, gear) at checkout (NBC Priority 2)
+- [x] Direct-to-consumer product upsells — `checkout_products` JSONB on organizations; product cards with toggle at Step 1 of registration; `selected_products` saved to registration (NBC Priority 2)
 - [x] Total number of sessions visible — `# X classes` badge on every session card, computed from `duration_weeks` or start/end date range (NBC Enhancement)
 - [x] External registration link-out — `external_registration_url` on sessions; Sessions page shows "Register Externally →" button (ExternalLink icon, `_blank`) when set; Notify Me hidden for external full classes (NBC Priority 1)
 
@@ -891,16 +891,16 @@ Registration Form → Payment → Confirmed Registration → Return User
 #### 3.8 Transfer Management (NEW - Swim School Deep Dive)
 **Swim School Insight:** Perpetual enrollment schools constantly move kids between classes — schedule changes, skill progression, family schedule shifts. This is a daily operation, not an edge case.
 
-- [ ] Transfer request flow (parent-initiated or admin-initiated)
-- [ ] Transfer destination search: show available classes matching child's level with open spots
+- [x] Transfer request flow (parent-initiated or admin-initiated) — `class_transfers` table + `request_class_transfer()` RPC; TransferRequestModal in Parent Portal
+- [x] Transfer destination search: show available classes matching child's level with open spots — `get_available_transfer_sessions()` RPC returns open sessions in same org
 - [ ] Billing adjustment: prorated credit/charge for different-priced classes
 - [ ] Transfer history: full audit trail of all class changes per child
 - [ ] Waitlist impact: transferring out of a class frees a spot, auto-notify waitlisted families
 - [ ] Batch transfers: admin can move multiple children at once (e.g., class cancelled, move all to another)
-- [ ] Transfer reason tracking (for analytics: schedule conflict, skill progression, coach preference, etc.)
+- [x] Transfer reason tracking (for analytics: schedule conflict, skill progression, coach preference, etc.) — `reason` field on `class_transfers`; dropdown in TransferRequestModal
 - [ ] Transfer limits: configurable max transfers per billing period (optional)
-- [ ] Transfer UX overhaul — make transfer process easier with clear fund movement display (NBC Priority 1)
-- [ ] Class transfer data accuracy — ensure transfer data reports correctly for CRM/accounting (NBC Priority 1)
+- [x] Transfer UX overhaul — TransferRequestModal with price diff indicator (amber/emerald), billing notice, reason dropdown; TransferHistoryPanel tab in Parent Portal (NBC Priority 1)
+- [x] Class transfer data accuracy — `billing_adjustment_cents` + `billing_direction` (credit/charge/none) on `class_transfers`; computed at request time from price diff (NBC Priority 1)
 
 #### 3.9 Parent Portal - Post-Registration (NEW - Swim School Deep Dive)
 **Swim School Insight:** After registration, parents need ongoing access to manage their child's enrollment — not just a one-time chat flow. Views filtered by child's skill level.
@@ -1522,7 +1522,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 **Admin Data Integrity:**
 - [ ] Prevent deletion of registrations/classes with registration history — soft-delete only (NBC Enhancement)
 - [ ] Prevent deletion of offline payments/refunds — audit trail preservation (NBC Priority 1)
-- [ ] Class transfer data accuracy for CRM/accounting — complete revenue data for transfers (NBC Priority 1)
+- [x] Class transfer data accuracy for CRM/accounting — complete revenue data for transfers (NBC Priority 1)
 
 **Admin Operations:**
 - [ ] Access edit class modal from account screen — quick navigation (NBC Enhancement)
@@ -1545,7 +1545,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [ ] Product catalog per organization — jerseys, equipment, branded gear
 - [ ] Size exchange processing — handle size exchanges directly in platform (NBC Priority 2)
 - [ ] Coupon application to annual fees — allow discount codes on recurring fees (NBC Priority 2)
-- [ ] Direct-to-consumer product suggestions at checkout — upsell gear during registration (NBC Priority 2)
+- [x] Direct-to-consumer product suggestions at checkout — upsell gear during registration (NBC Priority 2)
 
 ---
 
