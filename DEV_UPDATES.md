@@ -5,6 +5,24 @@ Format: `## [Month Year] - Title | Category | Description`
 
 ---
 
+## [April 8, 2026] - Bug Fix: WaitlistJoinModal Portal, Webhook Timeout, Cart Recovery UX & Error Logging | Bug Fix | High
+
+**Category:** Bug Fix
+**Impact:** High — Fixes 2 critical and 2 medium regressions from 2026-04-08 user simulation
+
+**Description:**
+Four targeted bug fixes from the daily QA simulation. WaitlistJoinModal now renders via `createPortal` at `document.body`, eliminating any stacking context or containing block interference that prevented the modal from opening when the Waitlist button was clicked on full sessions. N8N webhook timeout increased from 30s to 60s to accommodate multi-turn Kai conversations that include full message history, which consistently exceeded the 30s limit on follow-up messages. Cart recovery welcome message: when `useConversation` restores a prior session (more than 1 message), `ChatInterface` now adds a "Welcome back! I can see where we left off" Kai message so parents see an explicit signal their conversation was saved. Webhook error logging improved: `response.error` now logs `code`, `message`, and full JSON to console instead of an opaque `Object`.
+
+**Files Changed:**
+- `src/pages/Sessions.tsx` — `createPortal` import; `handleCloseWaitlistModal` memoized callback; `WaitlistJoinModal` rendered via `createPortal(…, document.body)`
+- `src/services/ai/n8nWebhook.ts` — `N8N_TIMEOUT_MS` 30000 → 60000
+- `src/hooks/useConversation.ts` — webhook error logged with `code`, `message`, `JSON.stringify`
+- `src/components/registration/ChatInterface.tsx` — "Welcome back" Kai message added when `messages.length > 1` on restore
+
+**No DB migrations. No edge function changes. No n8n workflow changes.**
+
+---
+
 ## [April 8, 2026] - Class Transfer Request Flow, Outstanding Payment CTA & Product Upsells at Checkout | Core Feature | High
 
 **Category:** Core Feature

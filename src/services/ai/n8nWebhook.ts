@@ -34,7 +34,7 @@ export interface N8NMessageResponse {
 
 const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL;
 const N8N_WEBHOOK_KEY = import.meta.env.VITE_N8N_WEBHOOK_KEY;
-const N8N_TIMEOUT_MS = 30000;
+const N8N_TIMEOUT_MS = 60000;
 
 export function isN8NConfigured(): boolean {
   return Boolean(N8N_WEBHOOK_URL && N8N_WEBHOOK_URL.length > 0);

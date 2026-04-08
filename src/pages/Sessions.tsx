@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import {
@@ -1033,6 +1034,8 @@ export function Sessions() {
     setWaitlistSession(session);
   }, []);
 
+  const handleCloseWaitlistModal = useCallback(() => setWaitlistSession(null), []);
+
   // Highlight a specific session from ?session= param (direct link)
   const highlightedSessionId = searchParams.get('session');
 
@@ -1373,12 +1376,13 @@ export function Sessions() {
         />
       )}
 
-      {/* Waitlist Join Modal */}
-      {waitlistSession && (
+      {/* Waitlist Join Modal — rendered via portal to avoid stacking context issues */}
+      {waitlistSession && createPortal(
         <WaitlistJoinModal
           session={waitlistSession}
-          onClose={() => setWaitlistSession(null)}
-        />
+          onClose={handleCloseWaitlistModal}
+        />,
+        document.body
       )}
     </div>
   );

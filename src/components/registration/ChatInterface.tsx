@@ -146,6 +146,10 @@ export function ChatInterface({ organizationId, familyId, initialSessionId }: Ch
         ? "Hi! I see you're interested in registering for a class — great choice! What's your child's name and age so I can get you set up?"
         : greetingRef.current;
       addAssistantMessageRef.current(greeting);
+    } else if (messages.length > 1) {
+      // Restored conversation with history — surface it to the parent
+      hasAddedInitialMessage.current = true;
+      addAssistantMessageRef.current("Welcome back! I can see where we left off. Ready to continue, or would you like to start fresh?");
     } else {
       hasAddedInitialMessage.current = true;
     }

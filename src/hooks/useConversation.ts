@@ -474,7 +474,7 @@ export function useConversation(options: UseConversationOptions) {
           setIsLoading(false);
           return aiMsg;
         } else if (response.error) {
-          console.error('N8N Webhook error response:', response.error);
+          console.error('N8N Webhook error response:', response.error?.code, response.error?.message, JSON.stringify(response.error));
           if (response.error.fallbackToForm) {
             devLog('Triggering form fallback. Error:', response.error.message);
             onFallbackToForm?.();
