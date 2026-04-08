@@ -26,6 +26,9 @@ import {
   ListOrdered,
   BellRing,
   XCircle,
+  ArrowRightLeft,
+  CreditCard,
+  Send,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -58,6 +61,7 @@ interface RegistrationRecord {
   createdAt: string;
   childName: string;
   childAge: number | null;
+  registrationToken: string | null;
   child: ChildRecord | null;
   session: {
     id: string;
@@ -72,6 +76,32 @@ interface RegistrationRecord {
     locationName: string | null;
     locationAddress: string | null;
   };
+}
+
+interface TransferSessionOption {
+  id: string;
+  dayOfWeek: number | null;
+  startTime: string;
+  startDate: string;
+  endDate: string | null;
+  spotsRemaining: number;
+  programName: string;
+  priceCents: number;
+  locationName: string | null;
+}
+
+interface TransferRecord {
+  id: string;
+  status: string;
+  reason: string | null;
+  billingAdjustmentCents: number;
+  billingDirection: 'credit' | 'charge' | 'none';
+  requestedAt: string;
+  processedAt: string | null;
+  toSessionProgram: string | null;
+  toSessionDay: number | null;
+  toSessionTime: string | null;
+  toSessionLocation: string | null;
 }
 
 interface MakeupToken {
@@ -291,17 +321,66 @@ function EmailGate({ onFound, returnTo }: EmailGateProps) {
 // Registration Card
 // ─────────────────────────────────────────────────────────────────────────────
 
-function RegistrationCard({ reg }: { reg: RegistrationRecord }) {
+interface RegistrationCardProps {
+  reg: RegistrationRecord;
+  familyId: string;
+  familyEmail: string;
+  onTransferRequest?: (reg: RegistrationRecord) => void;
+}
+
+function RegistrationCard({ reg, familyId, familyEmail, onTransferRequest }: RegistrationCardProps) {
   const upcoming = isUpcoming(reg.session);
   const childDisplayName = reg.child
     ? `${reg.child.firstName}${reg.child.lastName ? ' ' + reg.child.lastName : ''}`
     : reg.childName || 'Child';
+  const isAwaitingPayment = reg.status === 'awaiting_payment' || reg.paymentStatus === 'unpaid';
+  const [sendingLink, setSendingLink] = useState(false);
+  const [linkSent, setLinkSent] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
+
+  async function handleSendPaymentLink() {
+    setSendingLink(true);
+    setLinkError(null);
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+      const res = await fetch(`${supabaseUrl}/functions/v1/send-payment-link`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${anonKey}`,
+          Apikey: anonKey,
+        },
+        body: JSON.stringify({ registrationId: reg.id, familyEmail }),
+      });
+      const data = await res.json();
+      if (res.status === 429) {
+        setLinkError(data.reason ?? 'Please wait before requesting another link.');
+      } else if (data.success) {
+        setLinkSent(true);
+      } else if (data.error) {
+        setLinkError(data.message ?? 'Could not send link. Try again.');
+      } else {
+        setLinkSent(true);
+      }
+    } catch {
+      setLinkError('Network error. Please try again.');
+    } finally {
+      setSendingLink(false);
+    }
+  }
+
+  // Suppress unused variable warning — familyId will be used when transfer API integration expands
+  void familyId;
 
   return (
     <div className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${upcoming ? 'border-indigo-100' : 'border-slate-200'}`}>
       {/* Top accent bar */}
       {upcoming && reg.status === 'confirmed' && (
         <div className="h-1 bg-gradient-to-r from-indigo-500 to-emerald-500" />
+      )}
+      {isAwaitingPayment && (
+        <div className="h-1 bg-amber-400" />
       )}
 
       <div className="p-4 space-y-3">
@@ -351,6 +430,66 @@ function RegistrationCard({ reg }: { reg: RegistrationRecord }) {
             </span>
           )}
         </div>
+
+        {/* Awaiting payment CTA */}
+        {isAwaitingPayment && (
+          <div className="mt-3 pt-3 border-t border-amber-100 space-y-2">
+            {reg.registrationToken ? (
+              <a
+                href={`/register?token=${reg.registrationToken}`}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl transition-colors min-h-[44px]"
+              >
+                <CreditCard className="w-4 h-4" />
+                Complete Your Payment
+                <ChevronRight className="w-3.5 h-3.5" />
+              </a>
+            ) : (
+              <a
+                href={`/?session=${reg.session.id}`}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl transition-colors min-h-[44px]"
+              >
+                <CreditCard className="w-4 h-4" />
+                Complete Registration
+                <ChevronRight className="w-3.5 h-3.5" />
+              </a>
+            )}
+            {linkSent ? (
+              <div className="flex items-center justify-center gap-2 text-xs text-emerald-600 py-1">
+                <CheckCircle className="w-3.5 h-3.5" />
+                Payment link sent to {familyEmail}
+              </div>
+            ) : (
+              <button
+                onClick={handleSendPaymentLink}
+                disabled={sendingLink}
+                className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium rounded-xl transition-colors min-h-[40px] disabled:opacity-60"
+              >
+                {sendingLink ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Send className="w-3.5 h-3.5" />
+                )}
+                Resend payment link to email
+              </button>
+            )}
+            {linkError && (
+              <p className="text-xs text-red-500 text-center">{linkError}</p>
+            )}
+          </div>
+        )}
+
+        {/* Transfer button for confirmed upcoming registrations */}
+        {reg.status === 'confirmed' && upcoming && onTransferRequest && (
+          <div className="mt-3 pt-3 border-t border-slate-100">
+            <button
+              onClick={() => onTransferRequest(reg)}
+              className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors min-h-[40px]"
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5" />
+              Request Class Transfer
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1350,6 +1489,425 @@ function ChildrenPanel({ familyId, familyEmail }: ChildrenPanelProps) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Transfer Request Modal
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface TransferRequestModalProps {
+  registration: RegistrationRecord;
+  onClose: () => void;
+  onSubmitted: () => void;
+}
+
+const TRANSFER_REASONS = [
+  'Schedule conflict',
+  'Skill progression / level change',
+  'Location preference',
+  'Coach preference',
+  'Family schedule change',
+  'Other',
+];
+
+function TransferRequestModal({ registration, onClose, onSubmitted }: TransferRequestModalProps) {
+  const [sessions, setSessions] = useState<TransferSessionOption[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(true);
+  const [selectedSession, setSelectedSession] = useState<TransferSessionOption | null>(null);
+  const [reason, setReason] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    async function loadSessions() {
+      setLoadingSessions(true);
+      try {
+        const { data, error: rpcErr } = await supabase.rpc('get_available_transfer_sessions', {
+          p_registration_id: registration.id,
+        });
+        if (rpcErr) throw rpcErr;
+        const mapped: TransferSessionOption[] = (data ?? []).map((s: {
+          id: string;
+          day_of_week: number | null;
+          start_time: string;
+          start_date: string;
+          end_date: string | null;
+          spots_remaining: number;
+          program_name: string;
+          price_cents: number;
+          location_name: string | null;
+        }) => ({
+          id: s.id,
+          dayOfWeek: s.day_of_week,
+          startTime: s.start_time,
+          startDate: s.start_date,
+          endDate: s.end_date,
+          spotsRemaining: s.spots_remaining,
+          programName: s.program_name,
+          priceCents: s.price_cents,
+          locationName: s.location_name,
+        }));
+        setSessions(mapped);
+      } catch {
+        setError('Could not load available sessions. Please try again.');
+      } finally {
+        setLoadingSessions(false);
+      }
+    }
+    loadSessions();
+  }, [registration.id]);
+
+  async function handleSubmit() {
+    if (!selectedSession) {
+      setError('Please select a class to transfer to.');
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      const { data, error: rpcErr } = await supabase.rpc('request_class_transfer', {
+        p_registration_id: registration.id,
+        p_to_session_id: selectedSession.id,
+        p_reason: reason || null,
+      });
+      if (rpcErr) throw rpcErr;
+      if (data?.error) {
+        setError(data.message ?? 'Transfer request failed. Please try again.');
+        return;
+      }
+      setSuccess(true);
+    } catch {
+      setError('Transfer request failed. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  // Billing adjustment for the selected session
+  const currentPrice = registration.amountCents ?? 0;
+  const selectedPrice = selectedSession?.priceCents ?? 0;
+  const adjustment = selectedPrice - currentPrice;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100 sticky top-0 bg-white rounded-t-3xl sm:rounded-t-2xl z-10">
+          <div className="flex items-center gap-2.5">
+            <ArrowRightLeft className="w-5 h-5 text-indigo-600" />
+            <h2 className="text-base font-semibold text-slate-900">Request Class Transfer</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-5">
+          {success ? (
+            <div className="text-center py-8 space-y-4">
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-100">
+                <CheckCircle className="w-8 h-8 text-emerald-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900">Transfer Request Submitted</p>
+                <p className="text-sm text-slate-500 mt-1">
+                  We'll review your request and reach out within 1-2 business days.
+                </p>
+              </div>
+              {adjustment !== 0 && (
+                <div className={`text-sm px-4 py-3 rounded-xl ${adjustment > 0 ? 'bg-amber-50 text-amber-800' : 'bg-emerald-50 text-emerald-800'}`}>
+                  {adjustment > 0
+                    ? `A charge of ${formatCurrency(adjustment)} may apply for the price difference.`
+                    : `A credit of ${formatCurrency(Math.abs(adjustment))} will be applied.`}
+                </div>
+              )}
+              <button
+                onClick={onSubmitted}
+                className="inline-flex items-center gap-2 py-2.5 px-6 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors min-h-[44px]"
+              >
+                Done
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Current class info */}
+              <div className="bg-slate-50 rounded-xl p-3 space-y-1">
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Currently enrolled in</p>
+                <p className="text-sm font-semibold text-slate-900">{registration.session.programName}</p>
+                <p className="text-xs text-slate-500">
+                  {registration.session.dayOfWeek !== null ? `${DAY_NAMES_FULL[registration.session.dayOfWeek]}s` : ''}
+                  {' · '}{formatTime(registration.session.startTime)}
+                  {registration.session.locationName ? ` · ${registration.session.locationName}` : ''}
+                </p>
+              </div>
+
+              {/* Available sessions */}
+              <div>
+                <p className="text-sm font-semibold text-slate-800 mb-2.5">Choose a new class</p>
+                {loadingSessions ? (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+                  </div>
+                ) : sessions.length === 0 ? (
+                  <div className="text-center py-6 text-slate-400">
+                    <Calendar className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                    <p className="text-sm">No other classes are currently available for transfer.</p>
+                    <p className="text-xs mt-1">Check back soon or contact us directly.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-56 overflow-y-auto pr-0.5">
+                    {sessions.map((s) => {
+                      const priceChange = s.priceCents - currentPrice;
+                      const selected = selectedSession?.id === s.id;
+                      return (
+                        <button
+                          key={s.id}
+                          onClick={() => setSelectedSession(s)}
+                          className={`w-full text-left p-3 rounded-xl border transition-all ${
+                            selected
+                              ? 'border-indigo-400 bg-indigo-50'
+                              : 'border-slate-200 hover:border-indigo-200 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-slate-900 truncate">{s.programName}</p>
+                              <p className="text-xs text-slate-500 mt-0.5">
+                                {s.dayOfWeek !== null ? `${DAY_NAMES[s.dayOfWeek]}s` : ''}
+                                {' · '}{formatTime(s.startTime)}
+                                {s.locationName ? ` · ${s.locationName}` : ''}
+                              </p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="text-xs text-emerald-600 font-medium">{s.spotsRemaining} spots</p>
+                              {priceChange !== 0 && (
+                                <p className={`text-xs font-medium mt-0.5 ${priceChange > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                  {priceChange > 0 ? `+${formatCurrency(priceChange)}` : `-${formatCurrency(Math.abs(priceChange))}`}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Billing adjustment notice */}
+              {selectedSession && adjustment !== 0 && (
+                <div className={`flex items-start gap-2 text-sm px-3 py-2.5 rounded-xl ${adjustment > 0 ? 'bg-amber-50 text-amber-800' : 'bg-emerald-50 text-emerald-800'}`}>
+                  <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>
+                    {adjustment > 0
+                      ? `This class costs ${formatCurrency(adjustment)} more. Our team will contact you about the balance.`
+                      : `This class costs ${formatCurrency(Math.abs(adjustment))} less. A credit will be applied to your account.`}
+                  </span>
+                </div>
+              )}
+
+              {/* Reason */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Reason for transfer <span className="text-slate-400 font-normal">(optional)</span>
+                </label>
+                <select
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="">Select a reason…</option>
+                  {TRANSFER_REASONS.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+
+              {error && (
+                <div className="flex items-start gap-2 p-3 bg-red-50 rounded-xl text-sm text-red-700">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <button
+                onClick={handleSubmit}
+                disabled={submitting || !selectedSession || loadingSessions}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-semibold text-sm rounded-xl transition-colors min-h-[48px]"
+              >
+                {submitting ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    <ArrowRightLeft className="w-4 h-4" />
+                    Submit Transfer Request
+                  </>
+                )}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Transfer History Panel
+// ─────────────────────────────────────────────────────────────────────────────
+
+function TransferHistoryPanel({ familyId }: { familyId: string }) {
+  const [transfers, setTransfers] = useState<TransferRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      try {
+        const { data } = await supabase
+          .from('class_transfers')
+          .select(`
+            id,
+            status,
+            reason,
+            billing_adjustment_cents,
+            billing_direction,
+            requested_at,
+            processed_at,
+            sessions!to_session_id (
+              day_of_week,
+              start_time,
+              programs ( name ),
+              locations ( name )
+            )
+          `)
+          .eq('family_id', familyId)
+          .order('requested_at', { ascending: false });
+
+        if (cancelled) return;
+
+        const mapped: TransferRecord[] = (data ?? []).map((t: {
+          id: string;
+          status: string;
+          reason: string | null;
+          billing_adjustment_cents: number;
+          billing_direction: 'credit' | 'charge' | 'none';
+          requested_at: string;
+          processed_at: string | null;
+          sessions: {
+            day_of_week: number | null;
+            start_time: string;
+            programs: { name: string } | null;
+            locations: { name: string } | null;
+          } | null;
+        }) => ({
+          id: t.id,
+          status: t.status,
+          reason: t.reason,
+          billingAdjustmentCents: t.billing_adjustment_cents,
+          billingDirection: t.billing_direction,
+          requestedAt: t.requested_at,
+          processedAt: t.processed_at,
+          toSessionProgram: t.sessions?.programs?.name ?? null,
+          toSessionDay: t.sessions?.day_of_week ?? null,
+          toSessionTime: t.sessions?.start_time ?? null,
+          toSessionLocation: t.sessions?.locations?.name ?? null,
+        }));
+
+        setTransfers(mapped);
+      } catch {
+        // Silently fail — transfers are supplementary info
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [familyId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
+      </div>
+    );
+  }
+
+  if (transfers.length === 0) {
+    return (
+      <div className="text-center py-10 text-slate-400">
+        <ArrowRightLeft className="w-10 h-10 mx-auto mb-3 opacity-30" />
+        <p className="text-sm font-medium">No transfer requests yet</p>
+        <p className="text-xs mt-1">Use "Request Class Transfer" on any active enrollment</p>
+      </div>
+    );
+  }
+
+  function getTransferStatusColor(status: string) {
+    switch (status) {
+      case 'approved': case 'completed': return 'bg-emerald-100 text-emerald-700';
+      case 'pending': return 'bg-amber-100 text-amber-700';
+      case 'cancelled': return 'bg-red-100 text-red-700';
+      default: return 'bg-slate-100 text-slate-600';
+    }
+  }
+
+  function getTransferStatusLabel(status: string) {
+    switch (status) {
+      case 'pending': return 'Pending Review';
+      case 'approved': return 'Approved';
+      case 'completed': return 'Completed';
+      case 'cancelled': return 'Cancelled';
+      default: return status;
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      {transfers.map((t) => (
+        <div key={t.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-2.5">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-sm font-semibold text-slate-900">
+                {t.toSessionProgram ?? 'Transfer Request'}
+              </p>
+              {t.toSessionDay !== null && t.toSessionTime && (
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {DAY_NAMES_FULL[t.toSessionDay]}s · {formatTime(t.toSessionTime)}
+                  {t.toSessionLocation ? ` · ${t.toSessionLocation}` : ''}
+                </p>
+              )}
+            </div>
+            <span className={`shrink-0 text-xs font-medium px-2.5 py-1 rounded-full ${getTransferStatusColor(t.status)}`}>
+              {getTransferStatusLabel(t.status)}
+            </span>
+          </div>
+
+          {t.reason && (
+            <p className="text-xs text-slate-500">Reason: {t.reason}</p>
+          )}
+
+          {t.billingDirection !== 'none' && t.billingAdjustmentCents > 0 && (
+            <div className={`text-xs px-2.5 py-1.5 rounded-lg ${t.billingDirection === 'charge' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>
+              {t.billingDirection === 'charge'
+                ? `Pending charge: ${formatCurrency(t.billingAdjustmentCents)}`
+                : `Credit to apply: ${formatCurrency(t.billingAdjustmentCents)}`}
+            </div>
+          )}
+
+          <p className="text-xs text-slate-400">
+            Requested {formatDate(t.requestedAt)}
+            {t.processedAt ? ` · Processed ${formatDate(t.processedAt)}` : ''}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Portal Dashboard
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1363,7 +1921,8 @@ function PortalDashboard({ family, onSignOut }: PortalDashboardProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [familyProfile, setFamilyProfile] = useState(family);
-  const [tab, setTab] = useState<'upcoming' | 'history' | 'waitlist' | 'tokens' | 'children'>('upcoming');
+  const [tab, setTab] = useState<'upcoming' | 'history' | 'waitlist' | 'tokens' | 'children' | 'transfers'>('upcoming');
+  const [transferTarget, setTransferTarget] = useState<RegistrationRecord | null>(null);
 
   const loadRegistrations = useCallback(async () => {
     setLoading(true);
@@ -1381,6 +1940,7 @@ function PortalDashboard({ family, onSignOut }: PortalDashboardProps) {
           created_at,
           child_name,
           child_age,
+          registration_token,
           children (
             id,
             first_name,
@@ -1442,6 +2002,7 @@ function PortalDashboard({ family, onSignOut }: PortalDashboardProps) {
           createdAt: r.created_at,
           childName: r.child_name ?? '',
           childAge: r.child_age,
+          registrationToken: (r as unknown as { registration_token: string | null }).registration_token ?? null,
           child: child
             ? {
                 id: child.id,
@@ -1481,10 +2042,12 @@ function PortalDashboard({ family, onSignOut }: PortalDashboardProps) {
   }, [loadRegistrations]);
 
   const upcoming = registrations.filter(
-    (r) => r.status === 'confirmed' && isUpcoming(r.session)
+    (r) =>
+      (r.status === 'confirmed' || r.status === 'awaiting_payment') && isUpcoming(r.session)
   );
   const history = registrations.filter(
-    (r) => r.status !== 'confirmed' || !isUpcoming(r.session)
+    (r) =>
+      !(r.status === 'confirmed' || r.status === 'awaiting_payment') || !isUpcoming(r.session)
   );
 
   const totalPaid = registrations
@@ -1531,7 +2094,7 @@ function PortalDashboard({ family, onSignOut }: PortalDashboardProps) {
 
         {/* Registrations */}
         <div>
-          {/* Tab bar — 2-row layout to accommodate all 5 tabs */}
+          {/* Tab bar — 2-row layout */}
           <div className="space-y-1 mb-4">
             <div className="flex gap-1 bg-slate-200 rounded-xl p-1">
               <button
@@ -1579,6 +2142,15 @@ function PortalDashboard({ family, onSignOut }: PortalDashboardProps) {
                 <Baby className="w-3 h-3" />
                 Children
               </button>
+              <button
+                onClick={() => setTab('transfers')}
+                className={`flex-1 flex items-center justify-center gap-1 text-xs font-medium py-2 rounded-lg transition-colors min-h-[40px] ${
+                  tab === 'transfers' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+                }`}
+              >
+                <ArrowRightLeft className="w-3 h-3" />
+                Transfers
+              </button>
             </div>
           </div>
 
@@ -1588,6 +2160,8 @@ function PortalDashboard({ family, onSignOut }: PortalDashboardProps) {
             <MakeupTokensPanel familyId={family.id} />
           ) : tab === 'children' ? (
             <ChildrenPanel familyId={family.id} familyEmail={family.email} />
+          ) : tab === 'transfers' ? (
+            <TransferHistoryPanel familyId={family.id} />
           ) : loading ? (
             <div className="flex flex-col items-center justify-center py-12 text-slate-400 gap-3">
               <Loader2 className="w-8 h-8 animate-spin" />
@@ -1615,7 +2189,15 @@ function PortalDashboard({ family, onSignOut }: PortalDashboardProps) {
                     <p className="text-xs mt-1">Register a child to get started</p>
                   </div>
                 ) : (
-                  upcoming.map((reg) => <RegistrationCard key={reg.id} reg={reg} />)
+                  upcoming.map((reg) => (
+                    <RegistrationCard
+                      key={reg.id}
+                      reg={reg}
+                      familyId={family.id}
+                      familyEmail={family.email}
+                      onTransferRequest={setTransferTarget}
+                    />
+                  ))
                 )
               )}
               {tab === 'history' && (
@@ -1625,7 +2207,14 @@ function PortalDashboard({ family, onSignOut }: PortalDashboardProps) {
                     <p className="text-sm font-medium">No registration history yet</p>
                   </div>
                 ) : (
-                  history.map((reg) => <RegistrationCard key={reg.id} reg={reg} />)
+                  history.map((reg) => (
+                    <RegistrationCard
+                      key={reg.id}
+                      reg={reg}
+                      familyId={family.id}
+                      familyEmail={family.email}
+                    />
+                  ))
                 )
               )}
             </div>
@@ -1647,6 +2236,18 @@ function PortalDashboard({ family, onSignOut }: PortalDashboardProps) {
           </a>
         </div>
       </div>
+
+      {/* Transfer Request Modal */}
+      {transferTarget && (
+        <TransferRequestModal
+          registration={transferTarget}
+          onClose={() => setTransferTarget(null)}
+          onSubmitted={() => {
+            setTransferTarget(null);
+            setTab('transfers');
+          }}
+        />
+      )}
     </div>
   );
 }

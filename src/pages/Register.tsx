@@ -31,7 +31,18 @@ import {
   MessageSquare,
   Sparkles,
   Info,
+  ShoppingBag,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
+
+interface CheckoutProduct {
+  id: string;
+  name: string;
+  description: string;
+  price_cents: number;
+  image_url?: string;
+}
 
 interface PendingRegistration {
   registrationId: string;
@@ -57,6 +68,7 @@ interface PendingRegistration {
     name: string;
     installmentStartMode: 'registration' | 'class_start';
     maxProrationCapCents: number | null;
+    checkoutProducts: CheckoutProduct[];
   };
   amountCents: number;
   expiresAt: string;
@@ -168,6 +180,7 @@ export default function Register() {
   const [suggestedSessions, setSuggestedSessions] = useState<SuggestedSession[]>([]);
   const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([]);
   const [customAnswers, setCustomAnswers] = useState<Record<string, string>>({});
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
 
   // Load saved payment methods when we reach step 2 and email is set for a returning family
   const { methods: savedCards, loading: savedCardsLoading } = useSavedPaymentMethods({
@@ -315,6 +328,9 @@ export default function Register() {
           name: data.organization?.name ?? '',
           installmentStartMode: (data.organization?.installment_start_mode === 'class_start' ? 'class_start' : 'registration'),
           maxProrationCapCents: data.organization?.max_proration_cap_cents ?? null,
+          checkoutProducts: Array.isArray(data.organization?.checkout_products)
+            ? (data.organization.checkout_products as CheckoutProduct[])
+            : [],
         },
         amountCents: data.amount_cents,
         expiresAt: data.expires_at,
@@ -637,12 +653,17 @@ export default function Register() {
         return;
       }
 
-      // Persist custom question answers to the confirmed registration record
-      if (Object.keys(customAnswers).length > 0 && confirmData.registration_id) {
-        await supabase
-          .from('registrations')
-          .update({ custom_answers: customAnswers })
-          .eq('id', confirmData.registration_id);
+      // Persist custom question answers and selected products to the confirmed registration
+      if (confirmData.registration_id) {
+        const updates: Record<string, unknown> = {};
+        if (Object.keys(customAnswers).length > 0) updates.custom_answers = customAnswers;
+        if (selectedProductIds.length > 0) updates.selected_products = selectedProductIds;
+        if (Object.keys(updates).length > 0) {
+          await supabase
+            .from('registrations')
+            .update(updates)
+            .eq('id', confirmData.registration_id);
+        }
       }
 
       markRecovered();
@@ -1178,6 +1199,64 @@ export default function Register() {
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Product upsells — org-configured gear / apparel */}
+              {(registration?.organization.checkoutProducts?.length ?? 0) > 0 && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+                    <ShoppingBag className="h-4 w-4 text-indigo-500" />
+                    Add-ons & Gear
+                  </h3>
+                  <p className="text-xs text-gray-500 mb-3">
+                    Optional items offered by {registration?.organization.name}
+                  </p>
+                  <div className="space-y-2">
+                    {registration!.organization.checkoutProducts.map((product) => {
+                      const selected = selectedProductIds.includes(product.id);
+                      return (
+                        <button
+                          key={product.id}
+                          type="button"
+                          onClick={() =>
+                            setSelectedProductIds((prev) =>
+                              selected
+                                ? prev.filter((id) => id !== product.id)
+                                : [...prev, product.id]
+                            )
+                          }
+                          className={`w-full flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${
+                            selected
+                              ? 'border-indigo-400 bg-indigo-50'
+                              : 'border-gray-200 hover:border-indigo-200 hover:bg-gray-50'
+                          }`}
+                        >
+                          {selected ? (
+                            <CheckSquare className="h-5 w-5 text-indigo-600 flex-shrink-0 mt-0.5" />
+                          ) : (
+                            <Square className="h-5 w-5 text-gray-300 flex-shrink-0 mt-0.5" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
+                              <p className="text-sm font-semibold text-gray-700 flex-shrink-0">
+                                {formatPrice(product.price_cents)}
+                              </p>
+                            </div>
+                            {product.description && (
+                              <p className="text-xs text-gray-500 mt-0.5">{product.description}</p>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {selectedProductIds.length > 0 && (
+                    <p className="text-xs text-indigo-600 mt-2 text-right">
+                      {selectedProductIds.length} item{selectedProductIds.length !== 1 ? 's' : ''} selected
+                    </p>
+                  )}
                 </div>
               )}
 
