@@ -19,6 +19,7 @@ export interface Database {
           ai_agent_name: string
           installment_start_mode: 'registration' | 'class_start'
           max_proration_cap_cents: number | null
+          checkout_products: Json
           created_at: string
           updated_at: string
         }
@@ -31,6 +32,7 @@ export interface Database {
           ai_agent_name?: string
           installment_start_mode?: 'registration' | 'class_start'
           max_proration_cap_cents?: number | null
+          checkout_products?: Json
           created_at?: string
           updated_at?: string
         }
@@ -43,6 +45,7 @@ export interface Database {
           ai_agent_name?: string
           installment_start_mode?: 'registration' | 'class_start'
           max_proration_cap_cents?: number | null
+          checkout_products?: Json
           created_at?: string
           updated_at?: string
         }
@@ -341,6 +344,8 @@ export interface Database {
           enrolled_at: string | null
           registration_channel: string | null
           custom_answers: Json
+          selected_products: Json
+          payment_link_sent_at: string | null
           created_at: string
           updated_at: string
         }
@@ -356,6 +361,8 @@ export interface Database {
           enrolled_at?: string | null
           registration_channel?: string | null
           custom_answers?: Json
+          selected_products?: Json
+          payment_link_sent_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -371,6 +378,8 @@ export interface Database {
           enrolled_at?: string | null
           registration_channel?: string | null
           custom_answers?: Json
+          selected_products?: Json
+          payment_link_sent_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -569,6 +578,56 @@ export interface Database {
           opened_at?: string | null
           clicked_at?: string | null
           created_at?: string
+        }
+      }
+      class_transfers: {
+        Row: {
+          id: string
+          family_id: string
+          child_id: string | null
+          from_registration_id: string
+          to_session_id: string
+          reason: string | null
+          status: 'pending' | 'approved' | 'completed' | 'cancelled'
+          billing_adjustment_cents: number
+          billing_direction: 'credit' | 'charge' | 'none'
+          requested_at: string
+          processed_at: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          family_id: string
+          child_id?: string | null
+          from_registration_id: string
+          to_session_id: string
+          reason?: string | null
+          status?: 'pending' | 'approved' | 'completed' | 'cancelled'
+          billing_adjustment_cents?: number
+          billing_direction?: 'credit' | 'charge' | 'none'
+          requested_at?: string
+          processed_at?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          family_id?: string
+          child_id?: string | null
+          from_registration_id?: string
+          to_session_id?: string
+          reason?: string | null
+          status?: 'pending' | 'approved' | 'completed' | 'cancelled'
+          billing_adjustment_cents?: number
+          billing_direction?: 'credit' | 'charge' | 'none'
+          requested_at?: string
+          processed_at?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
         }
       }
     }
