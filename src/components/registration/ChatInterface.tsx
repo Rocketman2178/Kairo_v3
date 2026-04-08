@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send, AlertCircle, Star, Sparkles, RotateCcw, Mic, Volume2, VolumeX } from 'lucide-react';
+import { Send, AlertCircle, Star, Sparkles, RotateCcw, Mic, Volume2, VolumeX, AudioWaveform } from 'lucide-react';
 import { MessageBubble } from './MessageBubble';
 import { useConversation } from '../../hooks/useConversation';
 import { useVoiceInput } from '../../hooks/useVoiceInput';
@@ -30,6 +30,7 @@ export function ChatInterface({ organizationId, familyId, initialSessionId }: Ch
   const [error, setError] = useState<string | null>(null);
   const [language, setLanguage] = useState<LanguageCode>(getStoredLanguage);
   const [ttsEnabled, setTtsEnabled] = useState(false);
+  const [showVoiceMode, setShowVoiceMode] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const hasAddedInitialMessage = useRef(false);
@@ -572,6 +573,14 @@ export function ChatInterface({ organizationId, familyId, initialSessionId }: Ch
                 </button>
               )}
               <button
+                onClick={() => setShowVoiceMode(true)}
+                disabled={!isReady || sessionEnded}
+                title="Voice conversation mode"
+                className="px-3 py-2 rounded-lg bg-slate-700 text-emerald-400 hover:bg-slate-600 hover:text-emerald-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <AudioWaveform className="w-4 h-4" />
+              </button>
+              <button
                 onClick={() => handleSendMessage()}
                 disabled={!inputValue.trim() || isLoading || !isReady || sessionEnded}
                 className="px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
@@ -585,6 +594,42 @@ export function ChatInterface({ organizationId, familyId, initialSessionId }: Ch
           </div>
         </div>
       </div>
+
+      {/* Voice Mode Overlay */}
+      {showVoiceMode && (
+        <VoiceModeOverlay
+          onClose={() => setShowVoiceMode(false)}
+          onEndSession={(transcriptEntries) => {
+            // Add voice transcript entries as chat messages
+            for (const entry of transcriptEntries) {
+              if (entry.text.trim() && entry.text !== 'Looking that up for you...') {
+                if (entry.role === 'user') {
+                  addUserMessage(entry.text);
+                } else {
+                  addAssistantMessage(entry.text);
+                }
+              }
+            }
+            setShowVoiceMode(false);
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+// Lazy-loaded Voice Mode overlay
+import { lazy, Suspense } from 'react';
+const LazyVoiceModePage = lazy(() => import('../voice/VoiceModePage'));
+
+function VoiceModeOverlay({ onClose, onEndSession }: { onClose: () => void; onEndSession: (t: Array<{ role: 'user' | 'agent'; text: string; timestamp: Date }>) => void }) {
+  return (
+    <Suspense fallback={
+      <div className="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center">
+        <div className="text-white">Loading Voice Mode...</div>
+      </div>
+    }>
+      <LazyVoiceModePage onClose={onClose} onEndSession={onEndSession} />
+    </Suspense>
   );
 }

@@ -13,6 +13,9 @@ import { ParentPortal } from './pages/ParentPortal';
 import { Reports } from './pages/Reports';
 import { Retention } from './pages/Retention';
 import { Sessions } from './pages/Sessions';
+import { lazy, Suspense } from 'react';
+
+const VoiceModePage = lazy(() => import('./components/voice/VoiceModePage'));
 
 function App() {
   return (
@@ -22,6 +25,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/demo" element={<Demo />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/voice" element={<Suspense fallback={<div className="flex items-center justify-center h-screen bg-slate-900 text-white">Loading Voice Mode...</div>}><VoiceModePage /></Suspense>} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsConditions />} />
           <Route path="/test-data" element={<TestDataDashboard />} />
