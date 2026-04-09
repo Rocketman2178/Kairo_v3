@@ -392,7 +392,7 @@ export default function Register() {
     }
   }
 
-  const createPaymentIntent = useCallback(async () => {
+  const createPaymentIntent = useCallback(async (resolvedFamilyId?: string) => {
     if (isDemo || !token) return;
 
     try {
@@ -410,7 +410,7 @@ export default function Register() {
           registrationToken: token,
           paymentPlanType: 'full',
           email: formData.email,
-          familyId: familyId ?? existingFamilyId ?? undefined,
+          familyId: resolvedFamilyId ?? familyId ?? existingFamilyId ?? undefined,
         }),
       });
 
@@ -535,53 +535,61 @@ export default function Register() {
       setStep(1);
     } else if (step === 1 && validateStep2()) {
       setSubmitting(true);
-      await createFamilyAndChild();
-      await createPaymentIntent();
+      const result = await createFamilyAndChild();
+      if (!result) {
+        // createFamilyAndChild sets the error message internally
+        setSubmitting(false);
+        return;
+      }
+      await createPaymentIntent(result.familyId);
       setSubmitting(false);
       setStep(2);
     }
   }
 
-  async function createFamilyAndChild() {
+  async function createFamilyAndChild(): Promise<{ familyId: string; childId: string } | null> {
     try {
-      let currentFamilyId = existingFamilyId;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-      if (!currentFamilyId) {
-        // New family — create record
-        const { data: family, error: familyError } = await supabase
-          .from('families')
-          .insert({
-            primary_contact_name: `${formData.parentFirstName} ${formData.parentLastName}`,
+      const response = await fetch(`${supabaseUrl}/functions/v1/create-family`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${anonKey}`,
+          'Apikey': anonKey,
+        },
+        body: JSON.stringify({
+          registrationToken: token,
+          familyData: {
+            primaryContactName: `${formData.parentFirstName} ${formData.parentLastName}`,
             email: formData.email,
             phone: formData.phone,
-            email_opt_in: formData.emailOptIn,
-            sms_opt_in: formData.smsOptIn,
-          })
-          .select()
-          .single();
+            emailOptIn: formData.emailOptIn,
+            smsOptIn: formData.smsOptIn,
+          },
+          childData: {
+            firstName: registration?.childName || '',
+            dateOfBirth: formData.childDateOfBirth || new Date().toISOString().split('T')[0],
+            medicalInfo: formData.medicalNotes ? { notes: formData.medicalNotes } : {},
+          },
+        }),
+      });
 
-        if (familyError) throw familyError;
-        currentFamilyId = family.id;
+      const data = await response.json();
+
+      if (data.error) {
+        setError(data.message || 'Failed to save your information. Please try again.');
+        return null;
       }
 
-      setFamilyId(currentFamilyId);
-
-      const { data: child, error: childError } = await supabase
-        .from('children')
-        .insert({
-          family_id: currentFamilyId,
-          first_name: registration?.childName || '',
-          date_of_birth: formData.childDateOfBirth || new Date().toISOString().split('T')[0],
-          medical_info: formData.medicalNotes ? { notes: formData.medicalNotes } : {},
-        })
-        .select()
-        .single();
-
-      if (childError) throw childError;
-      setChildId(child.id);
+      setFamilyId(data.familyId);
+      setChildId(data.childId);
+      return { familyId: data.familyId, childId: data.childId };
     } catch (err) {
       console.error('Failed to create family/child:', err);
       setError('Failed to save your information. Please try again.');
+      return null;
     }
   }
 
@@ -593,46 +601,15 @@ export default function Register() {
       let currentFamilyId = familyId;
       let currentChildId = childId;
 
-      if (!currentFamilyId) {
-        // Use existing family if returning, otherwise create new
-        const resolvedFamilyId = existingFamilyId;
-        if (resolvedFamilyId) {
-          currentFamilyId = resolvedFamilyId;
-          setFamilyId(resolvedFamilyId);
-        } else {
-          const { data: family, error: familyError } = await supabase
-            .from('families')
-            .insert({
-              primary_contact_name: `${formData.parentFirstName} ${formData.parentLastName}`,
-              email: formData.email,
-              phone: formData.phone,
-              email_opt_in: formData.emailOptIn,
-              sms_opt_in: formData.smsOptIn,
-            })
-            .select()
-            .single();
-
-          if (familyError) throw familyError;
-          currentFamilyId = family.id;
-          setFamilyId(family.id);
+      if (!currentFamilyId || !currentChildId) {
+        // Family/child not yet created (e.g. user jumped to demo payment) — create via edge function
+        const created = await createFamilyAndChild();
+        if (!created) {
+          setSubmitting(false);
+          return;
         }
-      }
-
-      if (!currentChildId) {
-        const { data: child, error: childError } = await supabase
-          .from('children')
-          .insert({
-            family_id: currentFamilyId!,
-            first_name: registration?.childName || '',
-            date_of_birth: formData.childDateOfBirth || new Date().toISOString().split('T')[0],
-            medical_info: formData.medicalNotes ? { notes: formData.medicalNotes } : {},
-          })
-          .select()
-          .single();
-
-        if (childError) throw childError;
-        currentChildId = child.id;
-        setChildId(child.id);
+        currentFamilyId = created.familyId;
+        currentChildId = created.childId;
       }
 
       const { data: confirmData, error: confirmError } = await supabase.rpc(

@@ -910,7 +910,20 @@ export function Sessions() {
     }
 
     void fetchSessions();
-    return () => { cancelled = true; };
+
+    // Re-fetch enrollment counts when the user returns to this tab/page
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') {
+        cancelled = false;
+        void fetchSessions();
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   // Client-side filtering + zip-proximity sorting

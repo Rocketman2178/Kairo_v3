@@ -28,6 +28,9 @@ export function ChatInterface({ organizationId, familyId, initialSessionId }: Ch
   const [inputValue, setInputValue] = useState('');
   const [showFallbackForm, setShowFallbackForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [initialSessionName, setInitialSessionName] = useState<string | null>(null);
+  // True when session lookup is done (or not needed) so we don't show a greeting too early
+  const [initialSessionReady, setInitialSessionReady] = useState(!initialSessionId);
   const [language, setLanguage] = useState<LanguageCode>(getStoredLanguage);
   const [ttsEnabled, setTtsEnabled] = useState(false);
   const [showVoiceMode, setShowVoiceMode] = useState(false);
@@ -138,13 +141,43 @@ export function ChatInterface({ organizationId, familyId, initialSessionId }: Ch
     greetingRef.current = strings.greeting;
   }, [strings.greeting]);
 
+  // Fetch session name so we can greet parents with the specific class they came from
+  useEffect(() => {
+    if (!initialSessionId) return;
+    let cancelled = false;
+    async function fetchSession() {
+      try {
+        const { supabase } = await import('../../lib/supabase');
+        const { data } = await supabase
+          .from('sessions')
+          .select('programs(name)')
+          .eq('id', initialSessionId)
+          .single();
+        if (cancelled) return;
+        if (data) {
+          const prog = (data as unknown as { programs: { name: string } | null }).programs;
+          if (prog?.name) setInitialSessionName(prog.name);
+        }
+      } catch {
+        // Non-critical — fall back to generic session greeting
+      } finally {
+        if (!cancelled) setInitialSessionReady(true);
+      }
+    }
+    void fetchSession();
+    return () => { cancelled = true; };
+  }, [initialSessionId]);
+
   useEffect(() => {
     if (hasAddedInitialMessage.current) return;
     if (!isReady) return;
+    if (!initialSessionReady) return;
     if (messages.length === 0) {
       hasAddedInitialMessage.current = true;
       const greeting = initialSessionId
-        ? "Hi! I see you're interested in registering for a class — great choice! What's your child's name and age so I can get you set up?"
+        ? initialSessionName
+          ? `Hi! I see you're interested in ${initialSessionName} — great choice! What's your child's name and age so I can help you register?`
+          : "Hi! I see you're interested in registering for a class — great choice! What's your child's name and age so I can get you set up?"
         : greetingRef.current;
       addAssistantMessageRef.current(greeting);
     } else if (messages.length > 1) {
@@ -154,7 +187,7 @@ export function ChatInterface({ organizationId, familyId, initialSessionId }: Ch
     } else {
       hasAddedInitialMessage.current = true;
     }
-  }, [messages.length, isReady, initialSessionId]);
+  }, [messages.length, isReady, initialSessionId, initialSessionName, initialSessionReady]);
 
   // ── TTS — speak new Kai messages when TTS is enabled ─────────────────────
   const { isSupported: ttsSupported, isSpeaking, speak: ttsSpeak, stop: ttsStop } = useTtsOutput({ language });

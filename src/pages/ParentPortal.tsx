@@ -1928,51 +1928,43 @@ function PortalDashboard({ family, onSignOut }: PortalDashboardProps) {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: dbError } = await supabase
-        .from('registrations')
-        .select(`
-          id,
-          status,
-          payment_status,
-          amount_cents,
-          enrolled_at,
-          confirmed_at,
-          created_at,
-          child_name,
-          child_age,
-          registration_token,
-          children (
-            id,
-            first_name,
-            last_name,
-            date_of_birth,
-            skill_level
-          ),
-          sessions!inner (
-            id,
-            day_of_week,
-            start_time,
-            start_date,
-            end_date,
-            capacity,
-            enrolled_count,
-            programs!inner (
-              name,
-              description
-            ),
-            locations (
-              name,
-              address
-            )
-          )
-        `)
-        .eq('family_id', family.id)
-        .neq('status', 'pending_registration')
-        .order('created_at', { ascending: false });
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-      if (dbError) throw dbError;
+      const response = await fetch(`${supabaseUrl}/functions/v1/portal-registrations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${anonKey}`,
+          'Apikey': anonKey,
+        },
+        body: JSON.stringify({ familyId: family.id, email: family.email }),
+      });
 
-      const mapped: RegistrationRecord[] = (data ?? []).map((r) => {
+      const json = await response.json();
+
+      if (json.error) {
+        throw new Error(json.error);
+      }
+
+      const data = json.data ?? [];
+
+      type RawRegistrationRow = {
+        id: string;
+        status: string;
+        payment_status: string;
+        amount_cents: number | null;
+        enrolled_at: string | null;
+        confirmed_at: string | null;
+        created_at: string;
+        child_name: string | null;
+        child_age: number | null;
+        registration_token: string | null;
+        sessions: unknown;
+        children: unknown;
+      };
+
+      const mapped: RegistrationRecord[] = (data as RawRegistrationRow[]).map((r) => {
         const sess = r.sessions as unknown as {
           id: string;
           day_of_week: number | null;
@@ -2002,7 +1994,7 @@ function PortalDashboard({ family, onSignOut }: PortalDashboardProps) {
           createdAt: r.created_at,
           childName: r.child_name ?? '',
           childAge: r.child_age,
-          registrationToken: (r as unknown as { registration_token: string | null }).registration_token ?? null,
+          registrationToken: r.registration_token ?? null,
           child: child
             ? {
                 id: child.id,
@@ -2035,7 +2027,7 @@ function PortalDashboard({ family, onSignOut }: PortalDashboardProps) {
     } finally {
       setLoading(false);
     }
-  }, [family.id]);
+  }, [family.id, family.email]);
 
   useEffect(() => {
     loadRegistrations();
