@@ -34,6 +34,8 @@ import {
   ShoppingBag,
   CheckSquare,
   Square,
+  RefreshCw,
+  CheckCircle,
 } from 'lucide-react';
 
 interface CheckoutProduct {
@@ -69,6 +71,7 @@ interface PendingRegistration {
     installmentStartMode: 'registration' | 'class_start';
     maxProrationCapCents: number | null;
     checkoutProducts: CheckoutProduct[];
+    enrollmentType: 'term_based' | 'perpetual' | 'hybrid';
   };
   amountCents: number;
   expiresAt: string;
@@ -157,6 +160,13 @@ export default function Register() {
   const [quickPayProcessing, setQuickPayProcessing] = useState(false);
   const [quickPayMethodId, setQuickPayMethodId] = useState<string | null>(null);
   const emailLookupTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Phone verification state (SMS opt-in flow)
+  const [phoneVerifState, setPhoneVerifState] = useState<
+    'idle' | 'sending' | 'awaiting_code' | 'verifying' | 'verified' | 'error'
+  >('idle');
+  const [phoneVerifCode, setPhoneVerifCode] = useState('');
+  const [phoneVerifError, setPhoneVerifError] = useState<string | null>(null);
 
   // Proactive Kai chat intervention — only active on steps 0-2 (not confirmation)
   const proactive = useProactiveTrigger(step, {
@@ -331,6 +341,7 @@ export default function Register() {
           checkoutProducts: Array.isArray(data.organization?.checkout_products)
             ? (data.organization.checkout_products as CheckoutProduct[])
             : [],
+          enrollmentType: (data.organization?.enrollment_type as 'term_based' | 'perpetual' | 'hybrid') ?? 'term_based',
         },
         amountCents: data.amount_cents,
         expiresAt: data.expires_at,
@@ -573,6 +584,7 @@ export default function Register() {
             dateOfBirth: formData.childDateOfBirth || new Date().toISOString().split('T')[0],
             medicalInfo: formData.medicalNotes ? { notes: formData.medicalNotes } : {},
           },
+          phoneVerified: phoneVerifState === 'verified',
         }),
       });
 
@@ -665,6 +677,95 @@ export default function Register() {
       emailLookupTimeout.current = setTimeout(() => {
         lookupFamilyByEmail(newValue);
       }, 600);
+    }
+
+    // Reset phone verification if phone number changes
+    if (name === 'phone') {
+      if (phoneVerifState !== 'idle') {
+        setPhoneVerifState('idle');
+        setPhoneVerifCode('');
+        setPhoneVerifError(null);
+      }
+    }
+
+    // Reset phone verification if smsOptIn is unchecked
+    if (name === 'smsOptIn' && !newValue) {
+      setPhoneVerifState('idle');
+      setPhoneVerifCode('');
+      setPhoneVerifError(null);
+    }
+  }
+
+  async function handleSendVerificationCode() {
+    const phone = formData.phone.trim();
+    if (!phone) {
+      setPhoneVerifError('Please enter your phone number first.');
+      return;
+    }
+    if (!token) return;
+
+    setPhoneVerifState('sending');
+    setPhoneVerifError(null);
+
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/send-sms-verification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${anonKey}`,
+          Apikey: anonKey,
+        },
+        body: JSON.stringify({ phone, registrationToken: token }),
+      });
+
+      const data: { success?: boolean; error?: boolean; message?: string } = await res.json();
+      if (data.error) {
+        setPhoneVerifState('error');
+        setPhoneVerifError(data.message ?? 'Failed to send code. Please try again.');
+        return;
+      }
+      setPhoneVerifState('awaiting_code');
+    } catch {
+      setPhoneVerifState('error');
+      setPhoneVerifError('Failed to send verification code. Please try again.');
+    }
+  }
+
+  async function handleVerifyCode() {
+    const phone = formData.phone.trim();
+    const code = phoneVerifCode.trim();
+    if (!phone || !code || !token) return;
+
+    setPhoneVerifState('verifying');
+    setPhoneVerifError(null);
+
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/verify-phone-code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${anonKey}`,
+          Apikey: anonKey,
+        },
+        body: JSON.stringify({ phone, code, registrationToken: token }),
+      });
+
+      const data: { success?: boolean; verified?: boolean; error?: boolean; message?: string } = await res.json();
+      if (data.error) {
+        setPhoneVerifState('awaiting_code');
+        setPhoneVerifError(data.message ?? 'Incorrect code. Please try again.');
+        return;
+      }
+      setPhoneVerifState('verified');
+    } catch {
+      setPhoneVerifState('awaiting_code');
+      setPhoneVerifError('Verification failed. Please try again.');
     }
   }
 
@@ -878,6 +979,24 @@ export default function Register() {
                   );
                 })()
               }
+
+              {/* Perpetual enrollment notice */}
+              {registration?.organization.enrollmentType !== 'term_based' && (
+                <div className="flex items-start gap-2 bg-violet-50 border border-violet-200 rounded-xl px-4 py-3 text-sm text-violet-800">
+                  <RefreshCw className="h-4 w-4 text-violet-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold">
+                      {registration?.organization.enrollmentType === 'perpetual'
+                        ? 'Ongoing enrollment'
+                        : 'Flexible enrollment'}
+                    </span>
+                    {' — '}
+                    {registration?.organization.enrollmentType === 'perpetual'
+                      ? 'Your child stays enrolled until you cancel. No season end date or re-registration required.'
+                      : 'This organization supports both term-based and ongoing enrollment options.'}
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-4 py-2.5 rounded-xl">
                 <Shield className="h-4 w-4" />
@@ -1271,11 +1390,78 @@ export default function Register() {
                     <div>
                       <p className="text-sm font-medium text-gray-800">Text message (SMS) alerts</p>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Urgent notifications and last-minute class updates via SMS. Msg &amp; data rates may apply.
+                        Urgent notifications and last-minute class updates via SMS. Msg &amp; data rates may apply. TCPA: reply STOP to opt-out.
                       </p>
                     </div>
                   </div>
                 </label>
+
+                {/* Phone verification inline flow — shown when smsOptIn is checked */}
+                {formData.smsOptIn && (
+                  <div className="mt-2 ml-1 pl-3 border-l-2 border-green-200 space-y-2">
+                    {phoneVerifState === 'verified' ? (
+                      <div className="flex items-center gap-2 text-sm text-emerald-700 font-medium">
+                        <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                        Phone verified — you'll receive SMS updates
+                      </div>
+                    ) : phoneVerifState === 'awaiting_code' || phoneVerifState === 'verifying' ? (
+                      <div className="space-y-2">
+                        <p className="text-xs text-gray-600">Enter the 6-digit code sent to {formData.phone}</p>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            maxLength={6}
+                            placeholder="123456"
+                            value={phoneVerifCode}
+                            onChange={e => setPhoneVerifCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 min-h-[44px]"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleVerifyCode}
+                            disabled={phoneVerifCode.length < 6 || phoneVerifState === 'verifying'}
+                            className="px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 min-h-[44px] flex items-center gap-1.5"
+                          >
+                            {phoneVerifState === 'verifying'
+                              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Verifying…</>
+                              : 'Verify'}
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleSendVerificationCode}
+                          className="text-xs text-blue-600 hover:underline"
+                        >
+                          Resend code
+                        </button>
+                        {phoneVerifError && (
+                          <p className="text-xs text-red-600">{phoneVerifError}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <button
+                          type="button"
+                          onClick={handleSendVerificationCode}
+                          disabled={!formData.phone.trim() || phoneVerifState === 'sending'}
+                          className="inline-flex items-center gap-1.5 text-sm text-green-700 font-medium hover:text-green-800 disabled:opacity-50 min-h-[44px] px-2"
+                        >
+                          {phoneVerifState === 'sending'
+                            ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Sending code…</>
+                            : <><Shield className="w-3.5 h-3.5" /> Verify phone number (optional)</>}
+                        </button>
+                        {phoneVerifError && (
+                          <p className="text-xs text-red-600 pl-2">{phoneVerifError}</p>
+                        )}
+                        <p className="text-xs text-gray-400 pl-2">
+                          Verify to enable SMS updates. You can skip this step.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <label className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer">

@@ -24,6 +24,7 @@ import {
   Hash,
   ExternalLink,
   ListOrdered,
+  RefreshCw,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -776,6 +777,21 @@ export function Sessions() {
   const [showFilters, setShowFilters] = useState(false);
   const [notifySession, setNotifySession] = useState<SessionRow | null>(null);
   const [waitlistSession, setWaitlistSession] = useState<SessionRow | null>(null);
+  const [orgEnrollmentType, setOrgEnrollmentType] = useState<'term_based' | 'perpetual' | 'hybrid'>('term_based');
+
+  // Fetch org enrollment type (lightweight, non-blocking)
+  useEffect(() => {
+    supabase
+      .from('organizations')
+      .select('enrollment_type')
+      .eq('id', ORG_ID)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.enrollment_type) {
+          setOrgEnrollmentType(data.enrollment_type as 'term_based' | 'perpetual' | 'hybrid');
+        }
+      });
+  }, []);
 
   // Derive filter state from URL params
   const filters: FilterState = {
@@ -1317,6 +1333,19 @@ export function Sessions() {
           </div>
         ) : (
           <div className="space-y-6">
+            {/* Perpetual / hybrid enrollment banner */}
+            {orgEnrollmentType !== 'term_based' && (
+              <div className="flex items-start gap-2.5 px-4 py-3 bg-violet-950/40 border border-violet-800/50 rounded-xl text-xs text-violet-300">
+                <RefreshCw className="w-3.5 h-3.5 text-violet-400 flex-shrink-0 mt-0.5" />
+                <span>
+                  {orgEnrollmentType === 'perpetual'
+                    ? <><span className="text-white font-semibold">Ongoing enrollment</span> — enroll once and your child stays in class automatically each month. No seasonal re-registration required.</>
+                    : <><span className="text-white font-semibold">Flexible enrollment</span> — this organization offers both term-based and ongoing enrollment options.</>
+                  }
+                </span>
+              </div>
+            )}
+
             {/* Zip proximity banner */}
             {filters.zip && (
               <div className="flex items-center gap-2 px-3 py-2 bg-[#1a2332] border border-gray-700 rounded-xl text-xs text-gray-400">

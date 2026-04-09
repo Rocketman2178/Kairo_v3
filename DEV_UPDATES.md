@@ -5,6 +5,83 @@ Format: `## [Month Year] - Title | Category | Description`
 
 ---
 
+## [April 9, 2026] - Makeup Token Booking Flow, SMS Phone Verification & Perpetual Enrollment Type | Core Feature | High
+
+**Category:** Core Feature
+**Impact:** High — Advances Stage 3.7 Phase 2 (token booking), Stage 3.6.1 NBC Priority 2 (SMS verification), and Stage 3.10 (perpetual enrollment model foundation)
+
+**Description:**
+Three features advancing registration quality and multi-model enrollment support. Makeup Token Booking Flow completes the Phase 2 token booking UX: a `get_makeup_sessions_for_token()` RPC retrieves open sessions in the same org filtered by the token's skill level, the `redeem-makeup-token` edge function validates ownership, checks capacity, creates a confirmed registration, and calls `use_makeup_token()` atomically. `MakeupBookingModal` in the Parent Portal replaces the old "Browse available makeup slots" static link with a full session picker (day/time/location/spots badge, selection state), book button showing fee (or "Book for Free"), success state, and error handling — modal opens via the per-token "Book Makeup Class" button in the Tokens tab. SMS Phone Verification adds optional TCPA-compliant phone verification during checkout: when parents check "Text message (SMS) alerts", an inline "Verify phone number" flow appears; clicking it calls the new `send-sms-verification` edge function (generates 6-digit OTP, deletes prior unverified codes, triggers n8n with `sms_verification` intent), prompts for the code, and calls `verify-phone-code` on submit; on success a green "Phone verified" badge appears; resend and skip are both available; `phoneVerified` is passed to `create-family` which confirms server-side via `phone_verification_codes` and stamps `families.phone_verified_at`. Perpetual Enrollment Type adds `organizations.enrollment_type` (`term_based` | `perpetual` | `hybrid`, default `term_based`) to the DB and TS types; `get_pending_registration()` returns it in the org object; Register.tsx step 0 shows a violet "Ongoing enrollment" notice for perpetual orgs; Sessions.tsx shows a violet enrollment type banner above session cards for non-term-based orgs.
+
+### Feature 1: Makeup Token Booking Flow (Stage 3.7 Phase 2)
+- `supabase/migrations/20260409000001_add_makeup_booking_flow.sql` — **NEW**
+  - `get_makeup_sessions_for_token(p_token_id, p_family_id)` RPC — validates active token ownership, resolves org, returns available sessions filtered by skill level and capacity (up to 20 results)
+- `supabase/functions/redeem-makeup-token/index.ts` — **NEW** (verify_jwt=false)
+  - POST `{tokenId, familyId, childId, sessionId}` → validates token + session + org match + skill level + capacity → inserts confirmed registration → increments enrolled_count → calls `use_makeup_token()` RPC → returns `{success, registrationId, feeCents}`
+- `src/pages/ParentPortal.tsx`:
+  - `MakeupTokensPanel`: `bookingToken` state; `load()` extracted to named async fn so modal can refresh after booking; "Book Makeup Class" button replaces static anchor
+  - `MakeupBookingModal` component: `createPortal` to `document.body`; loads sessions via `get_makeup_sessions_for_token` RPC; `childId` fetched from `makeup_tokens`; session picker with day/time/location/spots; book button; success/error states; auto-closes with `onBooked()` callback after 2s
+
+### Feature 2: SMS Phone Verification at Checkout (Stage 3.6.1 — NBC Priority 2)
+- `supabase/migrations/20260409000002_add_phone_verification.sql` — **NEW**
+  - `phone_verification_codes` table: `phone`, `code` (6-digit OTP), `expires_at` (10 min TTL), `verified_at`; indexes on phone + expires_at; RLS service_role only
+  - `families.phone_verified_at TIMESTAMPTZ` — stamped when OTP is confirmed
+- `supabase/functions/send-sms-verification/index.ts` — **NEW** (verify_jwt=false)
+  - Validates registration token; deletes prior unverified codes for the phone; generates OTP via `crypto.getRandomValues`; inserts to DB; triggers n8n `sms_verification` intent (non-fatal if n8n unreachable); returns `{success, expiresAt}`
+- `supabase/functions/verify-phone-code/index.ts` — **NEW** (verify_jwt=false)
+  - Validates code against DB; rejects if expired; stamps `verified_at` on code record; stamps `families.phone_verified_at` if family exists for the registration token
+- `supabase/functions/create-family/index.ts` — updated to accept `phoneVerified?: boolean`; confirms server-side verification within 30-min window; stamps `phone_verified_at` on new family creation
+- `src/pages/Register.tsx`:
+  - `phoneVerifState` state machine: `idle | sending | awaiting_code | verifying | verified | error`
+  - `handleSendVerificationCode()` / `handleVerifyCode()` async handlers
+  - Inline verification UI below smsOptIn checkbox: send button → OTP input + verify button → verified badge; phone change resets state; `phoneVerified` passed to `createFamilyAndChild`
+  - `CheckCircle` imported for verified badge; `RefreshCw` imported for perpetual notice
+
+### Feature 3: Perpetual Enrollment Type (Stage 3.10 Foundation)
+- `supabase/migrations/20260409000003_add_enrollment_type.sql` — **NEW**
+  - `organizations.enrollment_type TEXT NOT NULL DEFAULT 'term_based' CHECK (IN ('term_based','perpetual','hybrid'))`
+  - `get_pending_registration()` updated to return `enrollment_type` in organization object
+- `src/pages/Register.tsx`:
+  - `PendingRegistration.organization.enrollmentType` field added
+  - `loadPendingRegistration` mapper reads `data.organization.enrollment_type`
+  - Step 0: violet "Ongoing enrollment" / "Flexible enrollment" notice (RefreshCw icon) shown for non-term-based orgs
+- `src/pages/Sessions.tsx`:
+  - `orgEnrollmentType` state (fetched from `organizations` table on mount)
+  - Violet enrollment type banner above session grid for perpetual/hybrid orgs
+  - `RefreshCw` icon added to import
+- `src/types/database.ts`:
+  - `organizations.enrollment_type: 'term_based' | 'perpetual' | 'hybrid'` added to Row/Insert/Update
+  - `families.phone_verified_at: string | null` added to Row/Insert/Update
+  - `programs.required_skill_level: string | null` added to Row/Insert/Update
+
+**Files Changed:**
+- `supabase/migrations/20260409000001_add_makeup_booking_flow.sql` — **NEW**
+- `supabase/migrations/20260409000002_add_phone_verification.sql` — **NEW**
+- `supabase/migrations/20260409000003_add_enrollment_type.sql` — **NEW**
+- `supabase/functions/redeem-makeup-token/index.ts` — **NEW**
+- `supabase/functions/send-sms-verification/index.ts` — **NEW**
+- `supabase/functions/verify-phone-code/index.ts` — **NEW**
+- `supabase/functions/create-family/index.ts` — `phoneVerified` param + server-side OTP confirmation
+- `src/pages/ParentPortal.tsx` — `MakeupBookingModal`; `MakeupTokensPanel` booking flow; `createPortal` import; `Users` icon added
+- `src/pages/Register.tsx` — phone verification state machine + UI; `enrollmentType` in `PendingRegistration`; perpetual enrollment notice; `CheckCircle` + `RefreshCw` imports
+- `src/pages/Sessions.tsx` — `orgEnrollmentType` state; enrollment type banner; `RefreshCw` import
+- `src/types/database.ts` — `organizations.enrollment_type`; `families.phone_verified_at`; `programs.required_skill_level`
+
+**DB Migrations Applied:**
+- `add_makeup_booking_flow` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓
+- `add_phone_verification_fixed` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓
+- `add_enrollment_type` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓
+
+**Edge Functions Deployed:**
+- `redeem-makeup-token` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓ (verify_jwt=false)
+- `send-sms-verification` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓ (verify_jwt=false)
+- `verify-phone-code` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓ (verify_jwt=false)
+- `create-family` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓ v2 (verify_jwt=false)
+
+**No n8n workflow changes.**
+
+---
+
 ## [April 8, 2026] - Bug Fix: WaitlistJoinModal Portal, Webhook Timeout, Cart Recovery UX & Error Logging | Bug Fix | High
 
 **Category:** Bug Fix

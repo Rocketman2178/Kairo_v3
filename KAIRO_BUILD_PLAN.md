@@ -845,7 +845,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 
 **Registration Flow:**
 - [x] Marketing opt-in checkboxes — email opt-in (default on) and SMS opt-in (default off) in step 1 with CAN-SPAM/TCPA disclosure; saved to `families.email_opt_in` / `sms_opt_in` (NBC Enhancement)
-- [ ] SMS verification during checkout — checkbox for customer to initiate phone verification (NBC Priority 2)
+- [x] SMS verification during checkout — when SMS opt-in checked, inline OTP flow appears; `send-sms-verification` edge function generates 6-digit code + triggers n8n; `verify-phone-code` validates; `families.phone_verified_at` stamped on success; `create-family` confirms server-side within 30-min window; skip is optional (NBC Priority 2)
 - [x] Custom class questions per class/location — `sessions.custom_questions` JSONB (select/text/textarea/checkbox); `registrations.custom_answers` JSONB stores answers; Register.tsx step 1 renders dynamic question section with required validation; demo seeded with shirt-size + allergy questions (NBC Priority 2)
 - [ ] Custom fields on classes — org-defined fields for reporting/filtering (Region, County, pre-scheduled makeup) (NBC Enhancement)
 - [ ] Account age lockout improvement — better error messaging instead of 24-hour lockout; 2-3 attempts before lock (NBC Priority 3)
@@ -859,20 +859,20 @@ Registration Form → Payment → Confirmed Registration → Return User
 
 #### 3.7 Makeup Class Token System (NEW - Swim School Deep Dive)
 **Swim School Insight:** Critical operational feature. Parents cancel in advance → receive a makeup token → token is level-locked, expires after configurable period, can only book into classes with open spots.
-**Status:** PHASE 1 COMPLETE — DB schema + parent portal display done. Token issuance trigger and booking flow pending.
+**Status:** PHASE 2 COMPLETE — DB schema + parent portal display + booking flow done. Token issuance trigger (on cancellation) and admin management pending.
 
 **Token Mechanics:**
 - [x] Token generation: `issue_makeup_token()` RPC; DB schema supports org-configurable expiry and fee (Phase 2: trigger on cancellation event)
 - [x] Token level-locking: `skill_level` field stored on token; level-lock enforced at query time
 - [x] Token expiration: configurable expiry months (default: 12); auto-expire in `get_family_tokens()`
-- [ ] Token usage: booking flow to use token when selecting makeup class (Phase 2)
-- [ ] Token limit: configurable max tokens per child per month (optional) (Phase 2)
+- [x] Token usage: `get_makeup_sessions_for_token()` RPC returns eligible sessions; `redeem-makeup-token` edge function validates + creates registration + marks token used; `MakeupBookingModal` in parent portal (Phase 2) — NBC Priority 1
+- [ ] Token limit: configurable max tokens per child per month (optional) (Phase 3)
 - [x] Token fees: `makeup_fee_cents` field on token; displayed in parent portal if > 0
 
 **Parent Experience:**
 - [x] View available makeup tokens in parent portal — Tokens tab with active/used/expired counts, per-token cards with expiry urgency
-- [ ] Browse available makeup slots filtered by token level
-- [ ] One-tap makeup booking from available classes
+- [x] Browse available makeup slots filtered by token level — `MakeupBookingModal` shows eligible sessions with day/time/location/spots picker
+- [x] One-tap makeup booking from available classes — `redeem-makeup-token` edge function; free or fee-based; success state refreshes token panel
 - [ ] Token expiration warnings (30 days, 7 days before expiry)
 - [ ] Makeup booking confirmation with calendar integration
 
@@ -934,7 +934,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 **Swim School Insight:** Hubbard runs perpetual enrollment (gym membership model) — enroll once, stay until you cancel. Fundamentally different from term/season-based. System must support both.
 
 **Perpetual Model:**
-- [ ] Enrollment type flag per organization: `perpetual` vs. `term_based` vs. `hybrid`
+- [x] Enrollment type flag per organization: `perpetual` vs. `term_based` vs. `hybrid` — `organizations.enrollment_type TEXT CHECK IN ('term_based','perpetual','hybrid') DEFAULT 'term_based'`; returned by `get_pending_registration()`; Register.tsx shows "Ongoing enrollment" violet notice for perpetual; Sessions.tsx shows enrollment type banner above session grid
 - [ ] No end date on enrollment (ongoing until cancelled)
 - [ ] Monthly recurring billing (not season-based lump sum)
 - [ ] Cancellation with notice period (configurable, default: 30 days)

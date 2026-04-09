@@ -20,6 +20,7 @@ export interface Database {
           installment_start_mode: 'registration' | 'class_start'
           max_proration_cap_cents: number | null
           checkout_products: Json
+          enrollment_type: 'term_based' | 'perpetual' | 'hybrid'
           created_at: string
           updated_at: string
         }
@@ -33,6 +34,7 @@ export interface Database {
           installment_start_mode?: 'registration' | 'class_start'
           max_proration_cap_cents?: number | null
           checkout_products?: Json
+          enrollment_type?: 'term_based' | 'perpetual' | 'hybrid'
           created_at?: string
           updated_at?: string
         }
@@ -46,6 +48,7 @@ export interface Database {
           installment_start_mode?: 'registration' | 'class_start'
           max_proration_cap_cents?: number | null
           checkout_products?: Json
+          enrollment_type?: 'term_based' | 'perpetual' | 'hybrid'
           created_at?: string
           updated_at?: string
         }
@@ -133,6 +136,7 @@ export interface Database {
           duration_weeks: number | null
           price_cents: number
           payment_plan_options: Json
+          required_skill_level: string | null
           created_at: string
           updated_at: string
         }
@@ -145,6 +149,7 @@ export interface Database {
           duration_weeks?: number | null
           price_cents: number
           payment_plan_options?: Json
+          required_skill_level?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -157,6 +162,7 @@ export interface Database {
           duration_weeks?: number | null
           price_cents?: number
           payment_plan_options?: Json
+          required_skill_level?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -268,6 +274,7 @@ export interface Database {
           address: Json
           preferences: Json
           engagement_score: number
+          phone_verified_at: string | null
           created_at: string
           updated_at: string
         }
@@ -280,6 +287,7 @@ export interface Database {
           address?: Json
           preferences?: Json
           engagement_score?: number
+          phone_verified_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -292,6 +300,7 @@ export interface Database {
           address?: Json
           preferences?: Json
           engagement_score?: number
+          phone_verified_at?: string | null
           created_at?: string
           updated_at?: string
         }

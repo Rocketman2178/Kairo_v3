@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Calendar,
@@ -29,6 +30,7 @@ import {
   ArrowRightLeft,
   CreditCard,
   Send,
+  Users,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -886,50 +888,47 @@ function MakeupTokensPanel({ familyId }: MakeupTokensPanelProps) {
   const [summary, setSummary] = useState<TokenSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [bookingToken, setBookingToken] = useState<MakeupToken | null>(null);
+
+  async function load() {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: rpcErr } = await supabase.rpc('get_family_tokens', {
+        p_family_id: familyId,
+      });
+      if (rpcErr) throw rpcErr;
+
+      const tokens: MakeupToken[] = ((data?.active_tokens as unknown[]) ?? []).map((t: unknown) => {
+        const tok = t as Record<string, unknown>;
+        return {
+          id: tok.id as string,
+          skillLevel: (tok.skill_level as string | null) ?? null,
+          expiresAt: tok.expires_at as string,
+          issuedAt: tok.issued_at as string,
+          makeupFeeCents: (tok.makeup_fee_cents as number) ?? 0,
+          childFirstName: tok.child_first_name as string,
+          childLastName: (tok.child_last_name as string | null) ?? null,
+          sourceProgramName: (tok.source_program_name as string | null) ?? null,
+          expiryUrgency: (tok.expiry_urgency as 'urgent' | 'warning' | 'ok') ?? 'ok',
+        };
+      });
+
+      setSummary({
+        activeCount: (data?.active_count as number) ?? 0,
+        usedCount: (data?.used_count as number) ?? 0,
+        expiredCount: (data?.expired_count as number) ?? 0,
+        activeTokens: tokens,
+      });
+    } catch {
+      setError('Failed to load makeup tokens.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const { data, error: rpcErr } = await supabase.rpc('get_family_tokens', {
-          p_family_id: familyId,
-        });
-        if (cancelled) return;
-        if (rpcErr) throw rpcErr;
-
-        const tokens: MakeupToken[] = ((data?.active_tokens as unknown[]) ?? []).map((t: unknown) => {
-          const tok = t as Record<string, unknown>;
-          return {
-            id: tok.id as string,
-            skillLevel: (tok.skill_level as string | null) ?? null,
-            expiresAt: tok.expires_at as string,
-            issuedAt: tok.issued_at as string,
-            makeupFeeCents: (tok.makeup_fee_cents as number) ?? 0,
-            childFirstName: tok.child_first_name as string,
-            childLastName: (tok.child_last_name as string | null) ?? null,
-            sourceProgramName: (tok.source_program_name as string | null) ?? null,
-            expiryUrgency: (tok.expiry_urgency as 'urgent' | 'warning' | 'ok') ?? 'ok',
-          };
-        });
-
-        setSummary({
-          activeCount: (data?.active_count as number) ?? 0,
-          usedCount: (data?.used_count as number) ?? 0,
-          expiredCount: (data?.expired_count as number) ?? 0,
-          activeTokens: tokens,
-        });
-      } catch {
-        if (!cancelled) setError('Failed to load makeup tokens.');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
     void load();
-    return () => { cancelled = true; };
   }, [familyId]);
 
   if (loading) {
@@ -1062,19 +1061,316 @@ function MakeupTokensPanel({ familyId }: MakeupTokensPanelProps) {
               </div>
 
               <div className="mt-3 pt-3 border-t border-slate-100">
-                <a
-                  href="/sessions"
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700 min-h-[36px]"
+                <button
+                  onClick={() => setBookingToken(tok)}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700 min-h-[44px] px-1"
                 >
-                  Browse available makeup slots
+                  Book Makeup Class
                   <ChevronRight className="w-3.5 h-3.5" />
-                </a>
+                </button>
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Makeup Booking Modal */}
+      {bookingToken && (
+        <MakeupBookingModal
+          token={bookingToken}
+          familyId={familyId}
+          onClose={() => setBookingToken(null)}
+          onBooked={() => {
+            setBookingToken(null);
+            void load();
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Makeup Booking Modal
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface MakeupSessionOption {
+  id: string;
+  dayOfWeek: number | null;
+  startTime: string;
+  startDate: string;
+  endDate: string | null;
+  spotsRemaining: number;
+  programName: string;
+  priceCents: number;
+  durationWeeks: number | null;
+  requiredSkillLevel: string | null;
+  locationName: string | null;
+  locationAddress: string | null;
+}
+
+interface MakeupBookingModalProps {
+  token: MakeupToken;
+  familyId: string;
+  onClose: () => void;
+  onBooked: () => void;
+}
+
+function MakeupBookingModal({ token, familyId, onClose, onBooked }: MakeupBookingModalProps) {
+  const [sessions, setSessions] = useState<MakeupSessionOption[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(true);
+  const [sessionsError, setSessionsError] = useState<string | null>(null);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [booking, setBooking] = useState(false);
+  const [bookError, setBookError] = useState<string | null>(null);
+  const [booked, setBooked] = useState(false);
+
+  // Load eligible sessions for this token
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoadingSessions(true);
+      setSessionsError(null);
+      try {
+        const { data, error: rpcErr } = await supabase.rpc('get_makeup_sessions_for_token', {
+          p_token_id:  token.id,
+          p_family_id: familyId,
+        });
+        if (cancelled) return;
+        if (rpcErr) throw rpcErr;
+        if (data?.error) {
+          setSessionsError(data.message ?? 'Failed to load available sessions.');
+          return;
+        }
+        const rawSessions: MakeupSessionOption[] = ((data?.sessions as unknown[]) ?? []).map((s: unknown) => {
+          const row = s as Record<string, unknown>;
+          return {
+            id:                row.id as string,
+            dayOfWeek:         row.day_of_week as number | null,
+            startTime:         row.start_time as string,
+            startDate:         row.start_date as string,
+            endDate:           row.end_date as string | null,
+            spotsRemaining:    row.spots_remaining as number,
+            programName:       row.program_name as string,
+            priceCents:        row.price_cents as number,
+            durationWeeks:     row.duration_weeks as number | null,
+            requiredSkillLevel: row.required_skill_level as string | null,
+            locationName:      row.location_name as string | null,
+            locationAddress:   row.location_address as string | null,
+          };
+        });
+        setSessions(rawSessions);
+      } catch {
+        if (!cancelled) setSessionsError('Failed to load available sessions.');
+      } finally {
+        if (!cancelled) setLoadingSessions(false);
+      }
+    }
+
+    void load();
+    return () => { cancelled = true; };
+  }, [token.id, familyId]);
+
+  // Lookup the child for this token (we need childId to book)
+  const [childId, setChildId] = useState<string | null>(null);
+  useEffect(() => {
+    async function getChild() {
+      const { data } = await supabase
+        .from('makeup_tokens')
+        .select('child_id')
+        .eq('id', token.id)
+        .single();
+      if (data?.child_id) setChildId(data.child_id as string);
+    }
+    void getChild();
+  }, [token.id]);
+
+  async function handleBook() {
+    if (!selectedSessionId || !childId) return;
+
+    setBooking(true);
+    setBookError(null);
+
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/redeem-makeup-token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${anonKey}`,
+          Apikey: anonKey,
+        },
+        body: JSON.stringify({
+          tokenId:   token.id,
+          familyId,
+          childId,
+          sessionId: selectedSessionId,
+        }),
+      });
+
+      const data: { success?: boolean; error?: boolean; message?: string; registrationId?: string } = await res.json();
+
+      if (data.error) {
+        setBookError(data.message ?? 'Booking failed. Please try again.');
+        return;
+      }
+
+      setBooked(true);
+      setTimeout(() => onBooked(), 2000);
+    } catch {
+      setBookError('Booking failed. Please try again.');
+    } finally {
+      setBooking(false);
+    }
+  }
+
+  const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  function formatTime(t: string): string {
+    if (!t) return '';
+    const [h, m] = t.split(':');
+    const hour = parseInt(h);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    return `${hour === 0 ? 12 : hour > 12 ? hour - 12 : hour}:${m} ${ampm}`;
+  }
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="w-full max-w-md bg-white rounded-2xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+              <Ticket className="w-4 h-4 text-indigo-600" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-slate-900">Book Makeup Class</p>
+              {token.skillLevel && (
+                <p className="text-xs text-slate-500">Level: {token.skillLevel}</p>
+              )}
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 min-h-[44px] min-w-[44px] flex items-center justify-center">
+            <X className="w-4 h-4 text-slate-500" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-5">
+          {booked ? (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-8 h-8 text-emerald-600" />
+              </div>
+              <p className="text-lg font-bold text-slate-900">Makeup class booked!</p>
+              <p className="text-sm text-slate-500 mt-1">Your registration has been confirmed.</p>
+            </div>
+          ) : loadingSessions ? (
+            <div className="flex items-center justify-center py-10 gap-2 text-slate-400">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="text-sm">Loading available classes…</span>
+            </div>
+          ) : sessionsError ? (
+            <div className="text-center py-8">
+              <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
+              <p className="text-sm text-red-600">{sessionsError}</p>
+            </div>
+          ) : sessions.length === 0 ? (
+            <div className="text-center py-10">
+              <Calendar className="w-10 h-10 mx-auto mb-3 opacity-30 text-slate-400" />
+              <p className="text-sm font-medium text-slate-600">No available classes right now</p>
+              <p className="text-xs text-slate-400 mt-1">
+                Check back soon — new spots open as schedules update.
+                {token.skillLevel && ` Only classes at level "${token.skillLevel}" are eligible.`}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-slate-500 mb-3">
+                Select an available class to redeem your makeup token
+                {token.makeupFeeCents > 0 && ` (${(token.makeupFeeCents / 100).toFixed(0)} fee applies)`}.
+              </p>
+              {sessions.map(s => {
+                const isSelected = selectedSessionId === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => setSelectedSessionId(s.id)}
+                    className={`w-full text-left p-4 rounded-xl border-2 transition-all min-h-[44px] ${
+                      isSelected
+                        ? 'border-indigo-500 bg-indigo-50'
+                        : 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 truncate">{s.programName}</p>
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs text-slate-500">
+                          {s.dayOfWeek !== null && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {DAY_NAMES[s.dayOfWeek]}s {formatTime(s.startTime)}
+                            </span>
+                          )}
+                          {s.locationName && (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {s.locationName}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            {s.spotsRemaining} spot{s.spotsRemaining !== 1 ? 's' : ''} left
+                          </span>
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <CheckCircle className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {bookError && (
+            <div className="mt-3 flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              {bookError}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        {!booked && !loadingSessions && sessions.length > 0 && (
+          <div className="px-5 py-4 border-t border-slate-100 flex-shrink-0">
+            <button
+              onClick={handleBook}
+              disabled={!selectedSessionId || booking}
+              className="w-full py-3.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
+            >
+              {booking ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Booking…</>
+              ) : token.makeupFeeCents > 0 ? (
+                `Book — $${(token.makeupFeeCents / 100).toFixed(0)} fee`
+              ) : (
+                'Book for Free'
+              )}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>,
+    document.body
   );
 }
 

@@ -49,6 +49,7 @@ interface CreateFamilyRequest {
     dateOfBirth: string;
     medicalInfo?: Record<string, string>;
   };
+  phoneVerified?: boolean;  // true when client completed OTP flow
 }
 
 Deno.serve(async (req: Request) => {
@@ -65,7 +66,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body: CreateFamilyRequest = await req.json();
-    const { registrationToken, familyData, childData } = body;
+    const { registrationToken, familyData, childData, phoneVerified } = body;
 
     // Validate required fields
     if (!registrationToken) {
@@ -133,6 +134,20 @@ Deno.serve(async (req: Request) => {
     if (existingFamily) {
       familyId = existingFamily.id;
     } else {
+      // Check if phone was server-side verified (OTP completed within 30 min)
+      let serverPhoneVerified = false;
+      if (phoneVerified && familyData.phone?.trim()) {
+        const { data: verifiedRecord } = await supabase
+          .from("phone_verification_codes")
+          .select("verified_at")
+          .eq("phone", familyData.phone.trim())
+          .not("verified_at", "is", null)
+          .gte("verified_at", new Date(Date.now() - 30 * 60 * 1000).toISOString())
+          .limit(1)
+          .single();
+        serverPhoneVerified = !!verifiedRecord;
+      }
+
       // Create new family record
       const { data: newFamily, error: familyError } = await supabase
         .from("families")
@@ -142,6 +157,7 @@ Deno.serve(async (req: Request) => {
           phone: familyData.phone.trim(),
           email_opt_in: familyData.emailOptIn ?? true,
           sms_opt_in: familyData.smsOptIn ?? false,
+          ...(serverPhoneVerified ? { phone_verified_at: new Date().toISOString() } : {}),
         })
         .select("id")
         .single();
