@@ -1109,12 +1109,17 @@ export default function Register() {
                 </div>
               )}
 
+              {/* Required field legend */}
+              <p className="text-xs text-gray-500 flex items-center gap-1">
+                <span className="text-red-500 text-sm">*</span> indicates a required field
+              </p>
+
               <div>
                 <h3 className="font-semibold text-gray-900 mb-3">Parent / Guardian</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      First Name
+                      First Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -1127,7 +1132,7 @@ export default function Register() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Last Name
+                      Last Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -1141,7 +1146,7 @@ export default function Register() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
                     <input
                       type="email"
                       name="email"
@@ -1152,7 +1157,7 @@ export default function Register() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone <span className="text-red-500">*</span></label>
                     <input
                       type="tel"
                       name="phone"
@@ -1181,15 +1186,67 @@ export default function Register() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Date of Birth
+                      Date of Birth <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="date"
-                      name="childDateOfBirth"
-                      value={formData.childDateOfBirth}
-                      onChange={handleInputChange}
-                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    />
+                    <div className="grid grid-cols-3 gap-2">
+                      <select
+                        value={formData.childDateOfBirth ? new Date(formData.childDateOfBirth + 'T00:00:00').getMonth() + 1 : ''}
+                        onChange={(e) => {
+                          const month = e.target.value;
+                          if (!month) return;
+                          const current = formData.childDateOfBirth ? new Date(formData.childDateOfBirth + 'T00:00:00') : new Date();
+                          const year = formData.childDateOfBirth ? current.getFullYear() : '';
+                          const day = formData.childDateOfBirth ? current.getDate() : 1;
+                          if (year) {
+                            const newDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                            handleInputChange({ target: { name: 'childDateOfBirth', value: newDate } } as React.ChangeEvent<HTMLInputElement>);
+                          }
+                        }}
+                        className="w-full px-2 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-sm"
+                      >
+                        <option value="">Month</option>
+                        {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
+                          <option key={i} value={i + 1}>{m}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={formData.childDateOfBirth ? new Date(formData.childDateOfBirth + 'T00:00:00').getDate() : ''}
+                        onChange={(e) => {
+                          const day = e.target.value;
+                          if (!day) return;
+                          const current = formData.childDateOfBirth ? new Date(formData.childDateOfBirth + 'T00:00:00') : new Date();
+                          const year = formData.childDateOfBirth ? current.getFullYear() : new Date().getFullYear();
+                          const month = formData.childDateOfBirth ? current.getMonth() + 1 : 1;
+                          const newDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                          handleInputChange({ target: { name: 'childDateOfBirth', value: newDate } } as React.ChangeEvent<HTMLInputElement>);
+                        }}
+                        className="w-full px-2 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-sm"
+                      >
+                        <option value="">Day</option>
+                        {Array.from({ length: 31 }, (_, i) => (
+                          <option key={i} value={i + 1}>{i + 1}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={formData.childDateOfBirth ? new Date(formData.childDateOfBirth + 'T00:00:00').getFullYear() : ''}
+                        onChange={(e) => {
+                          const year = e.target.value;
+                          if (!year) return;
+                          const current = formData.childDateOfBirth ? new Date(formData.childDateOfBirth + 'T00:00:00') : new Date();
+                          const month = formData.childDateOfBirth ? current.getMonth() + 1 : 1;
+                          const day = formData.childDateOfBirth ? current.getDate() : 1;
+                          const newDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                          handleInputChange({ target: { name: 'childDateOfBirth', value: newDate } } as React.ChangeEvent<HTMLInputElement>);
+                        }}
+                        className="w-full px-2 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-sm"
+                      >
+                        <option value="">Year</option>
+                        {Array.from({ length: 19 }, (_, i) => {
+                          const year = new Date().getFullYear() - 2 - i;
+                          return <option key={year} value={year}>{year}</option>;
+                        })}
+                      </select>
+                    </div>
                   </div>
                 </div>
                 <div className="mt-4">
@@ -1212,7 +1269,7 @@ export default function Register() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Contact Name
+                      Contact Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -1225,7 +1282,7 @@ export default function Register() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Contact Phone
+                      Contact Phone <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="tel"
