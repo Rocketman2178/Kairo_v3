@@ -191,18 +191,11 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // ── 6. Increment session enrolled_count ──────────────────────────────────
-    await supabase.rpc("increment_session_enrolled_count" as string, {
-      p_session_id: sessionId,
-    }).throwOnError().catch(() => {
-      // Fallback: direct increment if RPC doesn't exist
-      supabase
-        .from("sessions")
-        .update({ enrolled_count: session.enrolled_count + 1 })
-        .eq("id", sessionId);
-    });
+    // Note: enrolled_count is maintained automatically by the
+    // update_enrollment_count_on_registration trigger (AFTER INSERT on registrations).
+    // No explicit increment needed here.
 
-    // ── 7. Mark token as used ─────────────────────────────────────────────────
+    // ── 6. Mark token as used ─────────────────────────────────────────────────
     const { data: tokenResult, error: tokenUseErr } = await supabase.rpc(
       "use_makeup_token",
       {
