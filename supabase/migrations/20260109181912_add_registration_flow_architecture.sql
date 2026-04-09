@@ -251,7 +251,6 @@ BEGIN
     s.id,
     s.day_of_week,
     s.start_time,
-    s.end_time,
     s.start_date,
     s.capacity,
     s.enrolled_count,

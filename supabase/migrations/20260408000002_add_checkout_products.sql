@@ -56,7 +56,6 @@ BEGIN
       'program_description', p.description,
       'day_of_week',         s.day_of_week,
       'start_time',          s.start_time,
-      'end_time',            s.end_time,
       'start_date',          s.start_date,
       'end_date',            s.end_date,
       'duration_weeks',      p.duration_weeks,
