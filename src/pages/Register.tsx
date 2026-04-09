@@ -83,7 +83,8 @@ interface FormData {
   email: string;
   phone: string;
   childDateOfBirth: string;
-  emergencyContactName: string;
+  emergencyFirstName: string;
+  emergencyLastName: string;
   emergencyContactPhone: string;
   medicalNotes: string;
   agreedToTerms: boolean;
@@ -180,7 +181,8 @@ export default function Register() {
     email: '',
     phone: '',
     childDateOfBirth: '',
-    emergencyContactName: '',
+    emergencyFirstName: '',
+    emergencyLastName: '',
     emergencyContactPhone: '',
     medicalNotes: '',
     agreedToTerms: false,
@@ -522,7 +524,7 @@ export default function Register() {
       setError('Please enter your phone number.');
       return false;
     }
-    if (!formData.emergencyContactName.trim() || !formData.emergencyContactPhone.trim()) {
+    if (!formData.emergencyFirstName.trim() || !formData.emergencyLastName.trim() || !formData.emergencyContactPhone.trim()) {
       setError('Please provide emergency contact information.');
       return false;
     }
@@ -1205,9 +1207,14 @@ export default function Register() {
                         className="w-full px-2 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-sm"
                       >
                         <option value="">Month</option>
-                        {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
-                          <option key={i} value={i + 1}>{m}</option>
-                        ))}
+                        {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => {
+                          const now = new Date();
+                          const current = formData.childDateOfBirth ? new Date(formData.childDateOfBirth + 'T00:00:00') : null;
+                          const selYear = current ? current.getFullYear() : null;
+                          // Hide future months when viewing current year
+                          if (selYear === now.getFullYear() && i + 1 > now.getMonth() + 1) return null;
+                          return <option key={i} value={i + 1}>{m}</option>;
+                        })}
                       </select>
                       <select
                         value={formData.childDateOfBirth ? new Date(formData.childDateOfBirth + 'T00:00:00').getDate() : ''}
@@ -1223,9 +1230,21 @@ export default function Register() {
                         className="w-full px-2 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-sm"
                       >
                         <option value="">Day</option>
-                        {Array.from({ length: 31 }, (_, i) => (
-                          <option key={i} value={i + 1}>{i + 1}</option>
-                        ))}
+                        {(() => {
+                          const now = new Date();
+                          const current = formData.childDateOfBirth ? new Date(formData.childDateOfBirth + 'T00:00:00') : null;
+                          const selYear = current ? current.getFullYear() : now.getFullYear();
+                          const selMonth = current ? current.getMonth() + 1 : 1;
+                          // Days in selected month (accounts for leap years)
+                          const daysInMonth = new Date(selYear, selMonth, 0).getDate();
+                          const days: number[] = [];
+                          for (let d = 1; d <= daysInMonth; d++) {
+                            // Exclude future dates
+                            const candidate = new Date(selYear, selMonth - 1, d);
+                            if (candidate <= now) days.push(d);
+                          }
+                          return days.map(d => <option key={d} value={d}>{d}</option>);
+                        })()}
                       </select>
                       <select
                         value={formData.childDateOfBirth ? new Date(formData.childDateOfBirth + 'T00:00:00').getFullYear() : ''}
@@ -1241,26 +1260,18 @@ export default function Register() {
                         className="w-full px-2 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-sm"
                       >
                         <option value="">Year</option>
-                        {Array.from({ length: 19 }, (_, i) => {
-                          const year = new Date().getFullYear() - 2 - i;
-                          return <option key={year} value={year}>{year}</option>;
-                        })}
+                        {(() => {
+                          const now = new Date();
+                          const currentYear = now.getFullYear();
+                          const years: number[] = [];
+                          for (let y = currentYear; y >= currentYear - 19; y--) {
+                            years.push(y);
+                          }
+                          return years.map(y => <option key={y} value={y}>{y}</option>);
+                        })()}
                       </select>
                     </div>
                   </div>
-                </div>
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Medical Notes / Allergies (Optional)
-                  </label>
-                  <textarea
-                    name="medicalNotes"
-                    value={formData.medicalNotes}
-                    onChange={handleInputChange}
-                    rows={2}
-                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="Any medical conditions or allergies we should know about"
-                  />
                 </div>
               </div>
 
@@ -1269,12 +1280,12 @@ export default function Register() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Contact Name <span className="text-red-500">*</span>
+                      First Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
-                      name="emergencyContactName"
-                      value={formData.emergencyContactName}
+                      name="emergencyFirstName"
+                      value={formData.emergencyFirstName}
                       onChange={handleInputChange}
                       required
                       className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
@@ -1282,17 +1293,30 @@ export default function Register() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Contact Phone <span className="text-red-500">*</span>
+                      Last Name <span className="text-red-500">*</span>
                     </label>
                     <input
-                      type="tel"
-                      name="emergencyContactPhone"
-                      value={formData.emergencyContactPhone}
+                      type="text"
+                      name="emergencyLastName"
+                      value={formData.emergencyLastName}
                       onChange={handleInputChange}
                       required
                       className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                     />
                   </div>
+                </div>
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    name="emergencyContactPhone"
+                    value={formData.emergencyContactPhone}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  />
                 </div>
               </div>
 
