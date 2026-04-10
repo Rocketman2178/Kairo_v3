@@ -63,6 +63,7 @@ interface ScheduleClass {
   capacity: number;
   enrolledCount: number;
   students: { name: string; age: number | null }[];
+  customFields: Record<string, string>;
 }
 
 type ReportTab = 'enrollment' | 'revenue' | 'schedule';
@@ -598,6 +599,7 @@ function ScheduleReport() {
           end_date,
           capacity,
           enrolled_count,
+          custom_fields,
           programs!inner ( name ),
           locations ( name ),
           staff ( name )
@@ -659,6 +661,7 @@ function ScheduleReport() {
             capacity: s.capacity,
             enrolledCount: s.enrolled_count,
             students: studentMap.get(s.id) ?? [],
+            customFields: (s.custom_fields ?? {}) as Record<string, string>,
           };
         });
 
@@ -830,6 +833,18 @@ function ScheduleReport() {
                                   className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full"
                                 >
                                   {s.name}{s.age ? ` (${s.age})` : ''}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {Object.keys(cls.customFields).length > 0 && (
+                          <div className="px-4 pb-3">
+                            <div className="flex flex-wrap gap-x-4 gap-y-0.5">
+                              {Object.entries(cls.customFields).map(([key, value]) => (
+                                <span key={key} className="text-xs text-slate-500">
+                                  <span className="font-medium capitalize">{key.replace(/_/g, ' ')}:</span>{' '}
+                                  {String(value)}
                                 </span>
                               ))}
                             </div>

@@ -21,6 +21,7 @@ export interface Database {
           max_proration_cap_cents: number | null
           checkout_products: Json
           enrollment_type: 'term_based' | 'perpetual' | 'hybrid'
+          custom_field_definitions: Json
           created_at: string
           updated_at: string
         }
@@ -35,6 +36,7 @@ export interface Database {
           max_proration_cap_cents?: number | null
           checkout_products?: Json
           enrollment_type?: 'term_based' | 'perpetual' | 'hybrid'
+          custom_field_definitions?: Json
           created_at?: string
           updated_at?: string
         }
@@ -49,6 +51,7 @@ export interface Database {
           max_proration_cap_cents?: number | null
           checkout_products?: Json
           enrollment_type?: 'term_based' | 'perpetual' | 'hybrid'
+          custom_field_definitions?: Json
           created_at?: string
           updated_at?: string
         }
@@ -223,6 +226,7 @@ export interface Database {
           waitlist_count: number
           status: string
           custom_questions: Json
+          custom_fields: Json
           external_registration_url: string | null
           created_at: string
           updated_at: string
@@ -241,6 +245,7 @@ export interface Database {
           waitlist_count?: number
           status?: string
           custom_questions?: Json
+          custom_fields?: Json
           external_registration_url?: string | null
           created_at?: string
           updated_at?: string
@@ -259,6 +264,7 @@ export interface Database {
           waitlist_count?: number
           status?: string
           custom_questions?: Json
+          custom_fields?: Json
           external_registration_url?: string | null
           created_at?: string
           updated_at?: string

@@ -206,15 +206,71 @@ interface EmailGateProps {
   returnTo?: string | null;
 }
 
+const LOCKOUT_KEY = 'portal_lookup_lockout';
+const MAX_ATTEMPTS = 3;
+const LOCKOUT_MINUTES = 15;
+
+function getStoredLockout(): { attempts: number; lockedUntil: number | null } {
+  try {
+    const raw = localStorage.getItem(LOCKOUT_KEY);
+    if (!raw) return { attempts: 0, lockedUntil: null };
+    return JSON.parse(raw);
+  } catch {
+    return { attempts: 0, lockedUntil: null };
+  }
+}
+
+function setStoredLockout(attempts: number, lockedUntil: number | null) {
+  localStorage.setItem(LOCKOUT_KEY, JSON.stringify({ attempts, lockedUntil }));
+}
+
+function clearStoredLockout() {
+  localStorage.removeItem(LOCKOUT_KEY);
+}
+
 function EmailGate({ onFound, returnTo }: EmailGateProps) {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Attempt tracking — initialise from localStorage so lockout survives refresh
+  const stored = getStoredLockout();
+  const [failedAttempts, setFailedAttempts] = useState(stored.attempts);
+  const [lockedUntil, setLockedUntil] = useState<number | null>(() => {
+    if (stored.lockedUntil && stored.lockedUntil > Date.now()) return stored.lockedUntil;
+    if (stored.lockedUntil) clearStoredLockout(); // expired — clear
+    return null;
+  });
+  const [, forceUpdate] = useState(0);
+
+  // Countdown ticker — re-render every second while locked
+  useEffect(() => {
+    if (!lockedUntil) return;
+    const id = setInterval(() => {
+      if (Date.now() >= lockedUntil) {
+        setLockedUntil(null);
+        setFailedAttempts(0);
+        clearStoredLockout();
+        setError(null);
+      } else {
+        forceUpdate((n) => n + 1);
+      }
+    }, 1000);
+    return () => clearInterval(id);
+  }, [lockedUntil]);
+
+  const isLocked = lockedUntil !== null && Date.now() < lockedUntil;
+  const secondsLeft = isLocked ? Math.ceil((lockedUntil! - Date.now()) / 1000) : 0;
+  const minutesLeft = Math.floor(secondsLeft / 60);
+  const secsLeft = secondsLeft % 60;
+  const countdownLabel = minutesLeft > 0
+    ? `${minutesLeft}m ${secsLeft}s`
+    : `${secsLeft}s`;
+
   async function handleLookup(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!email.trim() || isLocked) return;
     setLoading(true);
     setError(null);
     try {
@@ -227,9 +283,32 @@ function EmailGate({ onFound, returnTo }: EmailGateProps) {
       if (dbError) throw dbError;
 
       if (!data) {
-        setError('No account found with that email. Complete a registration first.');
+        const newAttempts = failedAttempts + 1;
+        setFailedAttempts(newAttempts);
+
+        if (newAttempts >= MAX_ATTEMPTS) {
+          const until = Date.now() + LOCKOUT_MINUTES * 60 * 1000;
+          setLockedUntil(until);
+          setStoredLockout(newAttempts, until);
+          setError(
+            `Too many failed attempts. Access is temporarily locked for ${LOCKOUT_MINUTES} minutes. ` +
+            `If you registered under a different email address, try that instead.`
+          );
+        } else {
+          setStoredLockout(newAttempts, null);
+          const remaining = MAX_ATTEMPTS - newAttempts;
+          setError(
+            newAttempts === MAX_ATTEMPTS - 1
+              ? `No account found with that email. Double-check your spelling — 1 attempt remaining before a temporary lockout.`
+              : `No account found with that email. Make sure you use the address you registered with (${remaining} attempt${remaining !== 1 ? 's' : ''} left).`
+          );
+        }
         return;
       }
+
+      // Success — clear lockout state
+      clearStoredLockout();
+      setFailedAttempts(0);
 
       const profile: FamilyProfile = {
         id: data.id,
@@ -241,7 +320,6 @@ function EmailGate({ onFound, returnTo }: EmailGateProps) {
 
       // After login, navigate to returnTo URL if provided (e.g., from a deep link)
       if (returnTo) {
-        // Decode and validate: only allow relative paths to prevent open redirect
         try {
           const decoded = decodeURIComponent(returnTo);
           if (decoded.startsWith('/') && !decoded.startsWith('//')) {
@@ -272,43 +350,62 @@ function EmailGate({ onFound, returnTo }: EmailGateProps) {
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-          <form onSubmit={handleLookup} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Email address
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="parent@example.com"
-                required
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-base"
-              />
-            </div>
-
-            {error && (
-              <div className="flex items-start gap-2 p-3 bg-red-50 rounded-xl text-sm text-red-700">
-                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>{error}</span>
+          {isLocked ? (
+            <div className="space-y-4">
+              <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
+                <div>
+                  <p className="font-medium">Access temporarily locked</p>
+                  <p className="mt-0.5 text-amber-700">
+                    Too many failed attempts. Try again in{' '}
+                    <span className="font-semibold tabular-nums">{countdownLabel}</span>.
+                  </p>
+                </div>
               </div>
-            )}
+              <p className="text-xs text-slate-500 text-center">
+                If you haven't registered yet,{' '}
+                <a href="/" className="text-indigo-600 underline">start a new registration</a>.
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleLookup} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Email address
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="parent@example.com"
+                  required
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-base"
+                />
+              </div>
 
-            <button
-              type="submit"
-              disabled={loading || !email.trim()}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-semibold rounded-xl transition-colors min-h-[48px]"
-            >
-              {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  View My Account
-                  <ChevronRight className="w-4 h-4" />
-                </>
+              {error && (
+                <div className="flex items-start gap-2 p-3 bg-red-50 rounded-xl text-sm text-red-700">
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span>{error}</span>
+                </div>
               )}
-            </button>
-          </form>
+
+              <button
+                type="submit"
+                disabled={loading || !email.trim()}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-semibold rounded-xl transition-colors min-h-[48px]"
+              >
+                {loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    View My Account
+                    <ChevronRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          )}
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-6">
