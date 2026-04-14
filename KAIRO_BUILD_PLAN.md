@@ -873,12 +873,12 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [x] View available makeup tokens in parent portal — Tokens tab with active/used/expired counts, per-token cards with expiry urgency
 - [x] Browse available makeup slots filtered by token level — `MakeupBookingModal` shows eligible sessions with day/time/location/spots picker
 - [x] One-tap makeup booking from available classes — `redeem-makeup-token` edge function; free or fee-based; success state refreshes token panel
-- [ ] Token expiration warnings (30 days, 7 days before expiry)
+- [x] Token expiration warnings (30 days, 7 days before expiry) — `sweep-expiring-tokens` edge function; `warning_30d_sent_at` + `warning_7d_sent_at` on `makeup_tokens`; n8n `token_expiration_warning` intent; idempotent (won't re-send)
 - [ ] Makeup booking confirmation with calendar integration
 
 **Admin Management:**
-- [ ] Token dashboard: view all active tokens, expired tokens, usage rates
-- [ ] Manual token issuance (admin override)
+- [x] Token dashboard: view all active tokens, expired tokens, usage rates — "Makeup Tokens" tab in Reports; stats bar; search + status filter; CSV export
+- [x] Manual token issuance (admin override) — IssueTokenModal in Reports; email → child lookup → `issue_makeup_token` RPC; skill level/expiry/fee/notes
 - [ ] Bulk token management (e.g., issue tokens for weather cancellation)
 - [ ] Token policy configuration per organization
 - [ ] Makeup attendance tracking (distinguish regular vs. makeup students)
@@ -894,8 +894,8 @@ Registration Form → Payment → Confirmed Registration → Return User
 - [x] Transfer request flow (parent-initiated or admin-initiated) — `class_transfers` table + `request_class_transfer()` RPC; TransferRequestModal in Parent Portal
 - [x] Transfer destination search: show available classes matching child's level with open spots — `get_available_transfer_sessions()` RPC returns open sessions in same org
 - [ ] Billing adjustment: prorated credit/charge for different-priced classes
-- [ ] Transfer history: full audit trail of all class changes per child
-- [ ] Waitlist impact: transferring out of a class frees a spot, auto-notify waitlisted families
+- [x] Transfer history: full audit trail of all class changes per child — `from_session_id` on `class_transfers`; `request_class_transfer` captures source session at request time; TransferHistoryPanel shows From → To pill chain
+- [x] Waitlist impact: transferring out of a class frees a spot, auto-notify waitlisted families — `approve_class_transfer()` RPC decrements/increments enrolled counts; `approve-transfer` edge function promotes first pending waitlist entry to 'notified' + fires `trigger-waitlist-spot-available`; admin approve button in Reports Transfers tab
 - [ ] Batch transfers: admin can move multiple children at once (e.g., class cancelled, move all to another)
 - [x] Transfer reason tracking (for analytics: schedule conflict, skill progression, coach preference, etc.) — `reason` field on `class_transfers`; dropdown in TransferRequestModal
 - [ ] Transfer limits: configurable max transfers per billing period (optional)

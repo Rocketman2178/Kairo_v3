@@ -5,6 +5,73 @@ Format: `## [Month Year] - Title | Category | Description`
 
 ---
 
+## [April 14, 2026] - Admin Makeup Token Dashboard, Token Expiration Warnings & Waitlist-Impact Transfers | Core Feature | High
+
+**Category:** Core Feature
+**Impact:** High — Advances Stage 3.7 Admin Management (token dashboard + issuance + expiry warnings) and Stage 3.8 Transfer Management (waitlist impact on transfer approval, full audit trail)
+
+**Description:**
+Three features advancing the makeup token system and class transfer management. Admin Makeup Token Dashboard adds a "Makeup Tokens" tab to the Reports page showing all active/used/expired tokens across the org with search, status filter, CSV export, and a manual token-issuance modal (admin looks up parent by email + child by name, sets skill level, expiry months, fee, and notes — calls `issue_makeup_token` RPC). Token Expiration Warning System adds `warning_30d_sent_at` and `warning_7d_sent_at` columns to `makeup_tokens` and a new `sweep-expiring-tokens` edge function that sweeps active tokens expiring within 30/7 days, sends the appropriate warning via n8n (`token_expiration_warning` intent with tokenId, childName, skillLevel, daysUntilExpiry, warningType), stamps the column to prevent duplicate sends, and returns a summary of scanned/sent/failed counts — designed for daily cron execution. Waitlist Impact on Transfers implements the full transfer approval pipeline: `approve_class_transfer()` DB function atomically moves the registration to the new session, decrements/increments enrolled counts on both sessions, and saves `from_session_id`; `approve-transfer` edge function calls the RPC then promotes the first pending waitlisted family on the freed session to 'notified' and fires `trigger-waitlist-spot-available`; `request_class_transfer` updated to capture `from_session_id` at request time; `TransferHistoryPanel` in Parent Portal now shows From → To class chain with pill-style badges for full audit trail; new "Transfers" admin tab in Reports shows all pending/approved transfers with approve button.
+
+### Feature 1: Admin Makeup Token Dashboard (Stage 3.7 Admin Management)
+- `src/pages/Reports.tsx`:
+  - `RawTokenRecord` interface for typed Supabase results
+  - `TokenRow` / `IssueTokenForm` interfaces
+  - `IssueTokenModal`: parent email lookup → child name lookup → `issue_makeup_token` RPC → optional notes update; expiry dropdown (1/3/6/12/18/24 mo); fee input ($0 = free)
+  - `TokensReport`: loads all tokens with family/child joins; status override (active past expiry → expired client-side); stats (active/used/expired); search by child/parent/skill; status filter; CSV export; "Issue Token" button
+  - 'tokens' tab added to Reports tabs array; date range selector hidden for tokens tab
+
+### Feature 2: Token Expiration Warning System (Stage 3.7)
+- `supabase/migrations/20260414000001_add_token_expiration_warnings.sql` — **NEW**
+  - `makeup_tokens.warning_30d_sent_at TIMESTAMPTZ` — stamp when 30d warning sent
+  - `makeup_tokens.warning_7d_sent_at TIMESTAMPTZ` — stamp when 7d warning sent
+- `supabase/functions/sweep-expiring-tokens/index.ts` — **NEW** (verify_jwt=false)
+  - Queries active tokens with `expires_at <= NOW() + 30 days`
+  - For each: sends 7d warning if ≤7 days and no 7d stamp; else 30d warning if no 30d stamp
+  - n8n payload: `{ intent: "token_expiration_warning", tokenId, email, contactName, childName, skillLevel, expiresAt, daysUntilExpiry, warningType, portalUrl }`
+  - Stamps column on n8n success; returns `{ scanned, sent30d, sent7d, failed, results }`
+
+### Feature 3: Waitlist Impact on Transfers (Stage 3.8)
+- `supabase/migrations/20260414000002_add_approve_class_transfer.sql` — **NEW**
+  - `approve_class_transfer(p_transfer_id)` — atomically: validates pending status, moves registration session_id, decrements from_session enrolled_count (floor 0), increments to_session enrolled_count, marks transfer approved with `processed_at`; returns `{ transfer_id, from_session_id, to_session_id }`
+- `supabase/migrations/20260414000003_add_from_session_id_to_transfers.sql` — **NEW**
+  - `class_transfers.from_session_id UUID` — records the source session for audit trail
+  - Backfills existing pending transfer rows from `registrations.session_id`
+  - `request_class_transfer` updated to INSERT `from_session_id = r.session_id` at request time
+  - `approve_class_transfer` updated to persist `from_session_id` and prefer stored value over live lookup
+- `supabase/functions/approve-transfer/index.ts` — **NEW** (verify_jwt=false)
+  - POST `{ transferId }` → calls `approve_class_transfer` RPC → queries waitlist for first pending entry on freed session → promotes to 'notified' → fires `trigger-waitlist-spot-available` → returns `{ success, transferId, fromSessionId, toSessionId, waitlistNotified }`
+- `src/pages/ParentPortal.tsx`:
+  - `TransferRecord` extended with `fromSessionProgram/Day/Time/Location` fields
+  - `TransferHistoryPanel` query updated to join `from_session:sessions!from_session_id` alongside existing `to_session` join
+  - Transfer cards now show From pill → ArrowRightLeft icon → To pill when `from_session_id` is available
+- `src/pages/Reports.tsx`:
+  - `AdminTransferRow` interface
+  - `TransfersReport`: loads all transfers with children/families/to_session/from_session joins; pending/approved/all filter; approve button calls `approve-transfer` edge function; shows waitlist-notified confirmation message; status counts summary
+  - 'transfers' tab added to Reports tabs array
+
+**Files Changed:**
+- `supabase/migrations/20260414000001_add_token_expiration_warnings.sql` — **NEW**
+- `supabase/migrations/20260414000002_add_approve_class_transfer.sql` — **NEW**
+- `supabase/migrations/20260414000003_add_from_session_id_to_transfers.sql` — **NEW**
+- `supabase/functions/sweep-expiring-tokens/index.ts` — **NEW**
+- `supabase/functions/approve-transfer/index.ts` — **NEW**
+- `src/pages/Reports.tsx` — TokensReport + TransfersReport components; IssueTokenModal; 2 new tabs
+- `src/pages/ParentPortal.tsx` — TransferRecord type extended; TransferHistoryPanel From→To audit trail
+
+**DB Migrations Applied:**
+- `add_token_expiration_warnings` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓
+- `add_approve_class_transfer` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓
+- `add_from_session_id_to_transfers` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓
+
+**Edge Functions Deployed:**
+- `sweep-expiring-tokens` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓ v1 (verify_jwt=false)
+- `approve-transfer` → Kairo (`tatunnfxwfsyoiqoaenb`) ✓ v1 (verify_jwt=false)
+
+**No n8n workflow changes.** (n8n handles `token_expiration_warning` intent via existing routing)
+
+---
+
 ## [April 9, 2026] - Makeup Token Booking Flow, SMS Phone Verification & Perpetual Enrollment Type | Core Feature | High
 
 **Category:** Core Feature

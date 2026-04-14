@@ -100,10 +100,16 @@ interface TransferRecord {
   billingDirection: 'credit' | 'charge' | 'none';
   requestedAt: string;
   processedAt: string | null;
+  // Destination session
   toSessionProgram: string | null;
   toSessionDay: number | null;
   toSessionTime: string | null;
   toSessionLocation: string | null;
+  // Source session (full audit trail)
+  fromSessionProgram: string | null;
+  fromSessionDay: number | null;
+  fromSessionTime: string | null;
+  fromSessionLocation: string | null;
 }
 
 interface MakeupToken {
@@ -2159,7 +2165,8 @@ function TransferHistoryPanel({ familyId }: { familyId: string }) {
     async function load() {
       setLoading(true);
       try {
-        const { data } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data } = await (supabase as any)
           .from('class_transfers')
           .select(`
             id,
@@ -2169,7 +2176,13 @@ function TransferHistoryPanel({ familyId }: { familyId: string }) {
             billing_direction,
             requested_at,
             processed_at,
-            sessions!to_session_id (
+            to_session:sessions!to_session_id (
+              day_of_week,
+              start_time,
+              programs ( name ),
+              locations ( name )
+            ),
+            from_session:sessions!from_session_id (
               day_of_week,
               start_time,
               programs ( name ),
@@ -2177,25 +2190,21 @@ function TransferHistoryPanel({ familyId }: { familyId: string }) {
             )
           `)
           .eq('family_id', familyId)
-          .order('requested_at', { ascending: false });
+          .order('requested_at', { ascending: false }) as { data: {
+            id: string;
+            status: string;
+            reason: string | null;
+            billing_adjustment_cents: number;
+            billing_direction: 'credit' | 'charge' | 'none';
+            requested_at: string;
+            processed_at: string | null;
+            to_session: { day_of_week: number | null; start_time: string; programs: { name: string } | null; locations: { name: string } | null } | null;
+            from_session: { day_of_week: number | null; start_time: string; programs: { name: string } | null; locations: { name: string } | null } | null;
+          }[] | null };
 
         if (cancelled) return;
 
-        const mapped: TransferRecord[] = (data ?? []).map((t: {
-          id: string;
-          status: string;
-          reason: string | null;
-          billing_adjustment_cents: number;
-          billing_direction: 'credit' | 'charge' | 'none';
-          requested_at: string;
-          processed_at: string | null;
-          sessions: {
-            day_of_week: number | null;
-            start_time: string;
-            programs: { name: string } | null;
-            locations: { name: string } | null;
-          } | null;
-        }) => ({
+        const mapped: TransferRecord[] = (data ?? []).map((t) => ({
           id: t.id,
           status: t.status,
           reason: t.reason,
@@ -2203,10 +2212,14 @@ function TransferHistoryPanel({ familyId }: { familyId: string }) {
           billingDirection: t.billing_direction,
           requestedAt: t.requested_at,
           processedAt: t.processed_at,
-          toSessionProgram: t.sessions?.programs?.name ?? null,
-          toSessionDay: t.sessions?.day_of_week ?? null,
-          toSessionTime: t.sessions?.start_time ?? null,
-          toSessionLocation: t.sessions?.locations?.name ?? null,
+          toSessionProgram: t.to_session?.programs?.name ?? null,
+          toSessionDay: t.to_session?.day_of_week ?? null,
+          toSessionTime: t.to_session?.start_time ?? null,
+          toSessionLocation: t.to_session?.locations?.name ?? null,
+          fromSessionProgram: t.from_session?.programs?.name ?? null,
+          fromSessionDay: t.from_session?.day_of_week ?? null,
+          fromSessionTime: t.from_session?.start_time ?? null,
+          fromSessionLocation: t.from_session?.locations?.name ?? null,
         }));
 
         setTransfers(mapped);
@@ -2262,11 +2275,30 @@ function TransferHistoryPanel({ familyId }: { familyId: string }) {
       {transfers.map((t) => (
         <div key={t.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-2.5">
           <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="text-sm font-semibold text-slate-900">
-                {t.toSessionProgram ?? 'Transfer Request'}
-              </p>
-              {t.toSessionDay !== null && t.toSessionTime && (
+            <div className="flex-1 min-w-0">
+              {/* From → To audit trail */}
+              {t.fromSessionProgram ? (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg">
+                    {t.fromSessionProgram}
+                    {t.fromSessionDay !== null && t.fromSessionTime
+                      ? ` · ${DAY_NAMES_FULL[t.fromSessionDay]}s ${formatTime(t.fromSessionTime)}`
+                      : ''}
+                  </span>
+                  <ArrowRightLeft className="w-3 h-3 text-slate-400 shrink-0" />
+                  <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-lg">
+                    {t.toSessionProgram ?? '—'}
+                    {t.toSessionDay !== null && t.toSessionTime
+                      ? ` · ${DAY_NAMES_FULL[t.toSessionDay]}s ${formatTime(t.toSessionTime)}`
+                      : ''}
+                  </span>
+                </div>
+              ) : (
+                <p className="text-sm font-semibold text-slate-900">
+                  {t.toSessionProgram ?? 'Transfer Request'}
+                </p>
+              )}
+              {!t.fromSessionProgram && t.toSessionDay !== null && t.toSessionTime && (
                 <p className="text-xs text-slate-500 mt-0.5">
                   {DAY_NAMES_FULL[t.toSessionDay]}s · {formatTime(t.toSessionTime)}
                   {t.toSessionLocation ? ` · ${t.toSessionLocation}` : ''}
