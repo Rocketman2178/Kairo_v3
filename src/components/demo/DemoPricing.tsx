@@ -258,7 +258,7 @@ export function DemoPricing() {
         <div className="max-w-7xl mx-auto px-4 py-10 text-center">
           <p className="text-slate-400 text-sm uppercase tracking-widest font-semibold mb-2">Pricing</p>
           <h1 className="text-4xl font-black text-white mb-3">Simple, Transparent Pricing</h1>
-          <p className="text-slate-400 text-lg mb-6">Per location, per month. Start with a 30-day Pro trial — free.</p>
+          <p className="text-slate-400 text-lg mb-6">One flat subscription. Kai AI included free. Start with a 30-day Pro trial.</p>
 
           {/* Billing Toggle */}
           <div className="inline-flex items-center bg-slate-800 border border-slate-700 rounded-xl p-1 gap-1">
@@ -324,7 +324,7 @@ export function DemoPricing() {
 
                   <div className="mb-3">
                     <span className={`text-5xl font-black ${c.text}`}>${price}</span>
-                    <span className="text-slate-400 text-sm">/mo per location</span>
+                    <span className="text-slate-400 text-sm">/mo</span>
                   </div>
                   {billing === 'annual' && (
                     <p className="text-slate-500 text-xs mb-3">
@@ -403,6 +403,74 @@ export function DemoPricing() {
             <div className="flex items-center gap-1.5"><Check className="w-4 h-4 text-emerald-400" /> No credit card</div>
             <div className="flex items-center gap-1.5"><Check className="w-4 h-4 text-emerald-400" /> Full Pro access</div>
             <div className="flex items-center gap-1.5"><Check className="w-4 h-4 text-emerald-400" /> Cancel anytime</div>
+          </div>
+        </div>
+
+        {/* AI Registration Fee */}
+        <div className="bg-slate-800 border border-amber-500/30 rounded-2xl overflow-hidden">
+          <div className="bg-amber-500/10 border-b border-amber-500/20 px-6 py-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                <Brain className="w-5 h-5 text-amber-400" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-lg">AI Registration — Included Free</h3>
+                <p className="text-amber-300/70 text-sm">Your subscription stays fixed. You never pay more as you grow.</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-6 space-y-6">
+            <p className="text-slate-300 text-sm leading-relaxed">
+              Every Kairo plan includes <span className="text-white font-semibold">Kai, our AI registration assistant</span>, at no additional cost to you.
+              When a family registers through Kai, a small <span className="text-amber-400 font-semibold">$3.50 technology fee</span> is built into their checkout.
+              That's how we fund the AI — so you get unlimited AI-powered registration without any added cost on your side.
+            </p>
+
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="bg-slate-900/50 rounded-xl p-4 text-center">
+                <p className="text-3xl font-black text-amber-400 mb-1">$3.50</p>
+                <p className="text-slate-400 text-xs">Per registration at checkout</p>
+                <p className="text-slate-500 text-[11px] mt-1">Paid by families, not you</p>
+              </div>
+              <div className="bg-slate-900/50 rounded-xl p-4 text-center">
+                <p className="text-3xl font-black text-emerald-400 mb-1">1%</p>
+                <p className="text-slate-400 text-xs">Of average season cost</p>
+                <p className="text-slate-500 text-[11px] mt-1">$3.50 on a $350 season</p>
+              </div>
+              <div className="bg-slate-900/50 rounded-xl p-4 text-center">
+                <p className="text-3xl font-black text-purple-400 mb-1">$0</p>
+                <p className="text-slate-400 text-xs">Your cost for AI</p>
+                <p className="text-slate-500 text-[11px] mt-1">Included in every plan</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/50 border border-slate-700 rounded-xl p-4">
+              <p className="text-slate-500 text-xs uppercase font-semibold tracking-wide mb-3">How the fee works</p>
+              <div className="grid md:grid-cols-2 gap-3">
+                <div className="flex items-start gap-2">
+                  <Check className="w-3.5 h-3.5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-slate-300 text-sm">Charged <span className="text-white font-medium">once per registration</span> — not per transaction or payment installment</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-3.5 h-3.5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-slate-300 text-sm">No fee on <span className="text-white font-medium">renewals, installments, or subscription payments</span></p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-3.5 h-3.5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-slate-300 text-sm"><span className="text-white font-medium">1 child + 1 program + 1 season</span> = 1 registration = 1 fee</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-3.5 h-3.5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-slate-300 text-sm">We only earn from AI <span className="text-white font-medium">when families register</span> — we succeed when you do</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4">
+              <p className="text-blue-300 text-sm italic leading-relaxed">
+                "We don't bake AI costs into your subscription or charge you more as you grow. The AI is funded through a small fee paid by families at checkout. That means we're aligned around one goal — helping you grow by converting more families into long-term customers."
+              </p>
+            </div>
           </div>
         </div>
 
@@ -551,7 +619,7 @@ export function DemoPricing() {
             <div className="flex items-center gap-3">
               <Star className="w-5 h-5 text-emerald-400 flex-shrink-0" />
               <div>
-                <p className="text-white text-sm font-semibold">Switch to annual and save up to $900/yr per location</p>
+                <p className="text-white text-sm font-semibold">Switch to annual and save up to $900/yr</p>
                 <p className="text-emerald-300/70 text-xs">Pro annual: $424/mo vs $499/mo monthly</p>
               </div>
             </div>
