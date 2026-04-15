@@ -795,7 +795,7 @@ export function Sessions() {
 
   // Derive filter state from URL params
   const filters: FilterState = {
-    query: searchParams.get('q') ?? '',
+    query: searchParams.get('query') ?? '',
     day: searchParams.get('day') ?? '',
     ageMin: searchParams.get('ageMin') ?? '',
     ageMax: searchParams.get('ageMax') ?? '',

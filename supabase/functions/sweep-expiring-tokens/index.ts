@@ -131,8 +131,9 @@ Deno.serve(async (req: Request) => {
       if (token.expires_at <= in7Days && !token.warning_7d_sent_at) {
         warningsToSend.push("7d");
       }
-      // 30-day warning: expires within 30 days and 30d warning not yet sent (and not already past 7d threshold for first time)
-      else if (!token.warning_30d_sent_at) {
+      // 30-day warning: only for tokens still outside the 7-day window (prevents sending
+      // a factually wrong "30d" email for tokens already within 7 days of expiry)
+      else if (!token.warning_30d_sent_at && token.expires_at > in7Days) {
         warningsToSend.push("30d");
       }
 

@@ -968,27 +968,22 @@ function IssueTokenModal({
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: rpcErr } = await (supabase as any).rpc('issue_makeup_token', {
+      const { data: rpcData, error: rpcErr } = await (supabase as any).rpc('issue_makeup_token', {
         p_organization_id: orgId,
         p_family_id: fam.id,
         p_child_id: children[0].id,
         p_skill_level: form.skillLevel || null,
         p_expiry_months: form.expiryMonths,
         p_makeup_fee_cents: form.makeupFeeCents,
-      }) as { error: unknown };
+      }) as { data: { token_id: string } | null; error: unknown };
       if (rpcErr) throw rpcErr;
 
-      if (form.notes.trim()) {
-        // Update notes on the most recently issued token for this child
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any)
+      if (form.notes.trim() && rpcData?.token_id) {
+        // Update notes on the specific token just issued, by its ID
+        await supabase
           .from('makeup_tokens')
           .update({ notes: form.notes.trim() })
-          .eq('family_id', fam.id)
-          .eq('child_id', children[0].id)
-          .eq('status', 'active')
-          .order('created_at', { ascending: false })
-          .limit(1);
+          .eq('id', rpcData.token_id);
       }
 
       onIssued();
@@ -1317,7 +1312,9 @@ function TokensReport() {
         </button>
         <button
           onClick={() => setShowIssueModal(true)}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors"
+          disabled={!orgId}
+          title={!orgId ? 'Organization not loaded' : undefined}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Plus className="w-4 h-4" />
           Issue Token
@@ -1760,14 +1757,14 @@ export function Reports() {
 
           {/* Tabs + date range */}
           <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex gap-1">
+            <div className="flex gap-1 overflow-x-auto">
               {tabs.map((t) => {
                 const Icon = t.icon;
                 return (
                   <button
                     key={t.id}
                     onClick={() => setTab(t.id)}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors min-h-[40px] ${
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors min-h-[40px] flex-shrink-0 ${
                       tab === t.id
                         ? 'bg-indigo-600 text-white'
                         : 'text-slate-600 hover:bg-slate-100'
