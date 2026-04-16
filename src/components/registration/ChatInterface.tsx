@@ -310,16 +310,19 @@ export function ChatInterface({ organizationId, familyId, initialSessionId, onRe
   };
 
   // Expose send/reset handlers to external controllers (e.g. SalesDemo page)
+  // Use ref to always point at latest handleSendMessage (avoids stale closure)
+  const handleSendRef = useRef(handleSendMessage);
+  useEffect(() => { handleSendRef.current = handleSendMessage; });
   const onReadyCalled = useRef(false);
   useEffect(() => {
     if (onReady && !onReadyCalled.current) {
       onReadyCalled.current = true;
       onReady({
-        send: (text: string) => { handleSendMessage(text); },
+        send: (text: string) => { handleSendRef.current(text); },
         reset: () => { resetConversation(); hasAddedInitialMessage.current = false; },
       });
     }
-  }, [onReady]);
+  }, [onReady, resetConversation]);
 
   const [fallbackForm, setFallbackForm] = useState({
     childName: context.childName || '',

@@ -295,19 +295,14 @@ export default function SalesDemo() {
           <div>
             {scene.showChat ? (
               <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6">
-                {/* iPhone-style frame */}
-                <div className="max-w-md mx-auto">
-                  <div className="relative bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 overflow-hidden shadow-2xl" style={{ height: '720px' }}>
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-slate-800 rounded-b-2xl z-10" />
-                    <div className="h-full">
-                      <ChatInterface
-                        organizationId={DEMO_ORG_ID}
-                        onReady={(handle) => {
-                          chatHandleRef.current = handle;
-                        }}
-                      />
-                    </div>
-                  </div>
+                {/* ChatInterface has its own built-in iPhone frame */}
+                <div className="flex justify-center">
+                  <ChatInterface
+                    organizationId={DEMO_ORG_ID}
+                    onReady={(handle) => {
+                      chatHandleRef.current = handle;
+                    }}
+                  />
                 </div>
 
                 {/* Suggested messages */}
