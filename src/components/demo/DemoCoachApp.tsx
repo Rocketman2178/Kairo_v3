@@ -497,16 +497,23 @@ export function DemoCoachApp() {
                         <span className="text-xs text-slate-500">Age {student.age}</span>
                       </div>
                       <p className="text-sm text-slate-600">{student.parentName}</p>
-                      {student.notes && (
-                        <div className={`flex items-center gap-1 mt-1 text-xs ${
-                          student.notes.includes('First day')
-                            ? 'bg-amber-100 text-amber-700 border border-amber-300 px-2 py-0.5 rounded-full font-semibold'
-                            : 'text-slate-500'
-                        }`}>
-                          {student.notes.includes('First day') ? <span>⭐</span> : <AlertCircle className="w-3 h-3" />}
-                          {student.notes}
-                        </div>
-                      )}
+                      {student.notes && (() => {
+                        const noteLower = student.notes.toLowerCase();
+                        const isFirstDay = noteLower.includes('first day');
+                        const isMedical = /\b(allerg|asthma|epipen|epi-pen|insulin|diabet|seizure|inhaler|medication|medical|peanut|nut allergy|bee sting|anaphyla|condition)\b/i.test(student.notes);
+                        return (
+                          <div className={`flex items-center gap-1 mt-1 text-xs px-2 py-0.5 rounded-full font-semibold w-fit ${
+                            isMedical
+                              ? 'bg-red-100 text-red-700 border border-red-300'
+                              : isFirstDay
+                                ? 'bg-amber-100 text-amber-700 border border-amber-300'
+                                : 'text-slate-500 border border-transparent'
+                          }`}>
+                            {isMedical ? <AlertCircle className="w-3 h-3" /> : isFirstDay ? <span>⭐</span> : <AlertCircle className="w-3 h-3" />}
+                            {student.notes}
+                          </div>
+                        );
+                      })()}
                     </div>
                     <div className="flex items-center gap-2">
                       <button
