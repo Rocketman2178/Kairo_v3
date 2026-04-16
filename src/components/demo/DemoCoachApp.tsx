@@ -500,7 +500,7 @@ export function DemoCoachApp() {
                       {student.notes && (() => {
                         const noteLower = student.notes.toLowerCase();
                         const isFirstDay = noteLower.includes('first day');
-                        const isMedical = /\b(allerg|asthma|epipen|epi-pen|insulin|diabet|seizure|inhaler|medication|medical|peanut|nut allergy|bee sting|anaphyla|condition)\b/i.test(student.notes);
+                        const isMedical = /\b(allerg|asthma|epipen|epi-pen|insulin|diabet|seizure|inhaler|medication|medical|peanut|nut allergy|bee sting|anaphyla|condition)/i.test(student.notes);
                         return (
                           <div className={`flex items-center gap-1 mt-1 text-xs px-2 py-0.5 rounded-full font-semibold w-fit ${
                             isMedical
