@@ -89,7 +89,6 @@ const SCENES: Scene[] = [
       "My son Liam is 6 and loves soccer",
     ],
     type: 'chat',
-    autoReset: true,
   },
   {
     id: 'session-search',
@@ -158,7 +157,6 @@ const SCENES: Scene[] = [
       "Hola, mi hijo tiene 5 años y quiere fútbol los sábados",
     ],
     type: 'chat',
-    autoReset: true,
   },
 
   // ========== ACT 2: OPERATOR TOOLS ==========
@@ -314,12 +312,8 @@ export default function SalesDemo() {
     return () => window.removeEventListener('keydown', handler);
   }, [isFirst, isLast]);
 
-  // Auto-reset chat on scene transitions that require fresh conversation
-  useEffect(() => {
-    if (scene.autoReset && chatHandleRef.current) {
-      chatHandleRef.current.reset();
-    }
-  }, [sceneIdx, scene.autoReset]);
+  // Conversation persists across scenes intentionally — seller can use the
+  // "New" button in the chat header if they want a fresh conversation.
 
   const handleSendSuggested = useCallback((text: string) => {
     if (chatHandleRef.current) {
