@@ -450,7 +450,8 @@ export default function SalesDemo() {
                 const isDark = scene.componentTheme === 'dark';
                 return (
                   <div className={`border border-slate-800 rounded-2xl overflow-hidden ${isDark ? 'bg-slate-950' : 'bg-white'}`}>
-                    <div className="max-h-[80vh] overflow-y-auto">
+                    {/* Override any nested sticky top offsets (e.g. DemoDataInsights nav uses top-14 which assumes a page header) */}
+                    <div className="max-h-[80vh] overflow-y-auto [&_.sticky]:!top-0">
                       <scene.component />
                     </div>
                   </div>
