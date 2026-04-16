@@ -21,9 +21,11 @@ interface ChatInterfaceProps {
   familyId?: string;
   onComplete?: () => void;
   initialSessionId?: string;
+  /** Optional: exposes a send function for demo/external control. Called once on mount. */
+  onReady?: (handle: { send: (text: string) => void; reset: () => void }) => void;
 }
 
-export function ChatInterface({ organizationId, familyId, initialSessionId }: ChatInterfaceProps) {
+export function ChatInterface({ organizationId, familyId, initialSessionId, onReady }: ChatInterfaceProps) {
   const navigate = useNavigate();
   const [inputValue, setInputValue] = useState('');
   const [showFallbackForm, setShowFallbackForm] = useState(false);
@@ -306,6 +308,18 @@ export function ChatInterface({ organizationId, familyId, initialSessionId }: Ch
       handleSendMessage();
     }
   };
+
+  // Expose send/reset handlers to external controllers (e.g. SalesDemo page)
+  const onReadyCalled = useRef(false);
+  useEffect(() => {
+    if (onReady && !onReadyCalled.current) {
+      onReadyCalled.current = true;
+      onReady({
+        send: (text: string) => { handleSendMessage(text); },
+        reset: () => { resetConversation(); hasAddedInitialMessage.current = false; },
+      });
+    }
+  }, [onReady]);
 
   const [fallbackForm, setFallbackForm] = useState({
     childName: context.childName || '',

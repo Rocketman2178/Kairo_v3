@@ -16,6 +16,7 @@ import { Sessions } from './pages/Sessions';
 import { lazy, Suspense } from 'react';
 
 const VoiceModePage = lazy(() => import('./components/voice/VoiceModePage'));
+const SalesDemo = lazy(() => import('./pages/SalesDemo'));
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/demo" element={<Demo />} />
+          <Route path="/sales-demo" element={<Suspense fallback={<div className="flex items-center justify-center h-screen bg-slate-900 text-white">Loading Sales Demo...</div>}><SalesDemo /></Suspense>} />
           <Route path="/register" element={<Register />} />
           <Route path="/voice" element={<Suspense fallback={<div className="flex items-center justify-center h-screen bg-slate-900 text-white">Loading Voice Mode...</div>}><VoiceModePage /></Suspense>} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
