@@ -431,9 +431,10 @@ interface RegistrationCardProps {
   familyId: string;
   familyEmail: string;
   onTransferRequest?: (reg: RegistrationRecord) => void;
+  onCancelled?: () => void;
 }
 
-function RegistrationCard({ reg, familyId, familyEmail, onTransferRequest }: RegistrationCardProps) {
+function RegistrationCard({ reg, familyId, familyEmail, onTransferRequest, onCancelled }: RegistrationCardProps) {
   const upcoming = isUpcoming(reg.session);
   const childDisplayName = reg.child
     ? `${reg.child.firstName}${reg.child.lastName ? ' ' + reg.child.lastName : ''}`
@@ -442,6 +443,42 @@ function RegistrationCard({ reg, familyId, familyEmail, onTransferRequest }: Reg
   const [sendingLink, setSendingLink] = useState(false);
   const [linkSent, setLinkSent] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
+
+  // Cancel registration state
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancelSuccess, setCancelSuccess] = useState(false);
+
+  async function handleCancelRegistration() {
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+      const res = await fetch(`${supabaseUrl}/functions/v1/cancel-registration`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${anonKey}`,
+          Apikey: anonKey,
+        },
+        body: JSON.stringify({ registrationId: reg.id, familyId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCancelSuccess(true);
+        setShowCancelConfirm(false);
+        setTimeout(() => onCancelled?.(), 1200);
+      } else {
+        setCancelError(data.message ?? 'Could not cancel. Please try again.');
+      }
+    } catch {
+      setCancelError('Network error. Please try again.');
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   async function handleSendPaymentLink() {
     setSendingLink(true);
@@ -583,16 +620,66 @@ function RegistrationCard({ reg, familyId, familyEmail, onTransferRequest }: Reg
           </div>
         )}
 
-        {/* Transfer button for confirmed upcoming registrations */}
-        {reg.status === 'confirmed' && upcoming && onTransferRequest && (
-          <div className="mt-3 pt-3 border-t border-slate-100">
-            <button
-              onClick={() => onTransferRequest(reg)}
-              className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors min-h-[40px]"
-            >
-              <ArrowRightLeft className="w-3.5 h-3.5" />
-              Request Class Transfer
-            </button>
+        {/* Transfer + Cancel buttons for confirmed upcoming registrations */}
+        {reg.status === 'confirmed' && upcoming && (onTransferRequest || onCancelled) && (
+          <div className="mt-3 pt-3 border-t border-slate-100 space-y-1">
+            {onTransferRequest && (
+              <button
+                onClick={() => onTransferRequest(reg)}
+                className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors min-h-[40px]"
+              >
+                <ArrowRightLeft className="w-3.5 h-3.5" />
+                Request Class Transfer
+              </button>
+            )}
+            {onCancelled && !cancelSuccess && !showCancelConfirm && (
+              <button
+                onClick={() => { setCancelError(null); setShowCancelConfirm(true); }}
+                className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-red-500 hover:bg-red-50 rounded-xl transition-colors min-h-[40px]"
+              >
+                <XCircle className="w-3.5 h-3.5" />
+                Cancel Class
+              </button>
+            )}
+            {/* Cancel success */}
+            {cancelSuccess && (
+              <div className="flex items-center justify-center gap-2 text-xs text-emerald-600 py-2">
+                <CheckCircle className="w-3.5 h-3.5" />
+                Cancelled — a makeup token has been added to your account
+              </div>
+            )}
+            {/* Cancel confirmation step */}
+            {showCancelConfirm && !cancelSuccess && (
+              <div className="rounded-xl border border-red-100 bg-red-50 p-3 space-y-2">
+                <p className="text-xs font-medium text-red-800">
+                  Cancel your {childDisplayName}'s spot in{' '}
+                  <span className="font-semibold">{reg.session.programName}</span>?
+                </p>
+                <p className="text-xs text-red-700">
+                  You'll receive a makeup token to book a future class. This cannot be undone.
+                </p>
+                {cancelError && (
+                  <p className="text-xs text-red-600">{cancelError}</p>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleCancelRegistration}
+                    disabled={cancelling}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition-colors min-h-[36px]"
+                  >
+                    {cancelling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                    Yes, Cancel
+                  </button>
+                  <button
+                    onClick={() => { setShowCancelConfirm(false); setCancelError(null); }}
+                    disabled={cancelling}
+                    className="flex-1 py-2 bg-white hover:bg-slate-50 text-slate-600 text-xs font-medium rounded-lg border border-slate-200 transition-colors min-h-[36px]"
+                  >
+                    Keep it
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -2613,6 +2700,7 @@ function PortalDashboard({ family, onSignOut }: PortalDashboardProps) {
                       familyId={family.id}
                       familyEmail={family.email}
                       onTransferRequest={setTransferTarget}
+                      onCancelled={loadRegistrations}
                     />
                   ))
                 )

@@ -1438,6 +1438,7 @@ interface AdminTransferRow {
   reason: string | null;
   billingAdjustmentCents: number;
   billingDirection: 'credit' | 'charge' | 'none';
+  billingAppliedAt: string | null;
   requestedAt: string;
   childFirstName: string;
   childLastName: string | null;
@@ -1473,6 +1474,7 @@ function TransfersReport() {
           reason,
           billing_adjustment_cents,
           billing_direction,
+          billing_applied_at,
           requested_at,
           children (
             first_name,
@@ -1501,6 +1503,7 @@ function TransfersReport() {
           reason: string | null;
           billing_adjustment_cents: number;
           billing_direction: 'credit' | 'charge' | 'none';
+          billing_applied_at: string | null;
           requested_at: string;
           children: { first_name: string; last_name: string | null } | null;
           families: { email: string } | null;
@@ -1516,6 +1519,7 @@ function TransfersReport() {
         reason: t.reason,
         billingAdjustmentCents: t.billing_adjustment_cents,
         billingDirection: t.billing_direction,
+        billingAppliedAt: t.billing_applied_at,
         requestedAt: t.requested_at,
         childFirstName: t.children?.first_name ?? '—',
         childLastName: t.children?.last_name ?? null,
@@ -1550,12 +1554,23 @@ function TransfersReport() {
         headers: { 'Content-Type': 'application/json', 'Apikey': anonKey },
         body: JSON.stringify({ transferId }),
       });
-      const result = await res.json() as { success?: boolean; error?: boolean; message?: string; waitlistNotified?: string | null };
+      const result = await res.json() as {
+        success?: boolean;
+        error?: boolean;
+        message?: string;
+        waitlistNotified?: string | null;
+        billing?: { direction: string; amountCents: number; applied: boolean; error: string | null };
+      };
       if (result.success) {
-        const msg = result.waitlistNotified
-          ? 'Transfer approved. Freed spot — waitlisted family notified.'
-          : 'Transfer approved successfully.';
-        setApproveMsg({ id: transferId, msg, ok: true });
+        const parts: string[] = ['Transfer approved.'];
+        if (result.billing?.applied) {
+          const dir = result.billing.direction === 'credit' ? 'Refund' : 'Charge';
+          parts.push(`${dir} of $${(result.billing.amountCents / 100).toFixed(2)} applied via Stripe.`);
+        } else if (result.billing?.error) {
+          parts.push(`Note: billing not applied — ${result.billing.error}`);
+        }
+        if (result.waitlistNotified) parts.push('Waitlisted family notified.');
+        setApproveMsg({ id: transferId, msg: parts.join(' '), ok: true });
         load();
       } else {
         setApproveMsg({ id: transferId, msg: result.message ?? 'Approval failed.', ok: false });
@@ -1676,9 +1691,17 @@ function TransfersReport() {
               <div className="flex items-center gap-3 flex-wrap text-xs text-slate-500">
                 {t.reason && <span>Reason: {t.reason}</span>}
                 {t.billingDirection !== 'none' && t.billingAdjustmentCents > 0 && (
-                  <span className={t.billingDirection === 'charge' ? 'text-amber-600' : 'text-emerald-600'}>
+                  <span className={`flex items-center gap-1 font-medium ${t.billingDirection === 'charge' ? 'text-amber-600' : 'text-emerald-600'}`}>
                     {t.billingDirection === 'charge' ? '+' : '−'}
                     {formatCurrency(t.billingAdjustmentCents)}
+                    {t.billingAppliedAt ? (
+                      <span className="flex items-center gap-0.5 ml-1 text-emerald-500 font-normal">
+                        <CheckCircle className="w-3 h-3" />
+                        Billed
+                      </span>
+                    ) : t.status === 'approved' ? (
+                      <span className="ml-1 text-amber-500 font-normal">(billing pending)</span>
+                    ) : null}
                   </span>
                 )}
                 <span>Requested {new Date(t.requestedAt).toLocaleDateString()}</span>

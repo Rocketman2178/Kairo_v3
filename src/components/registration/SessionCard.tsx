@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MapPin, Calendar, Clock, Users, Star, Info, TrendingUp, Zap, UserRound } from 'lucide-react';
+import { MapPin, Calendar, Clock, Users, Info, TrendingUp, Zap, UserRound, GraduationCap } from 'lucide-react';
 import { Button } from '../common/Button';
 import { LocationDetailModal } from './LocationDetailModal';
 import { CoachDetailModal } from './CoachDetailModal';
@@ -29,6 +29,7 @@ interface SessionRecommendation {
   spotsRemaining: number;
   fillRatePercent?: number;
   urgencyLevel?: 'full' | 'filling_fast' | 'moderate' | 'available';
+  requiredSkillLevel?: string | null;
 }
 
 interface SessionCardProps {
@@ -129,6 +130,12 @@ export function SessionCard({ session, onSelect, onJoinWaitlist, organizationId,
               {formatAgeRange(session.ageRange) && (
                 <span className="px-2 py-0.5 bg-[#0f1419] text-[#06b6d4] text-xs rounded-full border border-[#06b6d4]/30">
                   {formatAgeRange(session.ageRange)}
+                </span>
+              )}
+              {session.requiredSkillLevel && (
+                <span className="flex items-center gap-1 px-2 py-0.5 bg-violet-950/40 text-violet-300 text-xs rounded-full border border-violet-700/40">
+                  <GraduationCap className="w-3 h-3" />
+                  {session.requiredSkillLevel}
                 </span>
               )}
               {getUrgencyBadge()}

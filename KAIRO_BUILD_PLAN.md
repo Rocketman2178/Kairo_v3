@@ -574,12 +574,12 @@ Research required to inform Kairo's tiered pricing model.
 #### 2.2.1 Skill-Level-Based Registration (NEW - Swim School Deep Dive)
 **Swim School Insight:** Classes are assigned by skill level first, age second. A 5-year-old beginner is in a different class than a 5-year-old who can do freestyle. Age-only filtering is insufficient for swim schools and gymnastics.
 
-- [ ] Add `skill_level` field to children table (e.g., "Goldfish", "Starfish", "Level 1-6")
-- [ ] Add `required_skill_level` field to sessions table (prerequisite)
+- [x] Add `skill_level` field to children table (e.g., "Goldfish", "Starfish", "Level 1-6") — already existed
+- [x] Add `required_skill_level` field to sessions table (prerequisite) — migration 20260416000001; `skill_level_names JSONB` also added to organizations
 - [ ] Kai asks skill level during registration when program requires it
-- [ ] Session matching filters by skill level + age (not just age)
-- [ ] Skill level display on SessionCard UI
-- [ ] Organization-configurable skill level names and hierarchy
+- [x] Session matching filters by skill level + age (not just age) — `get_matching_sessions` updated with `p_child_skill_level` param; sessions without requirement always shown
+- [x] Skill level display on SessionCard UI — violet GraduationCap badge on SessionCard + SessionBrowseCard
+- [x] Organization-configurable skill level names and hierarchy — `organizations.skill_level_names JSONB` column added
 - [ ] Skill assessment quiz option during registration (optional per org)
 - [ ] Skill progression tracking (how long at each level)
 
@@ -862,7 +862,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 **Status:** PHASE 2 COMPLETE — DB schema + parent portal display + booking flow done. Token issuance trigger (on cancellation) and admin management pending.
 
 **Token Mechanics:**
-- [x] Token generation: `issue_makeup_token()` RPC; DB schema supports org-configurable expiry and fee (Phase 2: trigger on cancellation event)
+- [x] Token generation: `issue_makeup_token()` RPC; DB schema supports org-configurable expiry and fee; auto-issued by `cancel_registration()` RPC on cancellation event — `cancel-registration` edge function deployed; "Cancel Class" button + confirm dialog in Parent Portal; `registrations.cancelled_at` audit column added (20260416000003)
 - [x] Token level-locking: `skill_level` field stored on token; level-lock enforced at query time
 - [x] Token expiration: configurable expiry months (default: 12); auto-expire in `get_family_tokens()`
 - [x] Token usage: `get_makeup_sessions_for_token()` RPC returns eligible sessions; `redeem-makeup-token` edge function validates + creates registration + marks token used; `MakeupBookingModal` in parent portal (Phase 2) — NBC Priority 1
@@ -893,7 +893,7 @@ Registration Form → Payment → Confirmed Registration → Return User
 
 - [x] Transfer request flow (parent-initiated or admin-initiated) — `class_transfers` table + `request_class_transfer()` RPC; TransferRequestModal in Parent Portal
 - [x] Transfer destination search: show available classes matching child's level with open spots — `get_available_transfer_sessions()` RPC returns open sessions in same org
-- [ ] Billing adjustment: prorated credit/charge for different-priced classes
+- [x] Billing adjustment: prorated credit/charge for different-priced classes — `approve-transfer` edge function now applies Stripe refund (credit) or off-session PaymentIntent charge; `class_transfers.billing_applied_at` stamps success; Reports Transfers tab shows "Billed ✓" or "(billing pending)" indicator (20260416000002)
 - [x] Transfer history: full audit trail of all class changes per child — `from_session_id` on `class_transfers`; `request_class_transfer` captures source session at request time; TransferHistoryPanel shows From → To pill chain
 - [x] Waitlist impact: transferring out of a class frees a spot, auto-notify waitlisted families — `approve_class_transfer()` RPC decrements/increments enrolled counts; `approve-transfer` edge function promotes first pending waitlist entry to 'notified' + fires `trigger-waitlist-spot-available`; admin approve button in Reports Transfers tab
 - [ ] Batch transfers: admin can move multiple children at once (e.g., class cancelled, move all to another)

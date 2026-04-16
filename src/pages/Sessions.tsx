@@ -25,6 +25,7 @@ import {
   ExternalLink,
   ListOrdered,
   RefreshCw,
+  GraduationCap,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -40,6 +41,7 @@ interface SessionRow {
   status: string;
   is_hidden: boolean;
   external_registration_url: string | null;
+  required_skill_level: string | null;
   programs: {
     id: string;
     name: string;
@@ -611,6 +613,12 @@ function SessionBrowseCard({ session, onCopyLink, copiedId, filterZip, onNotifyM
                 {ageLabel}
               </span>
             )}
+            {session.required_skill_level && (
+              <span className="flex items-center gap-1 px-2 py-0.5 bg-violet-950/40 text-violet-300 text-xs rounded-full border border-violet-700/40 whitespace-nowrap">
+                <GraduationCap className="w-3 h-3" />
+                {session.required_skill_level}
+              </span>
+            )}
             {session.is_hidden && (
               <span className="flex items-center gap-1 px-2 py-0.5 bg-gray-800 text-gray-400 text-xs rounded-full border border-gray-700 whitespace-nowrap">
                 <EyeOff className="w-3 h-3" />
@@ -846,6 +854,7 @@ export function Sessions() {
             status,
             is_hidden,
             external_registration_url,
+            required_skill_level,
             programs!inner (
               id,
               name,
@@ -884,6 +893,7 @@ export function Sessions() {
               enrolled_count,
               status,
               is_hidden,
+              required_skill_level,
               programs!inner (
                 id,
                 name,
