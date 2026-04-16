@@ -2,7 +2,7 @@ import { ChatInterface } from '../components/registration/ChatInterface';
 import CartRecoveryBanner from '../components/registration/CartRecoveryBanner';
 import { useCartRecovery } from '../hooks/useCartRecovery';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ExternalLink, LayoutGrid } from 'lucide-react';
+import { ExternalLink, LayoutGrid, Presentation } from 'lucide-react';
 
 export function Home() {
   const { cartRecovery, recoveryUrl, dismiss } = useCartRecovery();
@@ -44,6 +44,13 @@ export function Home() {
               >
                 <LayoutGrid className="w-4 h-4" />
                 <span>Browse Classes</span>
+              </Link>
+              <Link
+                to="/sales-demo"
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
+              >
+                <Presentation className="w-4 h-4" />
+                <span>Sales Demo</span>
               </Link>
               <a
                 href="/demo"

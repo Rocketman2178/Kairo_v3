@@ -14,8 +14,21 @@ import {
   X,
   Clock,
   CheckCircle2,
+  Users,
+  CalendarDays,
+  BarChart3,
+  Megaphone,
+  LineChart,
+  Palette,
+  UserCheck,
 } from 'lucide-react';
 import { ChatInterface } from '../components/registration/ChatInterface';
+import { DemoCoachApp } from '../components/demo/DemoCoachApp';
+import { DemoScheduling } from '../components/demo/DemoScheduling';
+import { DemoAnalytics } from '../components/demo/DemoAnalytics';
+import { DemoMarketing } from '../components/demo/DemoMarketing';
+import { DemoDataInsights } from '../components/demo/DemoDataInsights';
+import { DemoWhiteLabel } from '../components/demo/DemoWhiteLabel';
 
 // Demo org (Soccer Stars seed data)
 const DEMO_ORG_ID = '00000000-0000-0000-0000-000000000001';
@@ -25,6 +38,8 @@ interface ChatHandle {
   reset: () => void;
 }
 
+type SceneType = 'intro' | 'chat' | 'component';
+
 interface Scene {
   id: string;
   title: string;
@@ -33,12 +48,14 @@ interface Scene {
   feature: string;
   callout: string;
   talkingPoints: string[];
-  suggestedMessages: string[];
-  showChat: boolean;
+  type: SceneType;
+  suggestedMessages?: string[];
+  component?: React.ComponentType;
   autoReset?: boolean;
 }
 
 const SCENES: Scene[] = [
+  // ========== ACT 1: PARENT JOURNEY ==========
   {
     id: 'problem',
     title: 'The Problem',
@@ -52,8 +69,7 @@ const SCENES: Scene[] = [
       'Operators lose 25%+ of potential revenue to friction',
       'Existing tools (iClassPro, NBC, Jackrabbit) treat registration as a form — not a conversation',
     ],
-    suggestedMessages: [],
-    showChat: false,
+    type: 'intro',
   },
   {
     id: 'first-contact',
@@ -72,7 +88,7 @@ const SCENES: Scene[] = [
       "Hi, I'd like to sign up my son for soccer",
       "My son Liam is 6 and loves soccer",
     ],
-    showChat: true,
+    type: 'chat',
     autoReset: true,
   },
   {
@@ -91,7 +107,7 @@ const SCENES: Scene[] = [
     suggestedMessages: [
       "Saturdays in Irvine",
     ],
-    showChat: true,
+    type: 'chat',
   },
   {
     id: 'checkout',
@@ -107,8 +123,7 @@ const SCENES: Scene[] = [
       'Stripe handles payment: full pay or 3-type installment plans',
       'Cart abandonment recovery catches drop-offs within 24 hours',
     ],
-    suggestedMessages: [],
-    showChat: true,
+    type: 'chat',
   },
   {
     id: 'voice-mode',
@@ -124,8 +139,7 @@ const SCENES: Scene[] = [
       'Auto-mute during agent response prevents echo',
       '18 voice options — pick warm, professional, or energetic tones per org',
     ],
-    suggestedMessages: [],
-    showChat: true,
+    type: 'chat',
   },
   {
     id: 'spanish',
@@ -143,9 +157,117 @@ const SCENES: Scene[] = [
     suggestedMessages: [
       "Hola, mi hijo tiene 5 años y quiere fútbol los sábados",
     ],
-    showChat: true,
+    type: 'chat',
     autoReset: true,
   },
+
+  // ========== ACT 2: OPERATOR TOOLS ==========
+  {
+    id: 'coach-app',
+    title: 'Coach App',
+    subtitle: 'Mobile-first tools for coaches and staff',
+    icon: UserCheck,
+    feature: 'Staff Operations',
+    callout: 'Built for the field — mobile-first',
+    talkingPoints: [
+      'Coaches see their schedule, roster, and attendance on their phone',
+      'One-tap attendance check-in with QR code, phone number, or manual entry',
+      'Medical notes and allergies surfaced at check-in — critical for safety',
+      'Sub finder integration — coaches can request a sub with one click',
+      'All attendance data flows to parents (notifications) and operators (analytics) in real-time',
+    ],
+    type: 'component',
+    component: DemoCoachApp,
+  },
+  {
+    id: 'scheduling',
+    title: 'Smart Scheduling',
+    subtitle: 'AI-assisted schedule builder with conflict detection',
+    icon: CalendarDays,
+    feature: 'Operational Intelligence',
+    callout: 'AI helps operators build optimal schedules',
+    talkingPoints: [
+      'Drag-and-drop schedule builder — no spreadsheets needed',
+      'AI suggests optimal times based on historical enrollment patterns',
+      'Conflict detection prevents double-booking coaches, locations, or age groups',
+      'Bulk actions: reschedule entire seasons in seconds',
+      'Capacity intelligence predicts fill rates before you publish',
+    ],
+    type: 'component',
+    component: DemoScheduling,
+  },
+  {
+    id: 'analytics',
+    title: 'Analytics Dashboard',
+    subtitle: 'Real-time revenue, enrollment, and operational metrics',
+    icon: BarChart3,
+    feature: 'Business Intelligence',
+    callout: 'Every KPI in one dashboard',
+    talkingPoints: [
+      'Revenue tracking — current period vs. last year, projected completions',
+      'Registration funnel — see exactly where parents drop off',
+      'Churn prediction flags families at risk before they leave',
+      'Fill rate by location, program, and day — optimize capacity',
+      'Custom reports exportable to Excel for board meetings',
+    ],
+    type: 'component',
+    component: DemoAnalytics,
+  },
+
+  // ========== ACT 3: GROWTH & INSIGHTS ==========
+  {
+    id: 'marketing',
+    title: 'Marketing Automation',
+    subtitle: 'Track ad spend, attribution, and ROI in one place',
+    icon: Megaphone,
+    feature: 'Growth Engine',
+    callout: 'Attribute every dollar to a conversion',
+    talkingPoints: [
+      'Ad spend tracking across Facebook, Google, local sponsorships',
+      'UTM attribution connects ad clicks to registration completions',
+      'Automated cart recovery emails and SMS — proven 15-20% recovery rate',
+      'Win-back campaigns for lapsed families using ML-predicted churn scores',
+      'A/B test offers, subject lines, and landing pages directly in the platform',
+    ],
+    type: 'component',
+    component: DemoMarketing,
+  },
+  {
+    id: 'data-insights',
+    title: 'Peer Benchmarking',
+    subtitle: 'See how you stack up against similar operators (anonymously)',
+    icon: LineChart,
+    feature: 'Competitive Intelligence',
+    callout: 'Anonymous benchmarking across the network',
+    talkingPoints: [
+      'Compare your fill rates, pricing, retention to similar-sized operators',
+      'All data anonymized and aggregated — no operator sees another\'s specifics',
+      'Identify underperforming programs vs. market average',
+      'Pricing intelligence: are you leaving money on the table?',
+      'Only possible because Kairo powers multiple operators on one platform',
+    ],
+    type: 'component',
+    component: DemoDataInsights,
+  },
+  {
+    id: 'white-label',
+    title: 'White-Label Branding',
+    subtitle: 'Your brand, your domain, your logo — powered by Kairo',
+    icon: Palette,
+    feature: 'Brand Control',
+    callout: 'Parents see YOUR brand, not Kairo',
+    talkingPoints: [
+      'Custom subdomain: register.yourbrand.com',
+      'Full logo, color, font customization — match your existing brand book',
+      'Email and SMS templates branded with your organization',
+      'Franchise/multi-location support — each location can customize within brand guidelines',
+      'Your customers never know it\'s Kairo underneath',
+    ],
+    type: 'component',
+    component: DemoWhiteLabel,
+  },
+
+  // ========== CLOSE ==========
   {
     id: 'results',
     title: 'The Result',
@@ -154,14 +276,13 @@ const SCENES: Scene[] = [
     feature: 'Close',
     callout: '',
     talkingPoints: [
-      'In under 4 minutes you just saw: AI chat, live session search, checkout, voice mode, Spanish',
+      'In under 15 minutes you saw: AI chat, session search, checkout, voice, Spanish, coach app, scheduling, analytics, marketing, benchmarking, white-label',
       'All of this runs on YOUR data — sessions, programs, locations, coaches, pricing',
       'Setup: 1–2 weeks for single location, 3–6 months for multi-unit with phased rollout',
       'Pricing: $149–$499/month based on org size and features',
-      'Next step: 30-minute deep dive on your specific registration flow',
+      'Next step: 30-minute deep dive on your specific operations',
     ],
-    suggestedMessages: [],
-    showChat: false,
+    type: 'intro',
   },
 ];
 
@@ -239,17 +360,17 @@ export default function SalesDemo() {
               <ChevronLeft className="w-4 h-4" />
             </button>
 
-            <div className="flex gap-1">
+            <div className="hidden md:flex gap-0.5">
               {SCENES.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setSceneIdx(i)}
-                  className={`w-2 h-2 rounded-full transition-all ${
+                  className={`h-1.5 rounded-full transition-all ${
                     i === sceneIdx
-                      ? 'bg-cyan-400 w-6'
+                      ? 'bg-cyan-400 w-5'
                       : i < sceneIdx
-                        ? 'bg-cyan-700'
-                        : 'bg-slate-700 hover:bg-slate-600'
+                        ? 'bg-cyan-700 w-1.5'
+                        : 'bg-slate-700 hover:bg-slate-600 w-1.5'
                   }`}
                   aria-label={`Scene ${i + 1}`}
                 />
@@ -289,11 +410,11 @@ export default function SalesDemo() {
           </div>
         </div>
 
-        {/* Two-column layout: chat + talking points */}
-        <div className={`grid gap-6 ${scene.showChat ? 'lg:grid-cols-[minmax(0,1fr)_360px]' : 'grid-cols-1'}`}>
-          {/* Left: Chat or Scene Content */}
+        {/* Two-column layout: main content + talking points */}
+        <div className={`grid gap-6 ${scene.type !== 'intro' ? 'lg:grid-cols-[minmax(0,1fr)_360px]' : 'grid-cols-1'}`}>
+          {/* Left: Chat, Component, or Intro */}
           <div>
-            {scene.showChat ? (
+            {scene.type === 'chat' ? (
               <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6">
                 {/* ChatInterface has its own built-in iPhone frame */}
                 <div className="flex justify-center">
@@ -306,7 +427,7 @@ export default function SalesDemo() {
                 </div>
 
                 {/* Suggested messages */}
-                {scene.suggestedMessages.length > 0 && (
+                {scene.suggestedMessages && scene.suggestedMessages.length > 0 && (
                   <div className="mt-6 max-w-md mx-auto space-y-2">
                     <p className="text-xs uppercase tracking-wide text-slate-500 font-medium flex items-center gap-2">
                       <Play className="w-3 h-3" />
@@ -324,8 +445,15 @@ export default function SalesDemo() {
                   </div>
                 )}
               </div>
+            ) : scene.type === 'component' && scene.component ? (
+              // Component scene — render existing Demo component
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 overflow-hidden">
+                <div className="max-h-[80vh] overflow-y-auto">
+                  <scene.component />
+                </div>
+              </div>
             ) : (
-              // Non-chat scene (intro/outro)
+              // Intro/outro scene
               <div className="bg-slate-950 border border-slate-800 rounded-2xl p-12">
                 <div className="max-w-2xl mx-auto">
                   {scene.id === 'problem' && (
@@ -360,8 +488,8 @@ export default function SalesDemo() {
                         <CheckCircle2 className="w-10 h-10 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-3xl font-bold mb-3">You just saw the future of registration</h3>
-                        <p className="text-slate-400">In under 4 minutes — AI chat, live data, checkout, voice, Spanish.</p>
+                        <h3 className="text-3xl font-bold mb-3">You just saw the future of youth sports software</h3>
+                        <p className="text-slate-400">Parent-facing AI chat, coach app, smart scheduling, analytics, marketing, peer benchmarking — all in one platform.</p>
                       </div>
                       <div className="pt-6 space-y-3">
                         <button
@@ -384,8 +512,8 @@ export default function SalesDemo() {
             )}
           </div>
 
-          {/* Right: Talking points (only when showing chat) */}
-          {scene.showChat && (
+          {/* Right: Talking points (only when showing chat or component) */}
+          {scene.type !== 'intro' && (
             <div className="space-y-4">
               {scene.callout && (
                 <div className="px-4 py-3 bg-gradient-to-r from-indigo-500/10 to-cyan-500/10 border border-cyan-500/30 rounded-xl">
