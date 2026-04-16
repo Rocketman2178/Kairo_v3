@@ -51,6 +51,8 @@ interface Scene {
   type: SceneType;
   suggestedMessages?: string[];
   component?: React.ComponentType;
+  /** Visual theme for component scenes. 'light' = white bg (for components designed with dark text), 'dark' = transparent (component handles its own dark bg). Default 'light'. */
+  componentTheme?: 'light' | 'dark';
   autoReset?: boolean;
 }
 
@@ -246,6 +248,7 @@ const SCENES: Scene[] = [
     ],
     type: 'component',
     component: DemoDataInsights,
+    componentTheme: 'dark',
   },
   {
     id: 'white-label',
@@ -440,12 +443,19 @@ export default function SalesDemo() {
                 )}
               </div>
             ) : scene.type === 'component' && scene.component ? (
-              // Component scene — render existing Demo component
-              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 overflow-hidden">
-                <div className="max-h-[80vh] overflow-y-auto">
-                  <scene.component />
-                </div>
-              </div>
+              // Component scene — render existing Demo component.
+              // Most Demo components are designed for LIGHT backgrounds with dark text,
+              // so wrap them in bg-white. DemoDataInsights is dark-mode; render transparent.
+              (() => {
+                const isDark = scene.componentTheme === 'dark';
+                return (
+                  <div className={`border border-slate-800 rounded-2xl overflow-hidden ${isDark ? 'bg-slate-950' : 'bg-white'}`}>
+                    <div className="max-h-[80vh] overflow-y-auto">
+                      <scene.component />
+                    </div>
+                  </div>
+                );
+              })()
             ) : (
               // Intro/outro scene
               <div className="bg-slate-950 border border-slate-800 rounded-2xl p-12">
